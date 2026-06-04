@@ -1,0 +1,89 @@
+# FinManage Backend (Fastify + Prisma)
+
+This is the backend service for the FinManage application, built with a focus on performance, security, and clean architecture.
+
+## 🚀 Tech Stack & Techniques
+
+- **Framework**: [Fastify](https://www.fastify.io/) (High-performance web framework for Node.js)
+- **Database ORM**: [Prisma](https://www.prisma.io/)
+- **Database**: PostgreSQL
+- **Caching**: Redis (via `ioredis`)
+- **Validation**: Zod + `fastify-type-provider-zod`
+- **Security & Authentication**:
+  - `bcryptjs` for password hashing (Cost: 12)
+  - Short-lived Access Tokens (15m) + Long-lived Refresh Tokens (7d)
+  - Hashed Refresh Token rotation in DB for enhanced security
+  - JWT integration via `@fastify/jwt`
+- **Rate Limiting** (`@fastify/rate-limit` + Redis):
+  - Global rate limit: `100 requests / 1 minute`
+  - Strict Auth rate limit (Login/Register): `5-10 requests / 15 minutes` (Brute-force protection)
+- **Advanced Caching Strategy**:
+  - `TTL 2 mins`: Transaction Lists (highly volatile)
+  - `TTL 5 mins`: Budgets, Goals, User Profile
+  - `TTL 10 mins`: Analytical Reports, Category Lists
+  - Automatic cache invalidation on write (Create/Update/Delete)
+- **Architecture**: Layered design (Route → Controller → Service → Schema/Model)
+
+## 📁 Project Structure
+
+```text
+src/
+├── config/        # Environment variables validation (Zod)
+├── hooks/         # Fastify lifecycle hooks (e.g., authenticate)
+├── modules/       # Feature modules (auth, budgets, categories, goals, reports, transactions, users)
+│   └── [module]/
+│       ├── *.route.ts       # Route definitions & schema binding
+│       ├── *.controller.ts  # Thin request/response handlers
+│       ├── *.service.ts     # Core business logic & DB/Cache interaction
+│       └── *.schema.ts      # Zod validation schemas
+├── plugins/       # Fastify plugins (DB, Redis, Rate Limit)
+├── types/         # TypeScript type augmentations
+├── utils/         # Helpers (Cache manager, Password hasher, Error handler)
+└── server.ts      # Application entry point
+```
+
+## 🛠️ Setup & Run
+
+### 1. Prerequisites
+- Node.js (v18+)
+- Docker & Docker Compose (for PostgreSQL & Redis)
+
+### 2. Installation
+```bash
+npm install
+```
+
+### 3. Environment Variables
+Ensure your `.env` file matches the following structure:
+```env
+DATABASE_URL="postgresql://admin:password123@localhost:5432/finmanage?schema=public"
+REDIS_URL="redis://localhost:6379"
+JWT_SECRET="your-super-secret-key-min-32-chars"
+JWT_ACCESS_EXPIRES="15m"
+JWT_REFRESH_EXPIRES="7d"
+PORT=8080
+NODE_ENV="development"
+CORS_ORIGIN="http://localhost:3000"
+```
+
+### 4. Start Infrastructure (DB & Cache)
+```bash
+docker-compose up -d
+```
+
+### 5. Database Migration
+Synchronize your Prisma schema with the PostgreSQL database:
+```bash
+npm run db:push
+npm run db:generate
+```
+
+### 6. Start the Server
+Start the development server with hot-reload:
+```bash
+npm run dev
+```
+The server will run at `http://localhost:8080`.
+
+## 📜 Database Initialization (Optional)
+A complete `database.sql` file is provided in the root directory. It contains the full PostgreSQL schema, including triggers for `updatedAt` and sample seed data. You can execute this file directly against your PostgreSQL instance if you prefer not to use Prisma's migration tools.

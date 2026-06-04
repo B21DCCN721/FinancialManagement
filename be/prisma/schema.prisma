@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  password     String
+  firstName    String?
+  lastName     String?
+  name         String?
+  avatarUrl    String?
+  refreshToken String?  // stored as hashed token
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transactions Transaction[]
+  categories   Category[]
+  budgets      Budget[]
+  goals        Goal[]
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  type      String   // "income" | "expense"
+  color     String?
+  icon      String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@index([userId])
+  @@index([userId, type])
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  amount      Float
+  type        String   // "income" | "expense"
+  description String?
+  date        DateTime
+  isRecurring Boolean  @default(false)
+  frequency   String?  // "daily" | "weekly" | "monthly" | "yearly"
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, date(sort: Desc)])
+  @@index([userId, type])
+  @@index([categoryId])
+}
+
+model Budget {
+  id         String   @id @default(uuid())
+  amount     Float
+  period     String   // "YYYY-MM" format
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, categoryId, period])
+  @@index([userId])
+  @@index([userId, period])
+}
+
+model Goal {
+  id            String   @id @default(uuid())
+  title         String
+  description   String?
+  targetAmount  Float
+  currentAmount Float    @default(0)
+  deadline      DateTime
+  color         String?
+  icon          String?
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+}
