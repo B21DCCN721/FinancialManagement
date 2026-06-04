@@ -15,7 +15,9 @@ import {
   Area,
   AreaChart,
 } from "recharts"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useSelector } from "react-redux"
+import { RootState } from "@/store/store"
+import Link from "next/link"
 
 const monthlyData = [
   { name: "Jan", income: 4000, expense: 2400 },
@@ -27,33 +29,20 @@ const monthlyData = [
 ]
 
 const categoryData = [
-  { name: "Food & Dining", value: 400, color: "#7c5cfc" },
-  { name: "Transportation", value: 300, color: "#10d9a0" },
-  { name: "Shopping", value: 300, color: "#f59e0b" },
-  { name: "Entertainment", value: 200, color: "#ff4d6d" },
-  { name: "Healthcare", value: 150, color: "#38bdf8" },
-]
-
-const recentTransactions = [
-  { name: "Netflix Subscription", category: "Entertainment", amount: -15.99, date: "Today", icon: "🎬" },
-  { name: "Salary Deposit", category: "Income", amount: 4500.00, date: "Yesterday", icon: "💰" },
-  { name: "Grocery Store", category: "Food & Dining", amount: -87.50, date: "Jun 2", icon: "🛒" },
-  { name: "Uber Ride", category: "Transportation", amount: -12.30, date: "Jun 1", icon: "🚗" },
-  { name: "Amazon Purchase", category: "Shopping", amount: -134.99, date: "May 31", icon: "📦" },
+  { name: "Ăn uống", value: 400, color: "#7c5cfc" },
+  { name: "Di chuyển", value: 300, color: "#10d9a0" },
+  { name: "Mua sắm", value: 300, color: "#f59e0b" },
+  { name: "Giải trí", value: 200, color: "#ff4d6d" },
+  { name: "Tiện ích", value: 150, color: "#38bdf8" },
 ]
 
 const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
   if (active && payload && payload.length) {
     return (
       <div
-        className="rounded-xl p-3 text-sm"
-        style={{
-          background: "#1a1a2e",
-          border: "1px solid rgba(255,255,255,0.1)",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
-        }}
+        className="rounded-xl p-3 text-sm bg-popover text-popover-foreground border border-border shadow-lg"
       >
-        <p className="font-semibold text-white mb-2">{label}</p>
+        <p className="font-semibold mb-2">{label}</p>
         {payload.map((entry) => (
           <p key={entry.name} className="flex items-center gap-2" style={{ color: entry.color }}>
             <span className="h-2 w-2 rounded-full inline-block" style={{ background: entry.color }} />
@@ -67,12 +56,20 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 }
 
 export default function Dashboard() {
+  const transactions = useSelector((state: RootState) => state.finance.transactions)
+
+  const totalIncome = transactions.filter(tx => tx.type === "income").reduce((acc, tx) => acc + tx.amount, 0)
+  const totalExpense = transactions.filter(tx => tx.type === "expense").reduce((acc, tx) => acc + tx.amount, 0)
+  const totalBalance = totalIncome - totalExpense
+
+  const recentTransactions = transactions.slice(0, 5)
+
   const stats = [
     {
-      label: "Total Balance",
-      value: "$45,231.89",
+      label: "Tổng số dư",
+      value: `$${totalBalance.toLocaleString()}`,
       change: "+20.1%",
-      changeLabel: "from last month",
+      changeLabel: "so với tháng trước",
       positive: true,
       icon: Wallet,
       className: "stat-card-primary",
@@ -81,10 +78,10 @@ export default function Dashboard() {
       iconColor: "#7c5cfc",
     },
     {
-      label: "Total Income (Jun)",
-      value: "$12,234.00",
+      label: "Tổng thu nhập",
+      value: `$${totalIncome.toLocaleString()}`,
       change: "+15%",
-      changeLabel: "from last month",
+      changeLabel: "so với tháng trước",
       positive: true,
       icon: TrendingUp,
       className: "stat-card-income",
@@ -93,10 +90,10 @@ export default function Dashboard() {
       iconColor: "#10d9a0",
     },
     {
-      label: "Total Expense (Jun)",
-      value: "$3,456.00",
+      label: "Tổng chi phí",
+      value: `$${totalExpense.toLocaleString()}`,
       change: "-4%",
-      changeLabel: "from last month",
+      changeLabel: "so với tháng trước",
       positive: false,
       icon: TrendingDown,
       className: "stat-card-expense",
@@ -106,46 +103,44 @@ export default function Dashboard() {
     },
   ]
 
+  const formatDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr)
+      return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })
+    } catch {
+      return dateStr
+    }
+  }
+
   return (
     <div className="space-y-6 py-2">
       {/* Page header */}
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Tổng quan</h1>
             <span
-              className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider"
-              style={{ background: "rgba(124,92,252,0.15)", color: "#a78bfa", border: "1px solid rgba(124,92,252,0.25)" }}
+              className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-accent text-primary border border-primary/20"
             >
-              Live
+              Trực tiếp
             </span>
           </div>
-          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.875rem" }}>
-            Your financial overview for June 2026
+          <p className="text-sm text-muted-foreground">
+            Tổng quan tài chính của bạn trong tháng này
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105"
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              color: "rgba(255,255,255,0.6)",
-            }}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 bg-card border border-border text-muted-foreground hover:text-foreground"
           >
             <Calendar className="h-4 w-4" />
-            Jun 2026
+            Tháng 6, 2026
           </button>
           <button
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105"
-            style={{
-              background: "linear-gradient(135deg, #7c5cfc, #c084fc)",
-              color: "white",
-              boxShadow: "0 4px 15px rgba(124,92,252,0.4)",
-            }}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-[0_4px_15px_rgba(124,92,252,0.4)]"
           >
             <Sparkles className="h-4 w-4" />
-            AI Report
+            Báo cáo AI
           </button>
         </div>
       </div>
@@ -158,7 +153,7 @@ export default function Dashboard() {
             className={`rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] ${stat.className}`}
           >
             <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>
+              <p className="text-sm font-medium text-muted-foreground">
                 {stat.label}
               </p>
               <div
@@ -168,22 +163,22 @@ export default function Dashboard() {
                 <stat.icon className="h-4 w-4" style={{ color: stat.iconColor }} />
               </div>
             </div>
-            <div className="text-2xl font-bold mb-1.5 tracking-tight" style={{ color: stat.valueColor }}>
+            <div className="text-2xl font-bold mb-1.5 tracking-tight text-foreground">
               {stat.value}
             </div>
             <div className="flex items-center gap-1.5">
               {stat.positive ? (
-                <ArrowUpRight className="h-3.5 w-3.5 text-emerald-400" />
+                <ArrowUpRight className="h-3.5 w-3.5 text-success" />
               ) : (
-                <ArrowDownRight className="h-3.5 w-3.5 text-rose-400" />
+                <ArrowDownRight className="h-3.5 w-3.5 text-danger" />
               )}
               <span
                 className="text-xs font-semibold"
-                style={{ color: stat.positive ? "#10d9a0" : "#ff4d6d" }}
+                style={{ color: stat.positive ? "var(--success)" : "var(--danger)" }}
               >
                 {stat.change}
               </span>
-              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
+              <span className="text-xs text-muted-foreground">
                 {stat.changeLabel}
               </span>
             </div>
@@ -195,30 +190,25 @@ export default function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         {/* Bar chart */}
         <div
-          className="col-span-4 rounded-2xl p-5"
-          style={{
-            background: "linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
-            border: "1px solid rgba(255,255,255,0.07)",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
-          }}
+          className="col-span-4 rounded-2xl p-5 glass-card"
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-white">Income vs Expense</h3>
-              <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
-                Monthly cash flow overview
+              <h3 className="text-sm font-semibold text-foreground">Thu nhập và Chi phí</h3>
+              <p className="text-xs mt-0.5 text-muted-foreground">
+                Tổng quan dòng tiền hàng tháng
               </p>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
                 <div className="h-2.5 w-2.5 rounded-sm" style={{ background: "#10d9a0" }} />
-                <span className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>Income</span>
+                <span className="text-xs text-muted-foreground">Thu nhập</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="h-2.5 w-2.5 rounded-sm" style={{ background: "#ff4d6d" }} />
-                <span className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>Expense</span>
+                <span className="text-xs text-muted-foreground">Chi phí</span>
               </div>
-              <button style={{ color: "rgba(255,255,255,0.3)" }}>
+              <button className="text-muted-foreground hover:text-foreground transition-colors">
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </div>
@@ -226,24 +216,24 @@ export default function Dashboard() {
           <div className="h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" vertical={false} />
                 <XAxis
                   dataKey="name"
-                  stroke="rgba(255,255,255,0.2)"
+                  stroke="currentColor"
+                  className="text-muted-foreground"
                   fontSize={11}
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fill: "rgba(255,255,255,0.4)" }}
                 />
                 <YAxis
-                  stroke="rgba(255,255,255,0.2)"
+                  stroke="currentColor"
+                  className="text-muted-foreground"
                   fontSize={11}
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fill: "rgba(255,255,255,0.4)" }}
                   tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)", radius: 4 }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: "currentColor", className: "text-muted opacity-10", radius: 4 }} />
                 <Bar dataKey="income" fill="#10d9a0" radius={[6, 6, 0, 0]} maxBarSize={28} />
                 <Bar dataKey="expense" fill="#ff4d6d" radius={[6, 6, 0, 0]} maxBarSize={28} />
               </BarChart>
@@ -253,21 +243,16 @@ export default function Dashboard() {
 
         {/* Pie chart */}
         <div
-          className="col-span-3 rounded-2xl p-5"
-          style={{
-            background: "linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
-            border: "1px solid rgba(255,255,255,0.07)",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
-          }}
+          className="col-span-3 rounded-2xl p-5 glass-card"
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-white">Expenses by Category</h3>
-              <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
-                Where your money went
+              <h3 className="text-sm font-semibold text-foreground">Chi phí theo danh mục</h3>
+              <p className="text-xs mt-0.5 text-muted-foreground">
+                Tiền của bạn đã đi đâu
               </p>
             </div>
-            <button style={{ color: "rgba(255,255,255,0.3)" }}>
+            <button className="text-muted-foreground hover:text-foreground transition-colors">
               <MoreHorizontal className="h-4 w-4" />
             </button>
           </div>
@@ -292,10 +277,10 @@ export default function Dashboard() {
                   <Tooltip
                     contentStyle={{
                       borderRadius: "12px",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      backgroundColor: "#1a1a2e",
-                      boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
-                      color: "white",
+                      border: "1px solid var(--border)",
+                      backgroundColor: "var(--popover)",
+                      boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+                      color: "var(--popover-foreground)",
                       fontSize: "12px",
                     }}
                   />
@@ -307,8 +292,8 @@ export default function Dashboard() {
               {categoryData.map((entry) => (
                 <div key={entry.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full shrink-0" style={{ background: entry.color }} />
-                    <span className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>{entry.name}</span>
+                     <div className="h-2 w-2 rounded-full shrink-0" style={{ background: entry.color }} />
+                     <span className="text-xs text-muted-foreground">{entry.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div
@@ -319,7 +304,7 @@ export default function Dashboard() {
                         opacity: 0.5,
                       }}
                     />
-                    <span className="text-xs font-medium text-white">${entry.value}</span>
+                    <span className="text-xs font-medium text-foreground">${entry.value}</span>
                   </div>
                 </div>
               ))}
@@ -332,17 +317,12 @@ export default function Dashboard() {
       <div className="grid gap-4 lg:grid-cols-5">
         {/* Area chart */}
         <div
-          className="lg:col-span-2 rounded-2xl p-5"
-          style={{
-            background: "linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
-            border: "1px solid rgba(255,255,255,0.07)",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
-          }}
+          className="lg:col-span-2 rounded-2xl p-5 glass-card"
         >
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-white">Savings Trend</h3>
-            <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
-              Net savings over 6 months
+            <h3 className="text-sm font-semibold text-foreground">Xu hướng tiết kiệm</h3>
+            <p className="text-xs mt-0.5 text-muted-foreground">
+              Tiết kiệm ròng trong 6 tháng
             </p>
           </div>
           <div className="h-[160px]">
@@ -357,15 +337,15 @@ export default function Dashboard() {
                     <stop offset="95%" stopColor="#7c5cfc" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: "rgba(255,255,255,0.35)" }} />
-                <YAxis fontSize={10} tickLine={false} axisLine={false} tick={{ fill: "rgba(255,255,255,0.35)" }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" vertical={false} />
+                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} stroke="currentColor" className="text-muted-foreground" />
+                <YAxis fontSize={10} tickLine={false} axisLine={false} stroke="currentColor" className="text-muted-foreground" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
                 <Tooltip
                   contentStyle={{
                     borderRadius: "12px",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    backgroundColor: "#1a1a2e",
-                    color: "white",
+                    border: "1px solid var(--border)",
+                    backgroundColor: "var(--popover)",
+                    color: "var(--popover-foreground)",
                     fontSize: "12px",
                   }}
                 />
@@ -383,57 +363,52 @@ export default function Dashboard() {
 
         {/* Recent transactions */}
         <div
-          className="lg:col-span-3 rounded-2xl p-5"
-          style={{
-            background: "linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
-            border: "1px solid rgba(255,255,255,0.07)",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
-          }}
+          className="lg:col-span-3 rounded-2xl p-5 glass-card"
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-white">Recent Transactions</h3>
-              <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
-                Latest 5 transactions
+              <h3 className="text-sm font-semibold text-foreground">Giao dịch gần đây</h3>
+              <p className="text-xs mt-0.5 text-muted-foreground">
+                Các giao dịch mới nhất
               </p>
             </div>
-            <button
-              className="text-xs font-medium px-3 py-1 rounded-lg transition-all hover:scale-105"
-              style={{ color: "#a78bfa", background: "rgba(124,92,252,0.1)", border: "1px solid rgba(124,92,252,0.2)" }}
+            <Link
+              href="/transactions"
+              className="text-xs font-medium px-3 py-1 rounded-lg transition-all hover:scale-105 bg-accent text-primary border border-primary/20"
             >
-              View all
-            </button>
+              Xem tất cả
+            </Link>
           </div>
           <div className="space-y-2">
             {recentTransactions.map((tx, i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 p-3 rounded-xl transition-all hover:scale-[1.01]"
-                style={{
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(255,255,255,0.04)",
-                }}
+                className="flex items-center gap-3 p-3 rounded-xl transition-all hover:scale-[1.01] bg-card border border-border"
               >
                 <div
-                  className="h-9 w-9 rounded-xl flex items-center justify-center text-base shrink-0"
-                  style={{ background: "rgba(255,255,255,0.06)" }}
+                  className="h-9 w-9 rounded-xl flex items-center justify-center text-base shrink-0 bg-secondary"
                 >
-                  {tx.icon}
+                  {tx.icon || "📝"}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{tx.name}</p>
-                  <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.35)" }}>
-                    {tx.category} · {tx.date}
+                  <p className="text-sm font-medium text-foreground truncate">{tx.name}</p>
+                  <p className="text-xs truncate text-muted-foreground">
+                    {tx.category} · {formatDate(tx.date)}
                   </p>
                 </div>
                 <div
                   className="text-sm font-bold shrink-0"
-                  style={{ color: tx.amount > 0 ? "#10d9a0" : "#ff8fa3" }}
+                  style={{ color: tx.type === "income" ? "var(--success)" : "var(--danger)" }}
                 >
-                  {tx.amount > 0 ? "+" : ""}${Math.abs(tx.amount).toFixed(2)}
+                  {tx.type === "income" ? "+" : "-"}${Math.abs(tx.amount).toLocaleString()}
                 </div>
               </div>
             ))}
+            {recentTransactions.length === 0 && (
+              <div className="text-center py-6 text-sm text-muted-foreground">
+                Chưa có giao dịch nào
+              </div>
+            )}
           </div>
         </div>
       </div>

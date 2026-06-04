@@ -43,7 +43,7 @@ export default function RegisterPage() {
             <div>
               <span className="text-xl font-bold tracking-tight text-white">FinManage</span>
               <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "rgba(192,132,252,0.6)" }}>
-                Smart Finance
+                Tài chính thông minh
               </p>
             </div>
           </Link>
@@ -61,9 +61,9 @@ export default function RegisterPage() {
         >
           {/* Header */}
           <div className="text-center mb-7">
-            <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">Create your account</h1>
+            <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">Tạo tài khoản của bạn</h1>
             <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
-              Start managing your finances for free
+              Bắt đầu quản lý tài chính của bạn miễn phí
             </p>
           </div>
 
@@ -72,7 +72,7 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label htmlFor="first-name" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
-                  First name
+                  Tên
                 </label>
                 <input
                   id="first-name"
@@ -83,7 +83,7 @@ export default function RegisterPage() {
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="last-name" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
-                  Last name
+                  Họ
                 </label>
                 <input
                   id="last-name"
@@ -96,7 +96,7 @@ export default function RegisterPage() {
 
             <div className="space-y-1.5">
               <label htmlFor="email" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
-                Email address
+                Địa chỉ email
               </label>
               <input
                 id="email"
@@ -109,13 +109,13 @@ export default function RegisterPage() {
 
             <div className="space-y-1.5">
               <label htmlFor="password" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
-                Password
+                Mật khẩu
               </label>
               <div className="relative">
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Minimum 8 characters"
+                  placeholder="Tối thiểu 8 ký tự"
                   required
                   className="input-modern flex h-11 w-full px-4 pr-11 text-sm"
                 />
@@ -134,25 +134,25 @@ export default function RegisterPage() {
               type="submit"
               className="btn-primary-gradient flex items-center justify-center gap-2 h-11 w-full rounded-xl text-sm mt-2"
             >
-              Create Account
+              Tạo tài khoản
               <ArrowRight className="h-4 w-4" />
             </button>
 
             <p className="text-center text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
-              By creating an account, you agree to our{" "}
+              Bằng việc tạo tài khoản, bạn đồng ý với{" "}
               <Link href="#" className="underline underline-offset-2" style={{ color: "rgba(167,139,250,0.7)" }}>
-                Terms of Service
+                Điều khoản Dịch vụ
               </Link>{" "}
-              and{" "}
+              và{" "}
               <Link href="#" className="underline underline-offset-2" style={{ color: "rgba(167,139,250,0.7)" }}>
-                Privacy Policy
+                Chính sách Bảo mật
               </Link>
               .
             </p>
           </form>
 
           {/* Divider */}
-          <div className="divider my-5">Or sign up with</div>
+          <div className="divider my-5">Hoặc đăng ký bằng</div>
 
           {/* Social */}
           <div className="grid grid-cols-2 gap-3">
@@ -190,13 +190,13 @@ export default function RegisterPage() {
 
         {/* Footer */}
         <p className="text-center text-sm mt-6" style={{ color: "rgba(255,255,255,0.35)" }}>
-          Already have an account?{" "}
+          Đã có tài khoản?{" "}
           <Link
             href="/login"
             className="font-semibold transition-colors hover:text-white"
             style={{ color: "#a78bfa" }}
           >
-            Sign in
+            Đăng nhập
           </Link>
         </p>
       </div>

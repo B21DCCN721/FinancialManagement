@@ -50,7 +50,7 @@ export default function LoginPage() {
             <div>
               <span className="text-xl font-bold tracking-tight text-white">FinManage</span>
               <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "rgba(192,132,252,0.6)" }}>
-                Smart Finance
+                Tài chính thông minh
               </p>
             </div>
           </Link>
@@ -68,9 +68,9 @@ export default function LoginPage() {
         >
           {/* Header */}
           <div className="text-center mb-7">
-            <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">Welcome back</h1>
+            <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">Chào mừng trở lại</h1>
             <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
-              Sign in to manage your finances
+              Đăng nhập để quản lý tài chính của bạn
             </p>
           </div>
 
@@ -108,13 +108,13 @@ export default function LoginPage() {
           </div>
 
           {/* Divider */}
-          <div className="divider mb-6">Or continue with email</div>
+          <div className="divider mb-6">Hoặc tiếp tục với email</div>
 
           {/* Form */}
           <form className="space-y-4">
             <div className="space-y-1.5">
               <label htmlFor="email" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
-                Email address
+                Địa chỉ email
               </label>
               <input
                 id="email"
@@ -128,14 +128,14 @@ export default function LoginPage() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label htmlFor="password" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
-                  Password
+                  Mật khẩu
                 </label>
                 <Link
                   href="#"
                   className="text-xs font-medium transition-colors hover:text-white"
                   style={{ color: "#a78bfa" }}
                 >
-                  Forgot password?
+                  Quên mật khẩu?
                 </Link>
               </div>
               <div className="relative">
@@ -160,7 +160,7 @@ export default function LoginPage() {
               type="submit"
               className="btn-primary-gradient flex items-center justify-center gap-2 h-11 w-full rounded-xl text-sm"
             >
-              Sign In
+              Đăng nhập
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>
@@ -168,13 +168,13 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-sm mt-6" style={{ color: "rgba(255,255,255,0.35)" }}>
-          Don&apos;t have an account?{" "}
+          Chưa có tài khoản?{" "}
           <Link
             href="/register"
             className="font-semibold transition-colors hover:text-white"
             style={{ color: "#a78bfa" }}
           >
-            Create one for free
+            Tạo tài khoản miễn phí
           </Link>
         </p>
       </div>

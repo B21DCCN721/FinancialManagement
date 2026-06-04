@@ -2,7 +2,7 @@
 "use client"
 
 import { useState } from "react"
-import { Download, FileText, FileSpreadsheet, FileJson, ArrowRight } from "lucide-react"
+import { FileText, FileSpreadsheet, FileJson, ArrowRight } from "lucide-react"
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

@@ -9,9 +9,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "FinManage – Smart Financial Management",
-  description: "Track your finances, budgets, and goals with a modern and intuitive dashboard.",
+  title: "FinManage – Quản lý tài chính thông minh",
+  description: "Theo dõi tài chính, ngân sách và mục tiêu của bạn với bảng điều khiển hiện đại và trực quan.",
 };
+
+import { ThemeProvider } from "@/components/theme-provider";
+import { ReduxProvider } from "@/store/provider";
 
 export default function RootLayout({
   children,
@@ -20,10 +23,22 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="vi"
+      suppressHydrationWarning
       className={`${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ReduxProvider>
+            {children}
+          </ReduxProvider>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
