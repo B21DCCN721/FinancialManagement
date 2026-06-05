@@ -31,6 +31,10 @@ export const transactionParamsSchema = z.object({
   id: z.string().uuid("Invalid transaction ID"),
 })
 
+export const autoCategorizeSchema = z.object({
+  description: z.string().min(1, "Description is required"),
+})
+
 export const transactionQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
@@ -64,6 +68,12 @@ export const paginatedTransactionsSchema = z.object({
     limit: z.number(),
     totalPages: z.number(),
   }),
+})
+
+export const autoCategorizeResponseSchema = z.object({
+  categoryId: z.string().uuid().nullable(),
+  categoryName: z.string().nullable(),
+  type: z.string().nullable(),
 })
 
 // ─── Types ──────────────────────────────────────────────────────────

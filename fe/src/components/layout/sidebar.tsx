@@ -13,8 +13,15 @@ import {
   Settings,
   TrendingUp,
   ChevronRight,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useGetReportSummaryQuery } from "@/services/reportsApi"
+
+function currentPeriod() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+}
 
 const navigation = [
   { name: "Tổng quan", href: "/", icon: LayoutDashboard },
@@ -27,6 +34,7 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { data: summary, isLoading } = useGetReportSummaryQuery({ period: currentPeriod() })
 
   return (
     <div
@@ -99,9 +107,15 @@ export function Sidebar() {
             <p className="text-[10px] font-semibold uppercase tracking-wider text-primary mb-1">
               Số dư ròng
             </p>
-            <p className="text-lg font-bold text-foreground">$41,775.89</p>
-            <p className="text-[10px] text-success flex items-center gap-1 mt-0.5">
-              <span>↑</span> +20.1% tháng này
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mt-2 mb-1" />
+            ) : (
+              <p className="text-lg font-bold text-foreground">
+                {(summary?.netBalance ?? 0).toLocaleString("vi-VN")} ₫
+              </p>
+            )}
+            <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+              Tháng này
             </p>
           </div>
         </div>

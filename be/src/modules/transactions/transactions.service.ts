@@ -3,6 +3,32 @@ import { errors } from "../../utils/errors"
 import { getCache, setCache, deleteCache, invalidateCachePattern, TTL, buildCacheKey } from "../../utils/cache"
 import { CreateTransactionInput, UpdateTransactionInput, TransactionQuery } from "./transactions.schema"
 
+export async function autoCategorizeService(
+  server: FastifyInstance,
+  userId: string,
+  description: string
+) {
+  const lowerDesc = description.toLowerCase()
+  let suggestedCategory = "Khác"
+  
+  if (lowerDesc.includes("lương") || lowerDesc.includes("salary")) suggestedCategory = "Thu nhập"
+  else if (lowerDesc.includes("kfc") || lowerDesc.includes("mcdonald") || lowerDesc.includes("ăn") || lowerDesc.includes("food") || lowerDesc.includes("cafe") || lowerDesc.includes("coffee") || lowerDesc.includes("phở")) suggestedCategory = "Ăn uống"
+  else if (lowerDesc.includes("netflix") || lowerDesc.includes("spotify") || lowerDesc.includes("game") || lowerDesc.includes("phim") || lowerDesc.includes("movie")) suggestedCategory = "Giải trí"
+  else if (lowerDesc.includes("grab") || lowerDesc.includes("uber") || lowerDesc.includes("taxi") || lowerDesc.includes("xăng") || lowerDesc.includes("gas")) suggestedCategory = "Di chuyển"
+  else if (lowerDesc.includes("shopee") || lowerDesc.includes("lazada") || lowerDesc.includes("tiki") || lowerDesc.includes("amazon") || lowerDesc.includes("mua")) suggestedCategory = "Mua sắm"
+  else if (lowerDesc.includes("điện") || lowerDesc.includes("nước") || lowerDesc.includes("mạng") || lowerDesc.includes("internet")) suggestedCategory = "Tiện ích"
+  
+  const category = await server.prisma.category.findFirst({
+    where: { userId, name: suggestedCategory }
+  })
+  
+  if (!category) {
+    return { categoryId: null, categoryName: null, type: null }
+  }
+  
+  return { categoryId: category.id, categoryName: category.name, type: category.type }
+}
+
 function listCacheKey(userId: string, query: TransactionQuery) {
   return buildCacheKey("user", userId, "transactions", query)
 }

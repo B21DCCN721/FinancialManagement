@@ -25,8 +25,8 @@ export const userProfileSchema = z.object({
   firstName: z.string().nullable(),
   lastName: z.string().nullable(),
   avatarUrl: z.string().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  createdAt: z.union([z.date(), z.string()]),
+  updatedAt: z.union([z.date(), z.string()]),
 })
 
 // ─── Types ──────────────────────────────────────────────────────────

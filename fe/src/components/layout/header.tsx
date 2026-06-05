@@ -1,11 +1,26 @@
 "use client"
 
 import * as React from "react"
-import { Bell, Search, Sparkles, User, ChevronDown } from "lucide-react"
+import { Bell, Search, Sparkles, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useSelector } from "react-redux"
+import type { RootState } from "@/store/store"
 
 export function Header() {
+  const user = useSelector((state: RootState) => state.auth.user)
+
+  const displayName = user
+    ? [user.firstName, user.lastName].filter(Boolean).join(" ") || user.name || "Người dùng"
+    : "Người dùng"
+
+  const initials = displayName
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "U"
+
   return (
     <header
       className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 px-6 bg-background/80 backdrop-blur-[20px] border-b border-border"
@@ -65,17 +80,18 @@ export function Header() {
             className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all hover:scale-105 bg-card border border-border"
           >
             <div
-              className="h-7 w-7 rounded-lg flex items-center justify-center text-xs font-bold bg-gradient-to-br from-primary to-primary-light"
+              className="h-7 w-7 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-primary to-primary-light overflow-hidden"
             >
-              <User className="h-3.5 w-3.5 text-white" />
+              {user?.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.avatarUrl} alt={displayName} className="h-7 w-7 object-cover" />
+              ) : (
+                <span>{initials}</span>
+              )}
             </div>
             <div className="hidden md:block text-left">
-              <p className="text-xs font-semibold text-foreground leading-none">John Doe</p>
-              <p className="text-[10px] mt-0.5 text-muted-foreground">
-                Gói Pro
-              </p>
+              <p className="text-xs font-semibold text-foreground leading-none">{displayName}</p>
             </div>
-            <ChevronDown className="h-3.5 w-3.5 hidden md:block text-muted-foreground" />
           </button>
         </div>
       </div>

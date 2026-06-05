@@ -18,7 +18,8 @@ export async function getMeService(server: FastifyInstance, userId: string) {
     select: {
       id: true, email: true, name: true,
       firstName: true, lastName: true,
-      avatarUrl: true, createdAt: true, updatedAt: true,
+      avatarUrl: true, authProvider: true,
+      createdAt: true, updatedAt: true,
     },
   })
   if (!user) throw errors.notFound("User not found")
@@ -41,7 +42,8 @@ export async function updateProfileService(
     select: {
       id: true, email: true, name: true,
       firstName: true, lastName: true,
-      avatarUrl: true, createdAt: true, updatedAt: true,
+      avatarUrl: true, authProvider: true,
+      createdAt: true, updatedAt: true,
     },
   })
   await deleteCache(server.redis, profileCacheKey(userId))

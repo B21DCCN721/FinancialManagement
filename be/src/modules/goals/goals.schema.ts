@@ -46,6 +46,8 @@ export const goalSchema = z.object({
   userId: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
+  progressPercentage: z.number(),
+  isCompleted: z.boolean(),
 })
 
 // ─── Types ──────────────────────────────────────────────────────────

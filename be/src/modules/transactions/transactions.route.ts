@@ -4,10 +4,12 @@ import {
   createTransactionSchema, updateTransactionSchema,
   transactionParamsSchema, transactionQuerySchema,
   transactionSchema, paginatedTransactionsSchema,
+  autoCategorizeSchema, autoCategorizeResponseSchema
 } from "./transactions.schema"
 import {
   getAllTransactionsController, getTransactionByIdController,
   createTransactionController, updateTransactionController, deleteTransactionController,
+  autoCategorizeController
 } from "./transactions.controller"
 import { authenticate } from "../../hooks/authenticate"
 import { z } from "zod"
@@ -42,6 +44,14 @@ export const transactionRoutes: FastifyPluginAsync = async (server: FastifyInsta
       response: { 201: transactionSchema, 400: errorSchema, 404: errorSchema },
     },
   }, createTransactionController)
+
+  // POST /api/transactions/auto-categorize
+  s.post("/auto-categorize", {
+    schema: {
+      body: autoCategorizeSchema,
+      response: { 200: autoCategorizeResponseSchema },
+    },
+  }, autoCategorizeController)
 
   // PATCH /api/transactions/:id
   s.patch("/:id", {

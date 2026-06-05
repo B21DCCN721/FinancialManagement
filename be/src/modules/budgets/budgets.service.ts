@@ -71,6 +71,10 @@ export async function getBudgetSummaryService(
         ? Math.round((spentAmount / budget.amount) * 10000) / 100
         : 0
 
+      let status = "normal"
+      if (percentUsed >= 100) status = "exceeded"
+      else if (percentUsed >= 80) status = "warning"
+
       return {
         id: budget.id,
         amount: budget.amount,
@@ -80,6 +84,7 @@ export async function getBudgetSummaryService(
         spentAmount,
         remaining,
         percentUsed,
+        status,
       }
     })
   )

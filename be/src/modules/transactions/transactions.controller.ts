@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from "fastify"
 import {
   getAllTransactionsService, getTransactionByIdService,
   createTransactionService, updateTransactionService, deleteTransactionService,
+  autoCategorizeService,
 } from "./transactions.service"
 import { CreateTransactionInput, UpdateTransactionInput, TransactionQuery } from "./transactions.schema"
 import { AppError } from "../../utils/errors"
@@ -54,5 +55,15 @@ export async function deleteTransactionController(
   try {
     await deleteTransactionService(request.server, request.user.id, request.params.id)
     return reply.send({ message: "Transaction deleted" })
+  } catch (err) { return handleError(err, reply) }
+}
+
+export const autoCategorizeController = async (
+  request: FastifyRequest<{ Body: { description: string } }>,
+  reply: FastifyReply
+) => {
+  try {
+    const result = await autoCategorizeService(request.server, request.user.id, request.body.description)
+    return reply.code(200).send(result)
   } catch (err) { return handleError(err, reply) }
 }

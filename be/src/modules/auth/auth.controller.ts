@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify"
-import { registerService, loginService, refreshService, logoutService } from "./auth.service"
-import { RegisterInput, LoginInput, RefreshTokenInput } from "./auth.schema"
+import { registerService, loginService, googleLoginService, refreshService, logoutService, forgotPasswordService, resetPasswordService } from "./auth.service"
+import { RegisterInput, LoginInput, GoogleLoginInput, RefreshTokenInput, ForgotPasswordInput, ResetPasswordInput } from "./auth.schema"
 import { AppError } from "../../utils/errors"
 
 export async function registerController(
@@ -33,12 +33,57 @@ export async function loginController(
   }
 }
 
+export async function googleLoginController(
+  request: FastifyRequest<{ Body: GoogleLoginInput }>,
+  reply: FastifyReply
+) {
+  try {
+    const result = await googleLoginService(request.server, request.body.token)
+    return reply.code(200).send(result)
+  } catch (err) {
+    if (err instanceof AppError) {
+      return reply.code(err.statusCode).send({ statusCode: err.statusCode, message: err.message })
+    }
+    throw err
+  }
+}
+
 export async function refreshController(
   request: FastifyRequest<{ Body: RefreshTokenInput }>,
   reply: FastifyReply
 ) {
   try {
     const result = await refreshService(request.server, request.body.refreshToken)
+    return reply.code(200).send(result)
+  } catch (err) {
+    if (err instanceof AppError) {
+      return reply.code(err.statusCode).send({ statusCode: err.statusCode, message: err.message })
+    }
+    throw err
+  }
+}
+
+export async function forgotPasswordController(
+  request: FastifyRequest<{ Body: ForgotPasswordInput }>,
+  reply: FastifyReply
+) {
+  try {
+    const result = await forgotPasswordService(request.server, request.body)
+    return reply.code(200).send(result)
+  } catch (err) {
+    if (err instanceof AppError) {
+      return reply.code(err.statusCode).send({ statusCode: err.statusCode, message: err.message })
+    }
+    throw err
+  }
+}
+
+export async function resetPasswordController(
+  request: FastifyRequest<{ Body: ResetPasswordInput }>,
+  reply: FastifyReply
+) {
+  try {
+    const result = await resetPasswordService(request.server, request.body)
     return reply.code(200).send(result)
   } catch (err) {
     if (err instanceof AppError) {

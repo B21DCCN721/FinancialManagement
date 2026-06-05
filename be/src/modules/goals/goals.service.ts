@@ -17,8 +17,19 @@ export async function getAllGoalsService(server: FastifyInstance, userId: string
     orderBy: { deadline: "asc" },
   })
 
-  await setCache(server.redis, key, goals, TTL.MEDIUM) // 5 min
-  return goals
+  const enrichedGoals = goals.map((goal) => {
+    const progressPercentage = goal.targetAmount > 0
+      ? Math.round((goal.currentAmount / goal.targetAmount) * 10000) / 100
+      : 0
+    return {
+      ...goal,
+      progressPercentage,
+      isCompleted: goal.currentAmount >= goal.targetAmount,
+    }
+  })
+
+  await setCache(server.redis, key, enrichedGoals, TTL.MEDIUM) // 5 min
+  return enrichedGoals
 }
 
 export async function createGoalService(

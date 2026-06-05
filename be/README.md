@@ -61,7 +61,7 @@ REDIS_URL="redis://localhost:6379"
 JWT_SECRET="your-super-secret-key-min-32-chars"
 JWT_ACCESS_EXPIRES="15m"
 JWT_REFRESH_EXPIRES="7d"
-PORT=8080
+PORT=5000
 NODE_ENV="development"
 CORS_ORIGIN="http://localhost:3000"
 ```
@@ -83,7 +83,7 @@ Start the development server with hot-reload:
 ```bash
 npm run dev
 ```
-The server will run at `http://localhost:8080`.
+The server will run at `http://localhost:5000`.
 
 ## 📜 Database Initialization (Optional)
 A complete `database.sql` file is provided in the root directory. It contains the full PostgreSQL schema, including triggers for `updatedAt` and sample seed data. You can execute this file directly against your PostgreSQL instance if you prefer not to use Prisma's migration tools.

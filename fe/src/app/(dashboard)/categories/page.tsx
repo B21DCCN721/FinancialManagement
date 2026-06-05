@@ -1,94 +1,280 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Tag, Utensils, Car, ShoppingBag, Gamepad2, Briefcase } from "lucide-react"
+import { Plus, Tag, Pencil, Trash2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import {
+  useGetCategoriesQuery,
+  useCreateCategoryMutation,
+  useUpdateCategoryMutation,
+  useDeleteCategoryMutation,
+} from "@/services/categoriesApi"
+import { logger } from "@/lib/logger"
 
-const CATEGORIES = [
-  { id: 1, name: "Food & Dining", type: "expense", icon: <Utensils className="h-5 w-5" />, color: "bg-blue-500/10 text-blue-500" },
-  { id: 2, name: "Transportation", type: "expense", icon: <Car className="h-5 w-5" />, color: "bg-emerald-500/10 text-emerald-500" },
-  { id: 3, name: "Shopping", type: "expense", icon: <ShoppingBag className="h-5 w-5" />, color: "bg-rose-500/10 text-rose-500" },
-  { id: 4, name: "Entertainment", type: "expense", icon: <Gamepad2 className="h-5 w-5" />, color: "bg-amber-500/10 text-amber-500" },
-  { id: 5, name: "Salary", type: "income", icon: <Briefcase className="h-5 w-5" />, color: "bg-indigo-500/10 text-indigo-500" },
+// Bảng emoji icon gợi ý
+const ICON_SUGGESTIONS = ["🍔", "🚗", "🛍️", "🎬", "🏠", "⚡", "💊", "✈️", "📚", "💰", "🎓", "💳", "🎁", "📝"]
+const COLOR_SUGGESTIONS = [
+  "#7c5cfc", "#10d9a0", "#ff4d6d", "#f59e0b",
+  "#38bdf8", "#a78bfa", "#34d399", "#fb923c",
 ]
+
+function CategoryTypeBadge({ type }: { type: string }) {
+  return (
+    <span
+      className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+      style={
+        type === "income"
+          ? { background: "rgba(16,217,160,0.12)", color: "#10d9a0", border: "1px solid rgba(16,217,160,0.25)" }
+          : { background: "rgba(124,92,252,0.12)", color: "#a78bfa", border: "1px solid rgba(124,92,252,0.25)" }
+      }
+    >
+      {type === "income" ? "Thu nhập" : "Chi phí"}
+    </span>
+  )
+}
 
 export default function CategoriesPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [selectedIcon, setSelectedIcon] = useState("📝")
+  const [selectedColor, setSelectedColor] = useState("#7c5cfc")
+
+  const { data: categories = [], isLoading } = useGetCategoriesQuery()
+  const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation()
+  const [updateCategory, { isLoading: isUpdating }] = useUpdateCategoryMutation()
+  const [deleteCategory] = useDeleteCategoryMutation()
+
+  const editingCategory = categories.find((c) => c.id === editingId)
+
+  const resetModal = () => {
+    setIsAddModalOpen(false)
+    setEditingId(null)
+    setSelectedIcon("📝")
+    setSelectedColor("#7c5cfc")
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const name = formData.get("name") as string
+    const type = formData.get("type") as "income" | "expense"
+
+    try {
+      if (editingId) {
+        await updateCategory({ id: editingId, body: { name, color: selectedColor, icon: selectedIcon } }).unwrap()
+        logger.info("Category updated", { id: editingId })
+      } else {
+        await createCategory({ name, type, color: selectedColor, icon: selectedIcon }).unwrap()
+        logger.info("Category created", { name })
+      }
+      resetModal()
+    } catch (err) {
+      logger.error("Failed to save category", err)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteCategory(id).unwrap()
+      logger.info("Category deleted", { id })
+    } catch (err) {
+      logger.error("Failed to delete category", err)
+    }
+  }
+
+  const openEdit = (id: string) => {
+    const cat = categories.find((c) => c.id === id)
+    if (!cat) return
+    setEditingId(id)
+    setSelectedIcon(cat.icon ?? "📝")
+    setSelectedColor(cat.color ?? "#7c5cfc")
+    setIsAddModalOpen(true)
+  }
+
+  const incomeCategories = categories.filter((c) => c.type === "income")
+  const expenseCategories = categories.filter((c) => c.type === "expense")
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
-          <p className="text-muted-foreground">
-            Manage your default and custom categories.
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Danh mục</h1>
+          <p className="text-muted-foreground">Quản lý các danh mục thu nhập và chi phí của bạn.</p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Category
-        </Button>
+        <button
+          onClick={() => { setEditingId(null); setIsAddModalOpen(true) }}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-[0_4px_15px_rgba(124,92,252,0.4)]"
+        >
+          <Plus className="h-4 w-4" />
+          Tạo danh mục
+        </button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {CATEGORIES.map((cat) => (
-          <Card key={cat.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${cat.color}`}>
-                    {cat.icon}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">{cat.name}</h3>
-                    <p className="text-sm text-muted-foreground capitalize">{cat.type}</p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="icon" className="text-muted-foreground">
-                  <Tag className="h-4 w-4" />
-                </Button>
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {/* Income */}
+          {incomeCategories.length > 0 && (
+            <section>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 px-1">Thu nhập</h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {incomeCategories.map((cat) => (
+                  <CategoryCard key={cat.id} cat={cat} onEdit={openEdit} onDelete={handleDelete} />
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </section>
+          )}
 
-      <Modal 
-        isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)}
-        title="Create Category"
-        description="Add a new custom category for your transactions."
+          {/* Expense */}
+          {expenseCategories.length > 0 && (
+            <section>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 px-1">Chi phí</h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {expenseCategories.map((cat) => (
+                  <CategoryCard key={cat.id} cat={cat} onEdit={openEdit} onDelete={handleDelete} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {categories.length === 0 && (
+            <div className="py-12 text-center text-muted-foreground glass-card rounded-2xl">
+              Chưa có danh mục nào. Hãy tạo danh mục đầu tiên!
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Add / Edit Modal */}
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={resetModal}
+        title={editingId ? "Chỉnh sửa danh mục" : "Tạo danh mục mới"}
+        description={editingId ? "Cập nhật thông tin danh mục." : "Thêm danh mục tùy chỉnh cho giao dịch của bạn."}
       >
-        <form className="space-y-4 pt-4">
+        <form className="space-y-5 pt-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <Label htmlFor="name">Category Name</Label>
-            <Input id="name" placeholder="E.g., Travel" required />
+            <Label htmlFor="name">Tên danh mục</Label>
+            <Input id="name" name="name" placeholder="VD: Du lịch, Sức khỏe" required defaultValue={editingCategory?.name} />
           </div>
+
+          {!editingId && (
+            <div className="space-y-2">
+              <Label>Loại</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="type" value="expense" defaultChecked className="text-primary focus:ring-primary h-4 w-4" />
+                  <span className="text-sm font-medium">Chi phí</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="type" value="income" className="text-primary focus:ring-primary h-4 w-4" />
+                  <span className="text-sm font-medium">Thu nhập</span>
+                </label>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
-            <Label>Type</Label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
-                <input type="radio" name="type" value="expense" defaultChecked className="text-primary focus:ring-primary h-4 w-4" />
-                <span className="text-sm font-medium">Expense</span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="radio" name="type" value="income" className="text-primary focus:ring-primary h-4 w-4" />
-                <span className="text-sm font-medium">Income</span>
-              </label>
+            <Label>Biểu tượng (Icon)</Label>
+            <div className="flex flex-wrap gap-2">
+              {ICON_SUGGESTIONS.map((icon) => (
+                <button
+                  key={icon}
+                  type="button"
+                  onClick={() => setSelectedIcon(icon)}
+                  className="h-9 w-9 rounded-xl flex items-center justify-center text-lg transition-all hover:scale-110"
+                  style={
+                    selectedIcon === icon
+                      ? { background: selectedColor + "33", border: `2px solid ${selectedColor}` }
+                      : { background: "var(--secondary)", border: "2px solid transparent" }
+                  }
+                >
+                  {icon}
+                </button>
+              ))}
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
-              Cancel
+
+          <div className="space-y-2">
+            <Label>Màu sắc</Label>
+            <div className="flex gap-2">
+              {COLOR_SUGGESTIONS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setSelectedColor(color)}
+                  className="h-7 w-7 rounded-full transition-all hover:scale-110"
+                  style={{
+                    background: color,
+                    outline: selectedColor === color ? `3px solid ${color}` : "none",
+                    outlineOffset: "2px",
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={resetModal}>Hủy</Button>
+            <Button type="submit" disabled={isCreating || isUpdating}>
+              {(isCreating || isUpdating) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingId ? "Cập nhật" : "Tạo danh mục"}
             </Button>
-            <Button type="submit">Save Category</Button>
           </div>
         </form>
       </Modal>
     </div>
+  )
+}
+
+function CategoryCard({
+  cat,
+  onEdit,
+  onDelete,
+}: {
+  cat: { id: string; name: string; type: string; color?: string; icon?: string }
+  onEdit: (id: string) => void
+  onDelete: (id: string) => void
+}) {
+  return (
+    <Card className="hover:shadow-md transition-all group hover:scale-[1.01]">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-xl"
+              style={{ background: (cat.color ?? "#7c5cfc") + "22" }}
+            >
+              {cat.icon ?? <Tag className="h-5 w-5" />}
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">{cat.name}</h3>
+              <CategoryTypeBadge type={cat.type} />
+            </div>
+          </div>
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => onEdit(cat.id)}
+              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => onDelete(cat.id)}
+              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-danger hover:bg-danger/10 transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

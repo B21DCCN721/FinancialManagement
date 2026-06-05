@@ -29,6 +29,8 @@ CREATE TABLE "User" (
     "lastName"     TEXT,
     "name"         TEXT,                        -- computed / display name
     "avatarUrl"    TEXT,
+    "authProvider" TEXT         NOT NULL DEFAULT 'local', -- 'local' or 'google'
+    "providerId"   TEXT,                        -- Clerk's Google user ID
     "refreshToken" TEXT,                        -- hashed refresh token (nullable)
     "createdAt"    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     "updatedAt"    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -37,6 +39,7 @@ CREATE TABLE "User" (
 );
 
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE UNIQUE INDEX "User_providerId_key" ON "User"("providerId");
 CREATE INDEX "User_createdAt_idx" ON "User"("createdAt");
 
 COMMENT ON TABLE  "User"              IS 'Application users';
@@ -201,14 +204,16 @@ CREATE TRIGGER "Goal_updatedAt"
 -- Demo user (password: "Demo@12345" hashed with bcrypt cost 12)
 -- Run: node -e "const b=require('bcryptjs');b.hash('Demo@12345',12).then(h=>console.log(h))"
 -- to regenerate the hash below
-INSERT INTO "User" ("id", "email", "password", "firstName", "lastName", "name")
+INSERT INTO "User" ("id", "email", "password", "firstName", "lastName", "name", "authProvider", "providerId")
 VALUES (
     'usr_demo_001',
     'demo@finmanage.app',
     '$2a$12$demoHashPlaceholderReplaceWithRealBcryptHash00000000000000',
     'Demo',
     'User',
-    'Demo User'
+    'Demo User',
+    'local',
+    NULL
 ) ON CONFLICT ("email") DO NOTHING;
 
 -- Default categories for the demo user

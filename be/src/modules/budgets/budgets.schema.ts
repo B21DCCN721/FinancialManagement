@@ -46,6 +46,7 @@ export const budgetWithSpendingSchema = z.object({
   spentAmount: z.number(),
   remaining: z.number(),
   percentUsed: z.number(),
+  status: z.enum(["normal", "warning", "exceeded"]),
 })
 
 // ─── Types ──────────────────────────────────────────────────────────
