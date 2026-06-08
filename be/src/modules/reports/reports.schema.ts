@@ -42,3 +42,9 @@ export const cashFlowItemSchema = z.object({
   expense: z.number(),
   net: z.number(),
 })
+
+export const aiInsightsSchema = z.object({
+  period: z.string(),
+  generatedAt: z.string(),
+  insights: z.string(),
+})

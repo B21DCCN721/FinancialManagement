@@ -14,6 +14,7 @@ import {
   useDeleteCategoryMutation,
 } from "@/services/categoriesApi"
 import { logger } from "@/lib/logger"
+import { toast } from "sonner"
 
 // Bảng emoji icon gợi ý
 const ICON_SUGGESTIONS = ["🍔", "🚗", "🛍️", "🎬", "🏠", "⚡", "💊", "✈️", "📚", "💰", "🎓", "💳", "🎁", "📝"]
@@ -67,13 +68,16 @@ export default function CategoriesPage() {
       if (editingId) {
         await updateCategory({ id: editingId, body: { name, color: selectedColor, icon: selectedIcon } }).unwrap()
         logger.info("Category updated", { id: editingId })
+        toast.success("Cập nhật danh mục thành công")
       } else {
         await createCategory({ name, type, color: selectedColor, icon: selectedIcon }).unwrap()
         logger.info("Category created", { name })
+        toast.success("Tạo danh mục thành công")
       }
       resetModal()
     } catch (err) {
       logger.error("Failed to save category", err)
+      toast.error("Lưu danh mục thất bại. Vui lòng thử lại.")
     }
   }
 
@@ -81,8 +85,10 @@ export default function CategoriesPage() {
     try {
       await deleteCategory(id).unwrap()
       logger.info("Category deleted", { id })
+      toast.success("Xóa danh mục thành công")
     } catch (err) {
       logger.error("Failed to delete category", err)
+      toast.error("Xóa danh mục thất bại. Danh mục có thể đang được sử dụng.")
     }
   }
 

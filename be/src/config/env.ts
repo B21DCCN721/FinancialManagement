@@ -14,6 +14,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_REFRESH_TOKEN: z.string().optional(),
+  GEMINI_API_KEY: z.string().min(1, "GEMINI_API_KEY is required"),
 })
 
 const parsed = envSchema.safeParse(process.env)

@@ -100,3 +100,12 @@ export async function logoutController(
   await logoutService(request.server, request.user.id)
   return reply.code(200).send({ message: "Logged out successfully" })
 }
+
+export async function deleteAccountController(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const { deleteAccountService } = await import("./auth.service")
+  await deleteAccountService(request.server, request.user.id)
+  return reply.code(200).send({ message: "Account deleted successfully" })
+}

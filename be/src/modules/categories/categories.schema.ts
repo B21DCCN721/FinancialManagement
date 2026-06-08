@@ -28,8 +28,8 @@ export const categorySchema = z.object({
   color: z.string().nullable(),
   icon: z.string().nullable(),
   userId: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  createdAt: z.union([z.date(), z.string()]),
+  updatedAt: z.union([z.date(), z.string()]),
 })
 
 // ─── Types ──────────────────────────────────────────────────────────

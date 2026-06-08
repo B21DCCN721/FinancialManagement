@@ -13,6 +13,7 @@ import {
   useDeleteBudgetMutation,
 } from "@/services/budgetsApi"
 import { logger } from "@/lib/logger"
+import { toast } from "sonner"
 
 function currentPeriod() {
   const now = new Date()
@@ -51,8 +52,10 @@ export default function BudgetsPage() {
       setIsAddModalOpen(false)
       e.currentTarget.reset()
       logger.info("Budget created")
+      toast.success("Tạo ngân sách thành công")
     } catch (err) {
       logger.error("Failed to create budget", err)
+      toast.error("Tạo ngân sách thất bại. Vui lòng thử lại.")
     }
   }
 
@@ -100,7 +103,14 @@ export default function BudgetsPage() {
                       {budget.amount.toLocaleString("vi-VN")} ₫ giới hạn
                     </span>
                     <button
-                      onClick={() => deleteBudget(budget.id)}
+                      onClick={async () => {
+                        try {
+                          await deleteBudget(budget.id).unwrap()
+                          toast.success("Xóa ngân sách thành công")
+                        } catch (err) {
+                          toast.error("Xóa ngân sách thất bại")
+                        }
+                      }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger text-xs"
                     >
                       ✕

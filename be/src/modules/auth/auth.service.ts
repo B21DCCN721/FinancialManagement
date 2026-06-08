@@ -26,37 +26,39 @@ export async function registerService(
   const hashed = await hashPassword(data.password)
   const displayName = data.name ?? ([data.firstName, data.lastName].filter(Boolean).join(" ") || null)
 
-  const user = await prisma.user.create({
-    data: {
-      email: data.email,
-      password: hashed,
-      firstName: data.firstName ?? null,
-      lastName: data.lastName ?? null,
-      name: displayName,
-    },
+  return await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        email: data.email,
+        password: hashed,
+        firstName: data.firstName ?? null,
+        lastName: data.lastName ?? null,
+        name: displayName,
+      },
+    })
+
+    const { accessToken, refreshToken } = await issueTokens(server, user.id, user.email)
+
+    // Persist hashed refresh token
+    await tx.user.update({
+      where: { id: user.id },
+      data: { refreshToken: await hashPassword(refreshToken) },
+    })
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        authProvider: user.authProvider,
+        createdAt: user.createdAt,
+      },
+    }
   })
-
-  const { accessToken, refreshToken } = await issueTokens(server, user.id, user.email)
-
-  // Persist hashed refresh token
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { refreshToken: await hashPassword(refreshToken) },
-  })
-
-  return {
-    accessToken,
-    refreshToken,
-    user: {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      authProvider: user.authProvider,
-      createdAt: user.createdAt,
-    },
-  }
 }
 
 /**
@@ -130,69 +132,71 @@ export async function googleLoginService(
   const name = [firstName, lastName].filter(Boolean).join(" ") || email.split("@")[0]
   const avatarUrl = clerkUser.imageUrl
 
-  // Tìm user theo providerId hoặc email
-  let user = await prisma.user.findFirst({
-    where: {
-      OR: [
-        { providerId },
-        { email }
-      ]
-    }
-  })
+  return await prisma.$transaction(async (tx) => {
+    // Tìm user theo providerId hoặc email
+    let user = await tx.user.findFirst({
+      where: {
+        OR: [
+          { providerId },
+          { email }
+        ]
+      }
+    })
 
-  if (user) {
-    // Nếu user đã tồn tại nhưng chưa có providerId (tức là trước đây đk bằng email thường), thì update lại
-    if (!user.providerId || user.authProvider !== "google") {
-      user = await prisma.user.update({
-        where: { id: user.id },
+    if (user) {
+      // Nếu user đã tồn tại nhưng chưa có providerId (tức là trước đây đk bằng email thường), thì update lại
+      if (!user.providerId || user.authProvider !== "google") {
+        user = await tx.user.update({
+          where: { id: user.id },
+          data: {
+            providerId,
+            authProvider: "google",
+            avatarUrl: user.avatarUrl ?? avatarUrl, // Cập nhật avatar nếu rỗng
+          }
+        })
+      }
+    } else {
+      // Tạo user mới nếu chưa tồn tại
+      // random password cho tk google
+      const randomPassword = crypto.randomBytes(32).toString("hex")
+      const hashed = await hashPassword(randomPassword)
+
+      user = await tx.user.create({
         data: {
-          providerId,
+          email,
+          password: hashed,
+          firstName,
+          lastName,
+          name,
+          avatarUrl,
           authProvider: "google",
-          avatarUrl: user.avatarUrl ?? avatarUrl, // Cập nhật avatar nếu rỗng
+          providerId,
         }
       })
     }
-  } else {
-    // Tạo user mới nếu chưa tồn tại
-    // random password cho tk google
-    const randomPassword = crypto.randomBytes(32).toString("hex")
-    const hashed = await hashPassword(randomPassword)
 
-    user = await prisma.user.create({
-      data: {
-        email,
-        password: hashed,
-        firstName,
-        lastName,
-        name,
-        avatarUrl,
-        authProvider: "google",
-        providerId,
-      }
+    const { accessToken, refreshToken } = await issueTokens(server, user.id, user.email)
+
+    // Persist hashed refresh token (rotation)
+    await tx.user.update({
+      where: { id: user.id },
+      data: { refreshToken: await hashPassword(refreshToken) },
     })
-  }
 
-  const { accessToken, refreshToken } = await issueTokens(server, user.id, user.email)
-
-  // Persist hashed refresh token (rotation)
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { refreshToken: await hashPassword(refreshToken) },
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        authProvider: user.authProvider,
+        createdAt: user.createdAt,
+      },
+    }
   })
-
-  return {
-    accessToken,
-    refreshToken,
-    user: {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      authProvider: user.authProvider,
-      createdAt: user.createdAt,
-    },
-  }
 }
 
 /**
@@ -210,21 +214,23 @@ export async function refreshService(
   }
 
   const prisma: PrismaClient = server.prisma
-  const user = await prisma.user.findUnique({ where: { id: payload.id } })
-  if (!user || !user.refreshToken) throw errors.unauthorized("Session expired, please log in again")
+  return await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { id: payload.id } })
+    if (!user || !user.refreshToken) throw errors.unauthorized("Session expired, please log in again")
 
-  const valid = await verifyPassword(token, user.refreshToken)
-  if (!valid) throw errors.unauthorized("Invalid refresh token")
+    const valid = await verifyPassword(token, user.refreshToken)
+    if (!valid) throw errors.unauthorized("Invalid refresh token")
 
-  const { accessToken, refreshToken } = await issueTokens(server, user.id, user.email)
+    const { accessToken, refreshToken } = await issueTokens(server, user.id, user.email)
 
-  // Rotate token: Persist new hashed refresh token, invalidating the old one
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { refreshToken: await hashPassword(refreshToken) },
+    // Rotate token: Persist new hashed refresh token, invalidating the old one
+    await tx.user.update({
+      where: { id: user.id },
+      data: { refreshToken: await hashPassword(refreshToken) },
+    })
+
+    return { accessToken, refreshToken }
   })
-
-  return { accessToken, refreshToken }
 }
 
 /**
@@ -292,35 +298,52 @@ export async function resetPasswordService(
   data: ResetPasswordInput
 ) {
   const prisma: PrismaClient = server.prisma
-  const user = await prisma.user.findUnique({ where: { email: data.email } })
+  return await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { email: data.email } })
 
-  if (!user) throw errors.badRequest("Email không tồn tại hoặc OTP không hợp lệ")
+    if (!user) throw errors.badRequest("Email không tồn tại hoặc OTP không hợp lệ")
 
-  if (!user.resetPasswordOtp || !user.resetPasswordExpiresAt) {
-    throw errors.badRequest("Chưa có yêu cầu lấy lại mật khẩu nào cho tài khoản này")
-  }
+    if (!user.resetPasswordOtp || !user.resetPasswordExpiresAt) {
+      throw errors.badRequest("Chưa có yêu cầu lấy lại mật khẩu nào cho tài khoản này")
+    }
 
-  if (user.resetPasswordExpiresAt < new Date()) {
-    throw errors.badRequest("Mã OTP đã hết hạn")
-  }
+    if (user.resetPasswordExpiresAt < new Date()) {
+      throw errors.badRequest("Mã OTP đã hết hạn")
+    }
 
-  if (user.resetPasswordOtp !== data.otp) {
-    throw errors.badRequest("Mã OTP không chính xác")
-  }
+    if (user.resetPasswordOtp !== data.otp) {
+      throw errors.badRequest("Mã OTP không chính xác")
+    }
 
-  // Xoá OTP & cập nhật mật khẩu
-  const hashed = await hashPassword(data.newPassword)
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      password: hashed,
-      resetPasswordOtp: null,
-      resetPasswordExpiresAt: null,
-      refreshToken: null, // Bắt đăng nhập lại
-    },
+    // Xoá OTP & cập nhật mật khẩu
+    const hashed = await hashPassword(data.newPassword)
+    await tx.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashed,
+        resetPasswordOtp: null,
+        resetPasswordExpiresAt: null,
+        refreshToken: null, // Bắt đăng nhập lại
+      },
+    })
+
+    return { message: "Mật khẩu đã được đặt lại thành công" }
   })
+}
 
-  return { message: "Mật khẩu đã được đặt lại thành công" }
+/**
+ * Delete Account - Permanently remove user and all associated data
+ */
+export async function deleteAccountService(
+  server: FastifyInstance,
+  userId: string
+) {
+  const prisma: PrismaClient = server.prisma
+  
+  // Xóa tài khoản (Prisma onDelete: Cascade sẽ tự dọn các bảng liên quan)
+  await prisma.user.delete({
+    where: { id: userId },
+  })
 }
 
 // ─── Internal helpers ────────────────────────────────────────────────

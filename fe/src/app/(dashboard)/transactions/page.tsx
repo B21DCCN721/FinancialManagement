@@ -16,6 +16,7 @@ import {
   useDeleteTransactionMutation,
 } from "@/services/transactionsApi"
 import { logger } from "@/lib/logger"
+import { toast } from "sonner"
 
 
 export default function TransactionsPage() {
@@ -87,8 +88,10 @@ export default function TransactionsPage() {
       e.currentTarget.reset()
       setIsRecurring(false)
       logger.info("Transaction created")
+      toast.success("Thêm giao dịch thành công")
     } catch (err) {
       logger.error("Failed to create transaction", err)
+      toast.error("Thêm giao dịch thất bại. Vui lòng thử lại.")
     }
   }
 
@@ -96,8 +99,10 @@ export default function TransactionsPage() {
     try {
       await deleteTransaction(id).unwrap()
       logger.info("Transaction deleted", { id })
+      toast.success("Xóa giao dịch thành công")
     } catch (err) {
       logger.error("Failed to delete transaction", err)
+      toast.error("Xóa giao dịch thất bại. Vui lòng thử lại.")
     }
   }
 

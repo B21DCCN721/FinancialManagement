@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useState } from "react"
-import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, TrendingDown, Sparkles, Loader2, MoreHorizontal } from "lucide-react"
+import { useState, useRef } from "react"
+import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, TrendingDown, Sparkles, Loader2, MoreHorizontal, Download } from "lucide-react"
 import {
   Bar,
   BarChart,
@@ -19,8 +19,10 @@ import {
 } from "recharts"
 import Link from "next/link"
 import { useGetTransactionsQuery } from "@/services/transactionsApi"
-import { useGetMonthlyTrendQuery, useGetCategoryBreakdownQuery, useGetReportSummaryQuery } from "@/services/reportsApi"
+import { useGetMonthlyTrendQuery, useGetCategoryBreakdownQuery, useGetReportSummaryQuery, useLazyGetAiInsightsQuery } from "@/services/reportsApi"
 import { MonthPicker } from "@/components/ui/month-picker"
+import { Modal } from "@/components/ui/modal"
+import ReactMarkdown from "react-markdown"
 
 function currentPeriod() {
   const now = new Date()
@@ -49,6 +51,32 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 
 export default function Dashboard() {
   const [period, setPeriod] = useState(currentPeriod())
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false)
+  const reportRef = useRef<HTMLDivElement>(null)
+
+  const [triggerAi, { data: aiData, isFetching: isAiFetching }] = useLazyGetAiInsightsQuery()
+
+  const handleOpenAiModal = () => {
+    setIsAiModalOpen(true)
+    triggerAi({ period })
+  }
+
+  const handleDownloadPdf = async () => {
+    if (!reportRef.current) return
+    try {
+      const html2pdf = (await import("html2pdf.js")).default
+      const opt = {
+        margin: [15, 15] as [number, number],
+        filename: `Bao_Cao_Tai_Chinh_${period}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+      }
+      html2pdf().set(opt).from(reportRef.current).save()
+    } catch (error) {
+      console.error("Lỗi xuất PDF", error)
+    }
+  }
 
   const VI_MONTHS = [
     "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4",
@@ -138,7 +166,10 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <MonthPicker value={period} onChange={setPeriod} />
-          <button className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-[0_4px_15px_rgba(124,92,252,0.4)]">
+          <button 
+            onClick={handleOpenAiModal}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-[0_4px_15px_rgba(124,92,252,0.4)]"
+          >
             <Sparkles className="h-4 w-4" />
             Báo cáo AI
           </button>
@@ -332,6 +363,71 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* AI Report Modal */}
+      <Modal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        title="Báo cáo tài chính AI"
+        description={`Phân tích tháng ${periodM}/${periodYStr} bởi Gemini`}
+        className="max-w-2xl"
+      >
+        <div className="relative min-h-[200px]">
+          {isAiFetching ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm z-10 space-y-4">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full blur-md bg-primary/30 animate-pulse" />
+                <Sparkles className="h-8 w-8 text-primary animate-bounce relative z-10" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground animate-pulse">AI đang phân tích dữ liệu sổ sách...</p>
+            </div>
+          ) : aiData ? (
+            <div className="space-y-4">
+              {/* Vùng chứa nội dung Markdown để in PDF */}
+              <div 
+                ref={reportRef} 
+                className="bg-card rounded-lg p-5 border border-border shadow-sm text-sm space-y-3 
+                  [&>h1]:text-lg [&>h1]:font-bold [&>h1]:mb-3
+                  [&>h2]:text-base [&>h2]:font-semibold [&>h2]:mb-2 [&>h2]:mt-4
+                  [&>h3]:text-sm [&>h3]:font-medium [&>h3]:mb-1 [&>h3]:mt-3
+                  [&>p]:text-muted-foreground [&>p]:leading-relaxed
+                  [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-1 [&>ul]:text-muted-foreground
+                  [&>li>strong]:text-foreground"
+              >
+                <div className="border-b pb-4 mb-4 hidden print:block">
+                  <h1 className="text-2xl font-bold text-center text-primary">BÁO CÁO TÀI CHÍNH</h1>
+                  <p className="text-center text-muted-foreground">Kỳ báo cáo: Tháng {periodM} / {periodYStr}</p>
+                </div>
+                <ReactMarkdown>{aiData.insights}</ReactMarkdown>
+                <div className="mt-8 pt-4 border-t text-xs text-right text-muted-foreground hidden print:block">
+                  Phân tích tự động bởi Gemini AI - {new Date(aiData.generatedAt).toLocaleString('vi-VN')}
+                </div>
+              </div>
+
+              {/* Nút thao tác */}
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <button
+                  onClick={() => setIsAiModalOpen(false)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium border hover:bg-accent transition-colors"
+                >
+                  Đóng
+                </button>
+                <button
+                  onClick={handleDownloadPdf}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity shadow-md"
+                >
+                  <Download className="h-4 w-4" />
+                  Tải PDF
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <p>Không thể lấy dữ liệu phân tích.</p>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   )
 }

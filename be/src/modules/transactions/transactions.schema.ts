@@ -51,13 +51,13 @@ export const transactionSchema = z.object({
   amount: z.number(),
   type: z.string(),
   description: z.string().nullable(),
-  date: z.date(),
+  date: z.union([z.date(), z.string()]),
   isRecurring: z.boolean(),
   frequency: z.string().nullable(),
   userId: z.string(),
   categoryId: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  createdAt: z.union([z.date(), z.string()]),
+  updatedAt: z.union([z.date(), z.string()]),
 })
 
 export const paginatedTransactionsSchema = z.object({

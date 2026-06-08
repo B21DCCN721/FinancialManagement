@@ -105,21 +105,23 @@ export async function upsertBudgetService(
   if (!category) throw errors.notFound("Category not found")
   if (category.type !== "expense") throw errors.badRequest("Budgets can only be set for expense categories")
 
-  const budget = await server.prisma.budget.upsert({
-    where: {
-      userId_categoryId_period: {
-        userId,
-        categoryId: data.categoryId,
-        period: data.period,
+  return await server.prisma.$transaction(async (tx) => {
+    const budget = await tx.budget.upsert({
+      where: {
+        userId_categoryId_period: {
+          userId,
+          categoryId: data.categoryId,
+          period: data.period,
+        },
       },
-    },
-    update: { amount: data.amount },
-    create: { ...data, userId },
-    include: { category: true },
-  })
+      update: { amount: data.amount },
+      create: { ...data, userId },
+      include: { category: true },
+    })
 
-  await invalidateBudgetCache(server, userId)
-  return budget
+    await invalidateBudgetCache(server, userId)
+    return budget
+  })
 }
 
 export async function updateBudgetService(
@@ -128,17 +130,19 @@ export async function updateBudgetService(
   id: string,
   data: UpdateBudgetInput
 ) {
-  const existing = await server.prisma.budget.findFirst({ where: { id, userId } })
-  if (!existing) throw errors.notFound("Budget not found")
+  return await server.prisma.$transaction(async (tx) => {
+    const existing = await tx.budget.findFirst({ where: { id, userId } })
+    if (!existing) throw errors.notFound("Budget not found")
 
-  const updated = await server.prisma.budget.update({
-    where: { id },
-    data,
-    include: { category: true },
+    const updated = await tx.budget.update({
+      where: { id },
+      data,
+      include: { category: true },
+    })
+
+    await invalidateBudgetCache(server, userId)
+    return updated
   })
-
-  await invalidateBudgetCache(server, userId)
-  return updated
 }
 
 export async function deleteBudgetService(
@@ -146,9 +150,11 @@ export async function deleteBudgetService(
   userId: string,
   id: string
 ) {
-  const existing = await server.prisma.budget.findFirst({ where: { id, userId } })
-  if (!existing) throw errors.notFound("Budget not found")
+  await server.prisma.$transaction(async (tx) => {
+    const existing = await tx.budget.findFirst({ where: { id, userId } })
+    if (!existing) throw errors.notFound("Budget not found")
 
-  await server.prisma.budget.delete({ where: { id } })
-  await invalidateBudgetCache(server, userId)
+    await tx.budget.delete({ where: { id } })
+    await invalidateBudgetCache(server, userId)
+  })
 }

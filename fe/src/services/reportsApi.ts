@@ -35,6 +35,12 @@ export interface CashFlowItem {
   net: number
 }
 
+export interface AiInsightsResponse {
+  period: string
+  generatedAt: string
+  insights: string
+}
+
 // ─── API Service ──────────────────────────────────────────────────────────────
 
 export const reportsApi = baseApi.injectEndpoints({
@@ -61,6 +67,13 @@ export const reportsApi = baseApi.injectEndpoints({
         period ? `/reports/cash-flow?period=${period}` : "/reports/cash-flow",
       providesTags: [{ type: "Report", id: "CASHFLOW" }],
     }),
+
+    getAiInsights: builder.query<AiInsightsResponse, { period?: string }>({
+      query: ({ period } = {}) =>
+        period ? `/reports/ai-insights?period=${period}` : "/reports/ai-insights",
+      // Không cần auto-refetch khi focus, user muốn thì tự chạy lại
+      keepUnusedDataFor: 3600, // cache trên FE 1 tiếng
+    }),
   }),
 })
 
@@ -69,4 +82,5 @@ export const {
   useGetMonthlyTrendQuery,
   useGetCategoryBreakdownQuery,
   useGetCashFlowQuery,
+  useLazyGetAiInsightsQuery,
 } = reportsApi

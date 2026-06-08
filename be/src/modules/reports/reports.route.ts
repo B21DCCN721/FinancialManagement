@@ -3,11 +3,11 @@ import { ZodTypeProvider } from "fastify-type-provider-zod"
 import {
   reportQuerySchema, monthlyTrendQuerySchema,
   summarySchema, monthlyTrendItemSchema,
-  categoryBreakdownItemSchema, cashFlowItemSchema,
+  categoryBreakdownItemSchema, cashFlowItemSchema, aiInsightsSchema,
 } from "./reports.schema"
 import {
   getSummaryController, getMonthlyTrendController,
-  getCategoryBreakdownController, getCashFlowController,
+  getCategoryBreakdownController, getCashFlowController, getAiInsightsController,
 } from "./reports.controller"
 import { authenticate } from "../../hooks/authenticate"
 import { z } from "zod"
@@ -47,4 +47,11 @@ export const reportRoutes: FastifyPluginAsync = async (server: FastifyInstance) 
       response: { 200: z.array(cashFlowItemSchema) },
     },
   }, getCashFlowController)
+  // GET /api/reports/ai-insights?period=2026-06
+  s.get("/ai-insights", {
+    schema: {
+      querystring: reportQuerySchema,
+      response: { 200: aiInsightsSchema },
+    },
+  }, getAiInsightsController)
 }

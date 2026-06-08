@@ -19,6 +19,7 @@ import {
   useGetCashFlowQuery,
 } from "@/services/reportsApi"
 import { useGetTransactionsQuery } from "@/services/transactionsApi"
+import { toast } from "sonner"
 
 function currentPeriod() {
   const now = new Date()
@@ -263,12 +264,12 @@ export default function ReportsPage() {
                 Xuất CSV
                 <ArrowRight className="ml-auto h-4 w-4 opacity-50" />
               </Button>
-              <Button variant="outline" className="justify-start w-full" onClick={() => alert("Tính năng PDF đang phát triển.")}>
+              <Button variant="outline" className="justify-start w-full" onClick={() => toast.info("Tính năng PDF đang phát triển.")}>
                 <FileJson className="mr-2 h-4 w-4 text-muted-foreground" />
                 Xuất PDF
                 <ArrowRight className="ml-auto h-4 w-4 opacity-50" />
               </Button>
-              <Button variant="outline" className="justify-start w-full" onClick={() => alert("Tính năng Excel đang phát triển.")}>
+              <Button variant="outline" className="justify-start w-full" onClick={() => toast.info("Tính năng Excel đang phát triển.")}>
                 <FileSpreadsheet className="mr-2 h-4 w-4 text-muted-foreground" />
                 Xuất Excel
                 <ArrowRight className="ml-auto h-4 w-4 opacity-50" />

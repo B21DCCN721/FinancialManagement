@@ -26,18 +26,20 @@ export async function createCategoryService(
   userId: string,
   data: CreateCategoryInput
 ) {
-  // Check duplicate name+type per user
-  const existing = await server.prisma.category.findFirst({
-    where: { userId, name: { equals: data.name, mode: "insensitive" }, type: data.type },
-  })
-  if (existing) throw errors.conflict(`Category "${data.name}" already exists for type "${data.type}"`)
+  return await server.prisma.$transaction(async (tx) => {
+    // Check duplicate name+type per user
+    const existing = await tx.category.findFirst({
+      where: { userId, name: { equals: data.name, mode: "insensitive" }, type: data.type },
+    })
+    if (existing) throw errors.conflict(`Category "${data.name}" already exists for type "${data.type}"`)
 
-  const category = await server.prisma.category.create({
-    data: { ...data, userId },
-  })
+    const category = await tx.category.create({
+      data: { ...data, userId },
+    })
 
-  await deleteCache(server.redis, cacheKey(userId))
-  return category
+    await deleteCache(server.redis, cacheKey(userId))
+    return category
+  })
 }
 
 export async function updateCategoryService(
@@ -46,16 +48,18 @@ export async function updateCategoryService(
   id: string,
   data: UpdateCategoryInput
 ) {
-  const existing = await server.prisma.category.findFirst({ where: { id, userId } })
-  if (!existing) throw errors.notFound("Category not found")
+  return await server.prisma.$transaction(async (tx) => {
+    const existing = await tx.category.findFirst({ where: { id, userId } })
+    if (!existing) throw errors.notFound("Category not found")
 
-  const updated = await server.prisma.category.update({
-    where: { id },
-    data,
+    const updated = await tx.category.update({
+      where: { id },
+      data,
+    })
+
+    await deleteCache(server.redis, cacheKey(userId))
+    return updated
   })
-
-  await deleteCache(server.redis, cacheKey(userId))
-  return updated
 }
 
 export async function deleteCategoryService(
@@ -63,17 +67,19 @@ export async function deleteCategoryService(
   userId: string,
   id: string
 ) {
-  const existing = await server.prisma.category.findFirst({ where: { id, userId } })
-  if (!existing) throw errors.notFound("Category not found")
+  await server.prisma.$transaction(async (tx) => {
+    const existing = await tx.category.findFirst({ where: { id, userId } })
+    if (!existing) throw errors.notFound("Category not found")
 
-  // Check if category is used in transactions
-  const txCount = await server.prisma.transaction.count({ where: { categoryId: id } })
-  if (txCount > 0) {
-    throw errors.conflict(
-      `Cannot delete: ${txCount} transaction(s) are linked to this category. Reassign them first.`
-    )
-  }
+    // Check if category is used in transactions
+    const txCount = await tx.transaction.count({ where: { categoryId: id } })
+    if (txCount > 0) {
+      throw errors.conflict(
+        `Cannot delete: ${txCount} transaction(s) are linked to this category. Reassign them first.`
+      )
+    }
 
-  await server.prisma.category.delete({ where: { id } })
-  await deleteCache(server.redis, cacheKey(userId))
+    await tx.category.delete({ where: { id } })
+    await deleteCache(server.redis, cacheKey(userId))
+  })
 }

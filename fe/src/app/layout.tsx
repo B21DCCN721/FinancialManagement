@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 import { ThemeProvider } from "@/components/theme-provider";
 import { ReduxProvider } from "@/store/provider";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Toaster } from "sonner";
 
 export default function RootLayout({
   children,
@@ -38,6 +39,7 @@ export default function RootLayout({
           >
             <ReduxProvider>
               {children}
+              <Toaster position="top-right" richColors />
             </ReduxProvider>
           </ThemeProvider>
         </body>

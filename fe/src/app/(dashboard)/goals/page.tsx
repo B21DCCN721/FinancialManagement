@@ -13,6 +13,7 @@ import {
   useDeleteGoalMutation,
 } from "@/services/goalsApi"
 import { logger } from "@/lib/logger"
+import { toast } from "sonner"
 
 export default function GoalsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -39,8 +40,10 @@ export default function GoalsPage() {
       setIsAddModalOpen(false)
       e.currentTarget.reset()
       logger.info("Goal created")
+      toast.success("Tạo mục tiêu thành công")
     } catch (err) {
       logger.error("Failed to create goal", err)
+      toast.error("Tạo mục tiêu thất bại. Vui lòng thử lại.")
     }
   }
 
@@ -56,8 +59,10 @@ export default function GoalsPage() {
       setSelectedGoalId(null)
       e.currentTarget.reset()
       logger.info("Contributed to goal", { goalId: selectedGoalId, amount })
+      toast.success("Nạp tiền vào mục tiêu thành công")
     } catch (err) {
       logger.error("Failed to contribute to goal", err)
+      toast.error("Nạp tiền thất bại. Vui lòng thử lại.")
     }
   }
 
@@ -116,7 +121,14 @@ export default function GoalsPage() {
                         </span>
                       )}
                       <button
-                        onClick={() => deleteGoal(goal.id)}
+                        onClick={async () => {
+                          try {
+                            await deleteGoal(goal.id).unwrap()
+                            toast.success("Xóa mục tiêu thành công")
+                          } catch (err) {
+                            toast.error("Xóa mục tiêu thất bại")
+                          }
+                        }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger ml-2"
                       >
                         <Trash2 className="h-4 w-4" />

@@ -39,3 +39,13 @@ export async function getCashFlowController(
   const period = request.query.period ?? currentPeriod()
   return reply.send(await getCashFlowService(request.server, request.user.id, period))
 }
+
+export async function getAiInsightsController(
+  request: FastifyRequest<{ Querystring: { period?: string } }>,
+  reply: FastifyReply
+) {
+  const period = request.query.period ?? currentPeriod()
+  // dynamically import or require the ai service to avoid circular deps or keep it simple
+  const { getAiInsightsService } = await import("./ai.service")
+  return reply.send(await getAiInsightsService(request.server, request.user.id, period))
+}

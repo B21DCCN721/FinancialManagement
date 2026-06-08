@@ -80,4 +80,15 @@ export const authRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
       response: { 200: z.object({ message: z.string() }) },
     },
   }, logoutController)
+
+  // DELETE /api/auth/account (protected)
+  s.delete("/account", {
+    preHandler: [authenticate],
+    schema: {
+      response: { 200: z.object({ message: z.string() }), 401: errorSchema, 500: errorSchema },
+    },
+  }, async (request, reply) => {
+    const { deleteAccountController } = await import("./auth.controller")
+    return deleteAccountController(request, reply)
+  })
 }

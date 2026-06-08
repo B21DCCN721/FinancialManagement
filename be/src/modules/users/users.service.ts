@@ -33,21 +33,23 @@ export async function updateProfileService(
   userId: string,
   data: UpdateProfileInput
 ) {
-  const user = await server.prisma.user.update({
-    where: { id: userId },
-    data: {
-      ...data,
-      name: data.name ?? ([data.firstName, data.lastName].filter(Boolean).join(" ") || undefined),
-    },
-    select: {
-      id: true, email: true, name: true,
-      firstName: true, lastName: true,
-      avatarUrl: true, authProvider: true,
-      createdAt: true, updatedAt: true,
-    },
+  return await server.prisma.$transaction(async (tx) => {
+    const user = await tx.user.update({
+      where: { id: userId },
+      data: {
+        ...data,
+        name: data.name ?? ([data.firstName, data.lastName].filter(Boolean).join(" ") || undefined),
+      },
+      select: {
+        id: true, email: true, name: true,
+        firstName: true, lastName: true,
+        avatarUrl: true, authProvider: true,
+        createdAt: true, updatedAt: true,
+      },
+    })
+    await deleteCache(server.redis, profileCacheKey(userId))
+    return user
   })
-  await deleteCache(server.redis, profileCacheKey(userId))
-  return user
 }
 
 export async function changePasswordService(
@@ -55,21 +57,25 @@ export async function changePasswordService(
   userId: string,
   data: ChangePasswordInput
 ) {
-  const user = await server.prisma.user.findUnique({ where: { id: userId } })
-  if (!user) throw errors.notFound("User not found")
+  await server.prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { id: userId } })
+    if (!user) throw errors.notFound("User not found")
 
-  const valid = await verifyPassword(data.currentPassword, user.password)
-  if (!valid) throw errors.badRequest("Current password is incorrect")
+    const valid = await verifyPassword(data.currentPassword, user.password)
+    if (!valid) throw errors.badRequest("Current password is incorrect")
 
-  const hashed = await hashPassword(data.newPassword)
-  await server.prisma.user.update({
-    where: { id: userId },
-    data: { password: hashed, refreshToken: null }, // force re-login on password change
+    const hashed = await hashPassword(data.newPassword)
+    await tx.user.update({
+      where: { id: userId },
+      data: { password: hashed, refreshToken: null }, // force re-login on password change
+    })
+    await deleteCache(server.redis, profileCacheKey(userId))
   })
-  await deleteCache(server.redis, profileCacheKey(userId))
 }
 
 export async function deleteAccountService(server: FastifyInstance, userId: string) {
-  await server.prisma.user.delete({ where: { id: userId } })
-  await deleteCache(server.redis, profileCacheKey(userId))
+  await server.prisma.$transaction(async (tx) => {
+    await tx.user.delete({ where: { id: userId } })
+    await deleteCache(server.redis, profileCacheKey(userId))
+  })
 }

@@ -37,16 +37,18 @@ export async function createGoalService(
   userId: string,
   data: CreateGoalInput
 ) {
-  const goal = await server.prisma.goal.create({
-    data: {
-      ...data,
-      deadline: new Date(data.deadline),
-      userId,
-    },
-  })
+  return await server.prisma.$transaction(async (tx) => {
+    const goal = await tx.goal.create({
+      data: {
+        ...data,
+        deadline: new Date(data.deadline),
+        userId,
+      },
+    })
 
-  await deleteCache(server.redis, cacheKey(userId))
-  return goal
+    await deleteCache(server.redis, cacheKey(userId))
+    return goal
+  })
 }
 
 export async function updateGoalService(
@@ -55,19 +57,21 @@ export async function updateGoalService(
   id: string,
   data: UpdateGoalInput
 ) {
-  const existing = await server.prisma.goal.findFirst({ where: { id, userId } })
-  if (!existing) throw errors.notFound("Goal not found")
+  return await server.prisma.$transaction(async (tx) => {
+    const existing = await tx.goal.findFirst({ where: { id, userId } })
+    if (!existing) throw errors.notFound("Goal not found")
 
-  const updated = await server.prisma.goal.update({
-    where: { id },
-    data: {
-      ...data,
-      ...(data.deadline && { deadline: new Date(data.deadline) }),
-    },
+    const updated = await tx.goal.update({
+      where: { id },
+      data: {
+        ...data,
+        ...(data.deadline && { deadline: new Date(data.deadline) }),
+      },
+    })
+
+    await deleteCache(server.redis, cacheKey(userId))
+    return updated
   })
-
-  await deleteCache(server.redis, cacheKey(userId))
-  return updated
 }
 
 export async function contributeToGoalService(
@@ -76,23 +80,25 @@ export async function contributeToGoalService(
   id: string,
   data: ContributeGoalInput
 ) {
-  const existing = await server.prisma.goal.findFirst({ where: { id, userId } })
-  if (!existing) throw errors.notFound("Goal not found")
+  return await server.prisma.$transaction(async (tx) => {
+    const existing = await tx.goal.findFirst({ where: { id, userId } })
+    if (!existing) throw errors.notFound("Goal not found")
 
-  const newAmount = existing.currentAmount + data.amount
-  if (newAmount > existing.targetAmount) {
-    throw errors.badRequest(
-      `Contribution exceeds the target. Remaining: ${existing.targetAmount - existing.currentAmount}`
-    )
-  }
+    const newAmount = existing.currentAmount + data.amount
+    if (newAmount > existing.targetAmount) {
+      throw errors.badRequest(
+        `Contribution exceeds the target. Remaining: ${existing.targetAmount - existing.currentAmount}`
+      )
+    }
 
-  const updated = await server.prisma.goal.update({
-    where: { id },
-    data: { currentAmount: newAmount },
+    const updated = await tx.goal.update({
+      where: { id },
+      data: { currentAmount: newAmount },
+    })
+
+    await deleteCache(server.redis, cacheKey(userId))
+    return updated
   })
-
-  await deleteCache(server.redis, cacheKey(userId))
-  return updated
 }
 
 export async function deleteGoalService(
@@ -100,9 +106,11 @@ export async function deleteGoalService(
   userId: string,
   id: string
 ) {
-  const existing = await server.prisma.goal.findFirst({ where: { id, userId } })
-  if (!existing) throw errors.notFound("Goal not found")
+  await server.prisma.$transaction(async (tx) => {
+    const existing = await tx.goal.findFirst({ where: { id, userId } })
+    if (!existing) throw errors.notFound("Goal not found")
 
-  await server.prisma.goal.delete({ where: { id } })
-  await deleteCache(server.redis, cacheKey(userId))
+    await tx.goal.delete({ where: { id } })
+    await deleteCache(server.redis, cacheKey(userId))
+  })
 }

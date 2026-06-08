@@ -107,32 +107,34 @@ export async function createTransactionService(
   userId: string,
   data: CreateTransactionInput
 ) {
-  // Verify category belongs to user
-  const category = await server.prisma.category.findFirst({
-    where: { id: data.categoryId, userId },
+  return await server.prisma.$transaction(async (prismaTx) => {
+    // Verify category belongs to user
+    const category = await prismaTx.category.findFirst({
+      where: { id: data.categoryId, userId },
+    })
+    if (!category) throw errors.notFound("Category not found")
+
+    // Validate type matches category type
+    if (category.type !== data.type) {
+      throw errors.badRequest(`Category type "${category.type}" doesn't match transaction type "${data.type}"`)
+    }
+
+    const tx = await prismaTx.transaction.create({
+      data: {
+        ...data,
+        date: new Date(data.date),
+        userId,
+      },
+      include: { category: true },
+    })
+
+    await invalidateUserTransactionCache(server, userId)
+    // Also invalidate reports and budget summary caches
+    await invalidateCachePattern(server.redis, `user:${userId}:reports*`)
+    await invalidateCachePattern(server.redis, `user:${userId}:budgets*`)
+
+    return tx
   })
-  if (!category) throw errors.notFound("Category not found")
-
-  // Validate type matches category type
-  if (category.type !== data.type) {
-    throw errors.badRequest(`Category type "${category.type}" doesn't match transaction type "${data.type}"`)
-  }
-
-  const tx = await server.prisma.transaction.create({
-    data: {
-      ...data,
-      date: new Date(data.date),
-      userId,
-    },
-    include: { category: true },
-  })
-
-  await invalidateUserTransactionCache(server, userId)
-  // Also invalidate reports and budget summary caches
-  await invalidateCachePattern(server.redis, `user:${userId}:reports*`)
-  await invalidateCachePattern(server.redis, `user:${userId}:budgets*`)
-
-  return tx
 }
 
 export async function updateTransactionService(
@@ -141,23 +143,25 @@ export async function updateTransactionService(
   id: string,
   data: UpdateTransactionInput
 ) {
-  const existing = await server.prisma.transaction.findFirst({ where: { id, userId } })
-  if (!existing) throw errors.notFound("Transaction not found")
+  return await server.prisma.$transaction(async (prismaTx) => {
+    const existing = await prismaTx.transaction.findFirst({ where: { id, userId } })
+    if (!existing) throw errors.notFound("Transaction not found")
 
-  const updated = await server.prisma.transaction.update({
-    where: { id },
-    data: {
-      ...data,
-      ...(data.date && { date: new Date(data.date) }),
-    },
-    include: { category: true },
+    const updated = await prismaTx.transaction.update({
+      where: { id },
+      data: {
+        ...data,
+        ...(data.date && { date: new Date(data.date) }),
+      },
+      include: { category: true },
+    })
+
+    await invalidateUserTransactionCache(server, userId)
+    await invalidateCachePattern(server.redis, `user:${userId}:reports*`)
+    await invalidateCachePattern(server.redis, `user:${userId}:budgets*`)
+
+    return updated
   })
-
-  await invalidateUserTransactionCache(server, userId)
-  await invalidateCachePattern(server.redis, `user:${userId}:reports*`)
-  await invalidateCachePattern(server.redis, `user:${userId}:budgets*`)
-
-  return updated
 }
 
 export async function deleteTransactionService(
@@ -165,12 +169,14 @@ export async function deleteTransactionService(
   userId: string,
   id: string
 ) {
-  const existing = await server.prisma.transaction.findFirst({ where: { id, userId } })
-  if (!existing) throw errors.notFound("Transaction not found")
+  await server.prisma.$transaction(async (prismaTx) => {
+    const existing = await prismaTx.transaction.findFirst({ where: { id, userId } })
+    if (!existing) throw errors.notFound("Transaction not found")
 
-  await server.prisma.transaction.delete({ where: { id } })
+    await prismaTx.transaction.delete({ where: { id } })
 
-  await invalidateUserTransactionCache(server, userId)
-  await invalidateCachePattern(server.redis, `user:${userId}:reports*`)
-  await invalidateCachePattern(server.redis, `user:${userId}:budgets*`)
+    await invalidateUserTransactionCache(server, userId)
+    await invalidateCachePattern(server.redis, `user:${userId}:reports*`)
+    await invalidateCachePattern(server.redis, `user:${userId}:budgets*`)
+  })
 }

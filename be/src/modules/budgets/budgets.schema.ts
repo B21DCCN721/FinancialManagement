@@ -28,8 +28,8 @@ export const budgetSchema = z.object({
   period: z.string(),
   userId: z.string(),
   categoryId: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  createdAt: z.union([z.date(), z.string()]),
+  updatedAt: z.union([z.date(), z.string()]),
 })
 
 export const budgetWithSpendingSchema = z.object({
