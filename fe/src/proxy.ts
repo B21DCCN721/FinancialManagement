@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// ĐỔI TÊN HÀM THÀNH middleware ĐỂ NEXT.JS NHẬN DIỆN ĐƯỢC
-export function middleware(request: NextRequest) {
+// ĐỔI TÊN HÀM THÀNH proxy THEO ĐÚNG CHUẨN NEXT.JS 16+
+export function proxy(request: NextRequest) {
   // Sinh nonce ngẫu nhiên bằng Web Crypto API tích hợp sẵn của Edge Runtime
   const nonce = crypto.randomUUID()
   const isDev = process.env.NODE_ENV !== 'production'
 
-  // Xây dựng chuỗi CSP nghiêm ngặt (Đã bổ sung Clerk và Google Fonts)
+  // Xây dựng chuỗi CSP nghiêm ngặt
   const cspHeader = `
     default-src 'self';
     script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://*.clerk.accounts.dev ${isDev ? "'unsafe-eval'" : ""};
@@ -28,7 +28,7 @@ export function middleware(request: NextRequest) {
 
   const requestHeaders = new Headers(request.headers)
   
-  // Set x-nonce để Next.js (App Router) đọc và tự nhúng vào các thẻ <script> tự sinh
+  // Set x-nonce để Next.js đọc và tự nhúng vào các thẻ <script> tự sinh
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set(
     'Content-Security-Policy',
