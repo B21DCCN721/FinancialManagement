@@ -3,15 +3,17 @@
 
 import Link from "next/link"
 import { TrendingUp, ArrowRight, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, Suspense, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useDispatch } from "react-redux"
 import { useLoginMutation } from "@/services/authApi"
 import { setCredentials } from "@/store/authSlice"
 import { logger } from "@/lib/logger"
 import { useClerk } from "@clerk/nextjs"
+import { useTranslation } from "react-i18next"
 
-export default function LoginPage() {
+function LoginContent() {
+  const { t } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -22,6 +24,18 @@ export default function LoginPage() {
   const [login, { isLoading }] = useLoginMutation()
   const clerk = useClerk()
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  
+  const searchParams = useSearchParams()
+  const errorParam = searchParams.get("error")
+
+  const [prevErrorParam, setPrevErrorParam] = useState(errorParam)
+
+  if (errorParam !== prevErrorParam) {
+    setPrevErrorParam(errorParam)
+    if (errorParam) {
+      setErrorMsg(errorParam)
+    }
+  }
 
   const handleGoogleLogin = async () => {
     if (!clerk.loaded) return
@@ -110,9 +124,9 @@ export default function LoginPage() {
           }}>
           {/* Header */}
           <div className="text-center mb-7">
-            <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">Chào mừng trở lại</h1>
+            <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">{t("auth.welcomeBack")}</h1>
             <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
-              Đăng nhập để quản lý tài chính của bạn
+              {t("auth.enterDetails")}
             </p>
           </div>
 
@@ -129,7 +143,7 @@ export default function LoginPage() {
           <form className="space-y-4 mb-6" onSubmit={handleSubmit}>
             <div className="space-y-1.5">
               <label htmlFor="email" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
-                Địa chỉ email
+                {t("auth.email")}
               </label>
               <input
                 id="email"
@@ -145,7 +159,7 @@ export default function LoginPage() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label htmlFor="password" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
-                  Mật khẩu
+                  {t("auth.password")}
                 </label>
               </div>
               <div className="relative">
@@ -168,7 +182,7 @@ export default function LoginPage() {
               </div>
               <div className="text-right">
                 <Link href="/forgot-password" className="text-xs font-medium transition-colors hover:text-white" style={{ color: "#a78bfa" }}>
-                  Quên mật khẩu?
+                  {t("auth.forgotPassword")}
                 </Link>
               </div>
             </div>
@@ -179,14 +193,14 @@ export default function LoginPage() {
               className="btn-primary-gradient flex items-center justify-center gap-2 h-11 w-full rounded-xl text-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-              {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
+              {isLoading ? t("common.loading") : t("auth.login")}
             </button>
             <div id="clerk-captcha"></div>
           </form>
 
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.1))" }} />
-            <span className="text-xs uppercase font-medium tracking-widest" style={{ color: "rgba(255,255,255,0.3)" }}>Hoặc</span>
+            <span className="text-xs uppercase font-medium tracking-widest" style={{ color: "rgba(255,255,255,0.3)" }}>{t("auth.or")}</span>
             <div className="flex-1 h-px" style={{ background: "linear-gradient(270deg, transparent, rgba(255,255,255,0.1))" }} />
           </div>
 
@@ -213,18 +227,30 @@ export default function LoginPage() {
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
             )}
-            {isGoogleLoading ? "Đang chuyển hướng..." : "Tiếp tục với Google"}
+            {isGoogleLoading ? t("common.loading") : t("auth.loginWithGoogle")}
           </button>
         </div>
 
         {/* Footer */}
         <p className="text-center text-sm mt-6" style={{ color: "rgba(255,255,255,0.35)" }}>
-          Chưa có tài khoản?{" "}
+          {t("auth.noAccount")}{" "}
           <Link href="/register" className="font-semibold transition-colors hover:text-white" style={{ color: "#a78bfa" }}>
-            Tạo tài khoản miễn phí
+            {t("auth.createAccount")}
           </Link>
         </p>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#7c5cfc]" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }

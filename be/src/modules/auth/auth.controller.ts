@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify"
 import { registerService, loginService, googleLoginService, refreshService, logoutService, forgotPasswordService, resetPasswordService } from "./auth.service"
 import { RegisterInput, LoginInput, GoogleLoginInput, RefreshTokenInput, ForgotPasswordInput, ResetPasswordInput } from "./auth.schema"
-import { AppError } from "../../utils/errors"
+import { handleError } from "../../utils/errors"
 
 export async function registerController(
   request: FastifyRequest<{ Body: RegisterInput }>,
@@ -11,10 +11,7 @@ export async function registerController(
     const result = await registerService(request.server, request.body)
     return reply.code(201).send(result)
   } catch (err) {
-    if (err instanceof AppError) {
-      return reply.code(err.statusCode).send({ statusCode: err.statusCode, message: err.message })
-    }
-    throw err
+    return handleError(err, reply)
   }
 }
 
@@ -26,10 +23,7 @@ export async function loginController(
     const result = await loginService(request.server, request.body)
     return reply.code(200).send(result)
   } catch (err) {
-    if (err instanceof AppError) {
-      return reply.code(err.statusCode).send({ statusCode: err.statusCode, message: err.message })
-    }
-    throw err
+    return handleError(err, reply)
   }
 }
 
@@ -41,10 +35,7 @@ export async function googleLoginController(
     const result = await googleLoginService(request.server, request.body.token)
     return reply.code(200).send(result)
   } catch (err) {
-    if (err instanceof AppError) {
-      return reply.code(err.statusCode).send({ statusCode: err.statusCode, message: err.message })
-    }
-    throw err
+    return handleError(err, reply)
   }
 }
 
@@ -56,10 +47,7 @@ export async function refreshController(
     const result = await refreshService(request.server, request.body.refreshToken)
     return reply.code(200).send(result)
   } catch (err) {
-    if (err instanceof AppError) {
-      return reply.code(err.statusCode).send({ statusCode: err.statusCode, message: err.message })
-    }
-    throw err
+    return handleError(err, reply)
   }
 }
 
@@ -71,10 +59,7 @@ export async function forgotPasswordController(
     const result = await forgotPasswordService(request.server, request.body)
     return reply.code(200).send(result)
   } catch (err) {
-    if (err instanceof AppError) {
-      return reply.code(err.statusCode).send({ statusCode: err.statusCode, message: err.message })
-    }
-    throw err
+    return handleError(err, reply)
   }
 }
 
@@ -86,10 +71,7 @@ export async function resetPasswordController(
     const result = await resetPasswordService(request.server, request.body)
     return reply.code(200).send(result)
   } catch (err) {
-    if (err instanceof AppError) {
-      return reply.code(err.statusCode).send({ statusCode: err.statusCode, message: err.message })
-    }
-    throw err
+    return handleError(err, reply)
   }
 }
 

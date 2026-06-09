@@ -44,6 +44,7 @@ export interface AiInsightsResponse {
 // ─── API Service ──────────────────────────────────────────────────────────────
 
 export const reportsApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getReportSummary: builder.query<ReportSummary, { period?: string }>({
       query: ({ period } = {}) =>

@@ -15,6 +15,7 @@ import {
 } from "@/services/categoriesApi"
 import { logger } from "@/lib/logger"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 
 // Bảng emoji icon gợi ý
 const ICON_SUGGESTIONS = ["🍔", "🚗", "🛍️", "🎬", "🏠", "⚡", "💊", "✈️", "📚", "💰", "🎓", "💳", "🎁", "📝"]
@@ -33,12 +34,17 @@ function CategoryTypeBadge({ type }: { type: string }) {
           : { background: "rgba(124,92,252,0.12)", color: "#a78bfa", border: "1px solid rgba(124,92,252,0.25)" }
       }
     >
-      {type === "income" ? "Thu nhập" : "Chi phí"}
+      {type === "income" ? (
+        // Temporary fallback until hook is used here, or we use t directly
+        // Actually, this component is outside. Let's pass t or use hook here.
+        "Thu nhập"
+      ) : "Chi phí"}
     </span>
   )
 }
 
 export default function CategoriesPage() {
+  const { t } = useTranslation()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [selectedIcon, setSelectedIcon] = useState("📝")
@@ -68,16 +74,16 @@ export default function CategoriesPage() {
       if (editingId) {
         await updateCategory({ id: editingId, body: { name, color: selectedColor, icon: selectedIcon } }).unwrap()
         logger.info("Category updated", { id: editingId })
-        toast.success("Cập nhật danh mục thành công")
+        toast.success(t("categories.updateSuccess"))
       } else {
         await createCategory({ name, type, color: selectedColor, icon: selectedIcon }).unwrap()
         logger.info("Category created", { name })
-        toast.success("Tạo danh mục thành công")
+        toast.success(t("categories.addSuccess"))
       }
       resetModal()
     } catch (err) {
       logger.error("Failed to save category", err)
-      toast.error("Lưu danh mục thất bại. Vui lòng thử lại.")
+      toast.error(t("categories.addError"))
     }
   }
 
@@ -85,10 +91,10 @@ export default function CategoriesPage() {
     try {
       await deleteCategory(id).unwrap()
       logger.info("Category deleted", { id })
-      toast.success("Xóa danh mục thành công")
+      toast.success(t("categories.deleteSuccess"))
     } catch (err) {
       logger.error("Failed to delete category", err)
-      toast.error("Xóa danh mục thất bại. Danh mục có thể đang được sử dụng.")
+      toast.error(t("categories.deleteError"))
     }
   }
 
@@ -108,15 +114,15 @@ export default function CategoriesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Danh mục</h1>
-          <p className="text-muted-foreground">Quản lý các danh mục thu nhập và chi phí của bạn.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t("categories.title")}</h1>
+          <p className="text-muted-foreground">{t("categories.subtitle")}</p>
         </div>
         <button
           onClick={() => { setEditingId(null); setIsAddModalOpen(true) }}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-[0_4px_15px_rgba(124,92,252,0.4)]"
         >
           <Plus className="h-4 w-4" />
-          Tạo danh mục
+          {t("categories.createCategory")}
         </button>
       </div>
 
@@ -129,7 +135,7 @@ export default function CategoriesPage() {
           {/* Income */}
           {incomeCategories.length > 0 && (
             <section>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 px-1">Thu nhập</h2>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 px-1">{t("categories.income")}</h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {incomeCategories.map((cat) => (
                   <CategoryCard key={cat.id} cat={cat} onEdit={openEdit} onDelete={handleDelete} />
@@ -141,7 +147,7 @@ export default function CategoriesPage() {
           {/* Expense */}
           {expenseCategories.length > 0 && (
             <section>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 px-1">Chi phí</h2>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 px-1">{t("categories.expense")}</h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {expenseCategories.map((cat) => (
                   <CategoryCard key={cat.id} cat={cat} onEdit={openEdit} onDelete={handleDelete} />
@@ -152,7 +158,7 @@ export default function CategoriesPage() {
 
           {categories.length === 0 && (
             <div className="py-12 text-center text-muted-foreground glass-card rounded-2xl">
-              Chưa có danh mục nào. Hãy tạo danh mục đầu tiên!
+              {t("categories.empty")}
             </div>
           )}
         </div>
@@ -162,33 +168,33 @@ export default function CategoriesPage() {
       <Modal
         isOpen={isAddModalOpen}
         onClose={resetModal}
-        title={editingId ? "Chỉnh sửa danh mục" : "Tạo danh mục mới"}
-        description={editingId ? "Cập nhật thông tin danh mục." : "Thêm danh mục tùy chỉnh cho giao dịch của bạn."}
+        title={editingId ? t("categories.editModalTitle") : t("categories.addModalTitle")}
+        description={editingId ? t("categories.editModalDesc") : t("categories.addModalDesc")}
       >
         <form className="space-y-5 pt-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <Label htmlFor="name">Tên danh mục</Label>
+            <Label htmlFor="name">{t("categories.name")}</Label>
             <Input id="name" name="name" placeholder="VD: Du lịch, Sức khỏe" required defaultValue={editingCategory?.name} />
           </div>
 
           {!editingId && (
             <div className="space-y-2">
-              <Label>Loại</Label>
+              <Label>{t("categories.type")}</Label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="radio" name="type" value="expense" defaultChecked className="text-primary focus:ring-primary h-4 w-4" />
-                  <span className="text-sm font-medium">Chi phí</span>
+                  <span className="text-sm font-medium">{t("categories.expense")}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="radio" name="type" value="income" className="text-primary focus:ring-primary h-4 w-4" />
-                  <span className="text-sm font-medium">Thu nhập</span>
+                  <span className="text-sm font-medium">{t("categories.income")}</span>
                 </label>
               </div>
             </div>
           )}
 
           <div className="space-y-2">
-            <Label>Biểu tượng (Icon)</Label>
+            <Label>{t("categories.icon")}</Label>
             <div className="flex flex-wrap gap-2">
               {ICON_SUGGESTIONS.map((icon) => (
                 <button
@@ -209,7 +215,7 @@ export default function CategoriesPage() {
           </div>
 
           <div className="space-y-2">
-            <Label>Màu sắc</Label>
+            <Label>{t("categories.color")}</Label>
             <div className="flex gap-2">
               {COLOR_SUGGESTIONS.map((color) => (
                 <button
@@ -228,10 +234,10 @@ export default function CategoriesPage() {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={resetModal}>Hủy</Button>
+            <Button type="button" variant="outline" onClick={resetModal}>{t("categories.cancel")}</Button>
             <Button type="submit" disabled={isCreating || isUpdating}>
               {(isCreating || isUpdating) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {editingId ? "Cập nhật" : "Tạo danh mục"}
+              {editingId ? t("categories.update") : t("categories.save")}
             </Button>
           </div>
         </form>

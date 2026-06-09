@@ -21,7 +21,12 @@ export async function registerService(
 
   // Check duplicate email
   const existing = await prisma.user.findUnique({ where: { email: data.email } })
-  if (existing) throw errors.conflict("Email already in use")
+  if (existing) {
+    if (existing.authProvider === "google") {
+      throw errors.conflict("Email này đã được đăng ký bằng Google. Vui lòng đăng nhập bằng Google.")
+    }
+    throw errors.conflict("Email đã tồn tại trong hệ thống. Vui lòng đăng nhập.")
+  }
 
   const hashed = await hashPassword(data.password)
   const displayName = data.name ?? ([data.firstName, data.lastName].filter(Boolean).join(" ") || null)
@@ -71,7 +76,11 @@ export async function loginService(
   const prisma: PrismaClient = server.prisma
 
   const user = await prisma.user.findUnique({ where: { email: data.email } })
-  if (!user) throw errors.unauthorized("Invalid email or password")
+  if (!user) throw errors.unauthorized("Email hoặc mật khẩu không hợp lệ")
+
+  if (user.authProvider === "google") {
+    throw errors.unauthorized("Email này được đăng ký bằng Google. Vui lòng đăng nhập bằng Google.")
+  }
 
   const valid = await verifyPassword(data.password, user.password)
   if (!valid) throw errors.unauthorized("Invalid email or password")
@@ -144,14 +153,17 @@ export async function googleLoginService(
     })
 
     if (user) {
-      // Nếu user đã tồn tại nhưng chưa có providerId (tức là trước đây đk bằng email thường), thì update lại
-      if (!user.providerId || user.authProvider !== "google") {
+      if (user.authProvider !== "google") {
+        throw errors.conflict("Email này đã được đăng ký bằng tài khoản thường. Vui lòng đăng nhập bằng mật khẩu.")
+      }
+      
+      // Update providerId or avatarUrl if missing
+      if (!user.providerId || !user.avatarUrl) {
         user = await tx.user.update({
           where: { id: user.id },
           data: {
-            providerId,
-            authProvider: "google",
-            avatarUrl: user.avatarUrl ?? avatarUrl, // Cập nhật avatar nếu rỗng
+            providerId: user.providerId ?? providerId,
+            avatarUrl: user.avatarUrl ?? avatarUrl,
           }
         })
       }

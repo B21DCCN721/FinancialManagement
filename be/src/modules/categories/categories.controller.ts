@@ -4,12 +4,7 @@ import {
   updateCategoryService, deleteCategoryService,
 } from "./categories.service"
 import { CreateCategoryInput, UpdateCategoryInput } from "./categories.schema"
-import { AppError } from "../../utils/errors"
-
-function handleError(err: unknown, reply: FastifyReply) {
-  if (err instanceof AppError) return reply.code(err.statusCode).send({ statusCode: err.statusCode, message: err.message })
-  throw err
-}
+import { handleError } from "../../utils/errors"
 
 export async function getAllCategoriesController(request: FastifyRequest, reply: FastifyReply) {
   try {

@@ -14,8 +14,10 @@ import {
 } from "@/services/goalsApi"
 import { logger } from "@/lib/logger"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 
 export default function GoalsPage() {
+  const { t } = useTranslation()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isAddFundsOpen, setIsAddFundsOpen] = useState(false)
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
@@ -40,10 +42,10 @@ export default function GoalsPage() {
       setIsAddModalOpen(false)
       e.currentTarget.reset()
       logger.info("Goal created")
-      toast.success("Tạo mục tiêu thành công")
+      toast.success(t("goals.addSuccess"))
     } catch (err) {
       logger.error("Failed to create goal", err)
-      toast.error("Tạo mục tiêu thất bại. Vui lòng thử lại.")
+      toast.error(t("goals.addError"))
     }
   }
 
@@ -59,10 +61,10 @@ export default function GoalsPage() {
       setSelectedGoalId(null)
       e.currentTarget.reset()
       logger.info("Contributed to goal", { goalId: selectedGoalId, amount })
-      toast.success("Nạp tiền vào mục tiêu thành công")
+      toast.success(t("goals.fundsSuccess"))
     } catch (err) {
       logger.error("Failed to contribute to goal", err)
-      toast.error("Nạp tiền thất bại. Vui lòng thử lại.")
+      toast.error(t("goals.fundsError"))
     }
   }
 
@@ -85,15 +87,15 @@ export default function GoalsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Mục tiêu tiết kiệm</h1>
-          <p className="text-muted-foreground">Đặt mục tiêu và theo dõi tiến độ tiết kiệm của bạn.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t("goals.title")}</h1>
+          <p className="text-muted-foreground">{t("goals.subtitle")}</p>
         </div>
         <button
           onClick={() => setIsAddModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-[0_4px_15px_rgba(124,92,252,0.4)]"
         >
           <Plus className="h-4 w-4" />
-          Tạo mục tiêu
+          {t("goals.createGoal")}
         </button>
       </div>
 
@@ -117,16 +119,16 @@ export default function GoalsPage() {
                     <div className="flex items-center gap-1">
                       {goal.isCompleted && (
                         <span className="text-[10px] font-bold text-success uppercase px-2 py-1 bg-success/10 border border-success/20 rounded-full">
-                          Hoàn thành
+                          {t("goals.completed")}
                         </span>
                       )}
                       <button
                         onClick={async () => {
                           try {
                             await deleteGoal(goal.id).unwrap()
-                            toast.success("Xóa mục tiêu thành công")
+                            toast.success(t("goals.deleteSuccess"))
                           } catch (err) {
-                            toast.error("Xóa mục tiêu thất bại")
+                            toast.error(t("goals.deleteError"))
                           }
                         }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger ml-2"
@@ -137,7 +139,7 @@ export default function GoalsPage() {
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <CalendarDays className="h-3.5 w-3.5" />
-                    Hạn chót: {formatDate(goal.deadline)}
+                    {t("goals.deadline")} {formatDate(goal.deadline)}
                   </div>
                 </div>
 
@@ -145,7 +147,7 @@ export default function GoalsPage() {
                   <div className="flex items-end justify-between">
                     <div className="space-y-1">
                       <p className="text-3xl font-bold text-foreground">{goal.currentAmount.toLocaleString("vi-VN")} ₫</p>
-                      <p className="text-xs text-muted-foreground">trên tổng {goal.targetAmount.toLocaleString("vi-VN")} ₫</p>
+                      <p className="text-xs text-muted-foreground">{t("goals.onTotal")} {goal.targetAmount.toLocaleString("vi-VN")} ₫</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-primary">{goal.progressPercentage.toFixed(1)}%</p>
@@ -172,7 +174,7 @@ export default function GoalsPage() {
                     disabled={goal.isCompleted}
                   >
                     <TrendingUp className="h-4 w-4" />
-                    Nạp thêm tiền
+                    {t("goals.addFunds")}
                   </button>
                 </div>
               </div>
@@ -180,32 +182,32 @@ export default function GoalsPage() {
           })}
           {goals.length === 0 && (
             <div className="col-span-full py-12 text-center text-muted-foreground glass-card rounded-2xl">
-              Bạn chưa có mục tiêu nào. Hãy thiết lập mục tiêu đầu tiên nhé!
+              {t("goals.empty")}
             </div>
           )}
         </div>
       )}
 
       {/* Add Goal Modal */}
-      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Tạo Mục tiêu mới" description="Thiết lập mục tiêu tiết kiệm mới của bạn.">
+      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title={t("goals.addModalTitle")} description={t("goals.addModalDesc")}>
         <form className="space-y-4 pt-4" onSubmit={handleAddGoal}>
           <div className="space-y-2">
-            <Label htmlFor="title">Tên mục tiêu</Label>
-            <Input id="title" name="title" placeholder="VD: Du lịch hè, Quỹ khẩn cấp" required />
+            <Label htmlFor="title">{t("goals.goalName")}</Label>
+            <Input id="title" name="title" placeholder="VD: Du lịch hè" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="target">Số tiền đích (₫)</Label>
+            <Label htmlFor="target">{t("goals.targetAmount")}</Label>
             <Input id="target" name="target" type="number" placeholder="5000" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="deadline">Hạn chót</Label>
+            <Label htmlFor="deadline">{t("goals.deadlineLabel")}</Label>
             <Input id="deadline" name="deadline" type="date" required />
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>Hủy</Button>
+            <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>{t("goals.cancel")}</Button>
             <Button type="submit" disabled={isCreating}>
               {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Lưu mục tiêu
+              {t("goals.save")}
             </Button>
           </div>
         </form>
@@ -215,19 +217,19 @@ export default function GoalsPage() {
       <Modal
         isOpen={isAddFundsOpen}
         onClose={() => { setIsAddFundsOpen(false); setSelectedGoalId(null) }}
-        title="Nạp thêm tiền vào Mục tiêu"
-        description="Ghi nhận số tiền bạn vừa tích lũy được cho mục tiêu này."
+        title={t("goals.fundsModalTitle")}
+        description={t("goals.fundsModalDesc")}
       >
         <form className="space-y-4 pt-4" onSubmit={handleAddFunds}>
           <div className="space-y-2">
-            <Label htmlFor="deposit">Số tiền gửi vào (₫)</Label>
+            <Label htmlFor="deposit">{t("goals.deposit")}</Label>
             <Input id="deposit" name="deposit" type="number" step="0.01" placeholder="100.00" autoFocus required />
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsAddFundsOpen(false)}>Hủy</Button>
+            <Button type="button" variant="outline" onClick={() => setIsAddFundsOpen(false)}>{t("goals.cancel")}</Button>
             <Button type="submit" disabled={isContributing}>
               {isContributing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Xác nhận nạp
+              {t("goals.confirm")}
             </Button>
           </div>
         </form>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth, useClerk } from "@clerk/nextjs"
 import { useDispatch } from "react-redux"
 import { useGoogleLoginMutation } from "@/services/authApi"
 import { setCredentials } from "@/store/authSlice"
@@ -13,6 +13,7 @@ export default function AuthSyncPage() {
   const router = useRouter()
   const dispatch = useDispatch()
   const { getToken, isLoaded, isSignedIn } = useAuth()
+  const { signOut } = useClerk()
   const [googleLogin] = useGoogleLoginMutation()
   
   const hasSynced = useRef(false)
@@ -43,9 +44,12 @@ export default function AuthSyncPage() {
         
         logger.info("Google Login sync successful", { userId: result.user.id })
         router.push("/")
-      } catch (err) {
+      } catch (err: unknown) {
         logger.error("Google Login sync failed", err)
-        router.push("/login?error=sync_failed")
+        await signOut()
+        const apiErr = err as { data?: { message?: string } }
+        const msg = apiErr?.data?.message || "Đồng bộ tài khoản thất bại."
+        router.push(`/login?error=${encodeURIComponent(msg)}`)
       }
     }
 

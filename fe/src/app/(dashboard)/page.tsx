@@ -23,6 +23,7 @@ import { useGetMonthlyTrendQuery, useGetCategoryBreakdownQuery, useGetReportSumm
 import { MonthPicker } from "@/components/ui/month-picker"
 import { Modal } from "@/components/ui/modal"
 import ReactMarkdown from "react-markdown"
+import { useTranslation } from "react-i18next"
 
 function currentPeriod() {
   const now = new Date()
@@ -50,6 +51,7 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 }
 
 export default function Dashboard() {
+  const { t, i18n } = useTranslation()
   const [period, setPeriod] = useState(currentPeriod())
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
@@ -114,9 +116,9 @@ export default function Dashboard() {
 
   const stats = [
     {
-      label: "Tổng số dư",
+      label: t("dashboard.totalBalance"),
       value: `${totalBalance.toLocaleString("vi-VN")} ₫`,
-      changeLabel: "dựa trên giao dịch gần đây",
+      changeLabel: t("dashboard.basedOnRecent"),
       positive: totalBalance >= 0,
       icon: Wallet,
       className: "stat-card-primary",
@@ -124,9 +126,9 @@ export default function Dashboard() {
       iconColor: "#7c5cfc",
     },
     {
-      label: "Tổng thu nhập",
+      label: t("dashboard.totalIncome"),
       value: `${totalIncome.toLocaleString("vi-VN")} ₫`,
-      changeLabel: "dựa trên giao dịch gần đây",
+      changeLabel: t("dashboard.basedOnRecent"),
       positive: true,
       icon: TrendingUp,
       className: "stat-card-income",
@@ -134,9 +136,9 @@ export default function Dashboard() {
       iconColor: "#10d9a0",
     },
     {
-      label: "Tổng chi phí",
+      label: t("dashboard.totalExpense"),
       value: `${totalExpense.toLocaleString("vi-VN")} ₫`,
-      changeLabel: "dựa trên giao dịch gần đây",
+      changeLabel: t("dashboard.basedOnRecent"),
       positive: false,
       icon: TrendingDown,
       className: "stat-card-expense",
@@ -157,12 +159,12 @@ export default function Dashboard() {
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Tổng quan</h1>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("dashboard.title")}</h1>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-accent text-primary border border-primary/20">
-              Trực tiếp
+              {t("dashboard.live")}
             </span>
           </div>
-          <p className="text-sm text-muted-foreground">Tổng quan tài chính của bạn trong {selectedMonthLabel.toLowerCase()}, {periodYStr}</p>
+          <p className="text-sm text-muted-foreground">{t("dashboard.subtitle")} {selectedMonthLabel.toLowerCase()}, {periodYStr}</p>
         </div>
         <div className="flex items-center gap-2">
           <MonthPicker value={period} onChange={setPeriod} />
@@ -171,7 +173,7 @@ export default function Dashboard() {
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-[0_4px_15px_rgba(124,92,252,0.4)]"
           >
             <Sparkles className="h-4 w-4" />
-            Báo cáo AI
+            {t("dashboard.aiReport")}
           </button>
         </div>
       </div>
@@ -207,17 +209,17 @@ export default function Dashboard() {
         <div className="col-span-4 rounded-2xl p-5 glass-card">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Thu nhập và Chi phí</h3>
-              <p className="text-xs mt-0.5 text-muted-foreground">Tổng quan dòng tiền hàng tháng</p>
+              <h3 className="text-sm font-semibold text-foreground">{t("dashboard.incomeAndExpense")}</h3>
+              <p className="text-xs mt-0.5 text-muted-foreground">{t("dashboard.monthlyCashflow")}</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
                 <div className="h-2.5 w-2.5 rounded-sm" style={{ background: "#10d9a0" }} />
-                <span className="text-xs text-muted-foreground">Thu nhập</span>
+                <span className="text-xs text-muted-foreground">{t("dashboard.income")}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="h-2.5 w-2.5 rounded-sm" style={{ background: "#ff4d6d" }} />
-                <span className="text-xs text-muted-foreground">Chi phí</span>
+                <span className="text-xs text-muted-foreground">{t("dashboard.expense")}</span>
               </div>
               <button className="text-muted-foreground hover:text-foreground transition-colors">
                 <MoreHorizontal className="h-4 w-4" />
@@ -228,7 +230,7 @@ export default function Dashboard() {
             {isTrendLoading ? (
               <div className="h-full flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
             ) : monthlyData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-xs text-muted-foreground">Chưa có dữ liệu</div>
+              <div className="h-full flex items-center justify-center text-xs text-muted-foreground">{t("dashboard.noData")}</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }} barGap={4}>
@@ -248,8 +250,8 @@ export default function Dashboard() {
         <div className="col-span-3 rounded-2xl p-5 glass-card">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Chi phí theo danh mục</h3>
-              <p className="text-xs mt-0.5 text-muted-foreground">Tiền của bạn đã đi đâu</p>
+              <h3 className="text-sm font-semibold text-foreground">{t("dashboard.expenseByCategory")}</h3>
+              <p className="text-xs mt-0.5 text-muted-foreground">{t("dashboard.whereMoneyWent")}</p>
             </div>
             <button className="text-muted-foreground hover:text-foreground transition-colors">
               <MoreHorizontal className="h-4 w-4" />
@@ -259,7 +261,7 @@ export default function Dashboard() {
             {isBreakdownLoading ? (
               <div className="h-[180px] flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
             ) : categoryData.length === 0 ? (
-              <div className="h-[180px] flex items-center justify-center text-xs text-muted-foreground">Chưa có dữ liệu</div>
+              <div className="h-[180px] flex items-center justify-center text-xs text-muted-foreground">{t("dashboard.noData")}</div>
             ) : (
               <>
                 <div className="h-[180px] w-full">
@@ -302,8 +304,8 @@ export default function Dashboard() {
         {/* Area chart */}
         <div className="lg:col-span-2 rounded-2xl p-5 glass-card">
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Xu hướng tiết kiệm</h3>
-            <p className="text-xs mt-0.5 text-muted-foreground">Tiết kiệm ròng trong 6 tháng</p>
+            <h3 className="text-sm font-semibold text-foreground">{t("dashboard.savingsTrend")}</h3>
+            <p className="text-xs mt-0.5 text-muted-foreground">{t("dashboard.netSavings")}</p>
           </div>
           <div className="h-[160px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -328,11 +330,11 @@ export default function Dashboard() {
         <div className="lg:col-span-3 rounded-2xl p-5 glass-card">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Giao dịch gần đây</h3>
-              <p className="text-xs mt-0.5 text-muted-foreground">Các giao dịch mới nhất</p>
+              <h3 className="text-sm font-semibold text-foreground">{t("dashboard.recentTransactions")}</h3>
+              <p className="text-xs mt-0.5 text-muted-foreground">{t("dashboard.latestTransactions")}</p>
             </div>
             <Link href="/transactions" className="text-xs font-medium px-3 py-1 rounded-lg transition-all hover:scale-105 bg-accent text-primary border border-primary/20">
-              Xem tất cả
+              {t("dashboard.viewAll")}
             </Link>
           </div>
           <div className="space-y-2">
@@ -358,7 +360,7 @@ export default function Dashboard() {
                 </div>
               ))
             ) : (
-              <div className="text-center py-6 text-sm text-muted-foreground">Chưa có giao dịch nào</div>
+              <div className="text-center py-6 text-sm text-muted-foreground">{t("dashboard.noTransactions")}</div>
             )}
           </div>
         </div>
@@ -368,7 +370,7 @@ export default function Dashboard() {
       <Modal
         isOpen={isAiModalOpen}
         onClose={() => setIsAiModalOpen(false)}
-        title="Báo cáo tài chính AI"
+        title={t("dashboard.aiReportTitle")}
         description={`Phân tích tháng ${periodM}/${periodYStr} bởi Gemini`}
         className="max-w-2xl"
       >
@@ -379,7 +381,7 @@ export default function Dashboard() {
                 <div className="absolute inset-0 rounded-full blur-md bg-primary/30 animate-pulse" />
                 <Sparkles className="h-8 w-8 text-primary animate-bounce relative z-10" />
               </div>
-              <p className="text-sm font-medium text-muted-foreground animate-pulse">AI đang phân tích dữ liệu sổ sách...</p>
+              <p className="text-sm font-medium text-muted-foreground animate-pulse">{t("dashboard.analyzing")}</p>
             </div>
           ) : aiData ? (
             <div className="space-y-4">
@@ -410,14 +412,14 @@ export default function Dashboard() {
                   onClick={() => setIsAiModalOpen(false)}
                   className="px-4 py-2 rounded-lg text-sm font-medium border hover:bg-accent transition-colors"
                 >
-                  Đóng
+                  {t("dashboard.close")}
                 </button>
                 <button
                   onClick={handleDownloadPdf}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity shadow-md"
                 >
                   <Download className="h-4 w-4" />
-                  Tải PDF
+                  {t("dashboard.downloadPdf")}
                 </button>
               </div>
             </div>

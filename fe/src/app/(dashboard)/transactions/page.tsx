@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Plus, Search, Filter, MoreHorizontal, RefreshCw, X, Trash2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,17 +18,29 @@ import {
 } from "@/services/transactionsApi"
 import { logger } from "@/lib/logger"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 
+function TransactionsContent() {
+  const { t } = useTranslation()
+  const searchParams = useSearchParams()
+  const urlSearch = searchParams.get("search") || ""
 
-export default function TransactionsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isRecurring, setIsRecurring] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState(urlSearch)
   const [filterType, setFilterType] = useState("")
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
   const [page, setPage] = useState(1)
+
+  const [prevUrlSearch, setPrevUrlSearch] = useState(urlSearch)
+
+  if (urlSearch !== prevUrlSearch) {
+    setPrevUrlSearch(urlSearch)
+    setSearchTerm(urlSearch)
+    setPage(1)
+  }
 
   const { data, isLoading, isFetching } = useGetTransactionsQuery({
     page,
@@ -88,10 +101,10 @@ export default function TransactionsPage() {
       e.currentTarget.reset()
       setIsRecurring(false)
       logger.info("Transaction created")
-      toast.success("Thêm giao dịch thành công")
+      toast.success(t("transactions.addSuccess"))
     } catch (err) {
       logger.error("Failed to create transaction", err)
-      toast.error("Thêm giao dịch thất bại. Vui lòng thử lại.")
+      toast.error(t("transactions.addError"))
     }
   }
 
@@ -99,10 +112,10 @@ export default function TransactionsPage() {
     try {
       await deleteTransaction(id).unwrap()
       logger.info("Transaction deleted", { id })
-      toast.success("Xóa giao dịch thành công")
+      toast.success(t("transactions.deleteSuccess"))
     } catch (err) {
       logger.error("Failed to delete transaction", err)
-      toast.error("Xóa giao dịch thất bại. Vui lòng thử lại.")
+      toast.error(t("transactions.deleteError"))
     }
   }
 
@@ -116,19 +129,19 @@ export default function TransactionsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Giao dịch</h1>
-          <p className="text-muted-foreground">Quản lý các khoản thu chi một lần và định kỳ của bạn.</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("transactions.title")}</h1>
+          <p className="text-muted-foreground">{t("transactions.subtitle")}</p>
         </div>
         <Button onClick={() => setIsAddModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Thêm giao dịch
+          {t("transactions.addTransaction")}
         </Button>
       </div>
 
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="all">Tất cả giao dịch</TabsTrigger>
-          <TabsTrigger value="recurring">Định kỳ</TabsTrigger>
+          <TabsTrigger value="all">{t("transactions.allTransactions")}</TabsTrigger>
+          <TabsTrigger value="recurring">{t("transactions.recurring")}</TabsTrigger>
         </TabsList>
 
         {/* Search & Filter */}
@@ -138,7 +151,7 @@ export default function TransactionsPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Tìm kiếm giao dịch..."
+                placeholder={t("transactions.searchPlaceholder")}
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setPage(1) }}
@@ -150,7 +163,7 @@ export default function TransactionsPage() {
               onClick={() => setIsFilterOpen(!isFilterOpen)}
             >
               <Filter className="mr-2 h-4 w-4" />
-              Bộ lọc {activeFilterCount > 0 && `(${activeFilterCount})`}
+              {t("transactions.filter")} {activeFilterCount > 0 && `(${activeFilterCount})`}
             </Button>
           </div>
 
@@ -158,25 +171,25 @@ export default function TransactionsPage() {
             <Card className="bg-muted/30 border-dashed">
               <CardContent className="p-4 flex flex-wrap gap-4 items-end">
                 <div className="space-y-1.5 flex-1 min-w-[150px]">
-                  <Label className="text-xs text-muted-foreground">Loại</Label>
+                  <Label className="text-xs text-muted-foreground">{t("transactions.type")}</Label>
                   <Select value={filterType} onChange={(e) => { setFilterType(e.target.value); setPage(1) }}>
-                    <option value="">Tất cả</option>
-                    <option value="income">Thu nhập</option>
-                    <option value="expense">Chi phí</option>
+                    <option value="">{t("transactions.all")}</option>
+                    <option value="income">{t("transactions.income")}</option>
+                    <option value="expense">{t("transactions.expense")}</option>
                   </Select>
                 </div>
                 <div className="space-y-1.5 flex-1 min-w-[150px]">
-                  <Label className="text-xs text-muted-foreground">Từ ngày</Label>
+                  <Label className="text-xs text-muted-foreground">{t("transactions.dateFrom")}</Label>
                   <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1) }} />
                 </div>
                 <div className="space-y-1.5 flex-1 min-w-[150px]">
-                  <Label className="text-xs text-muted-foreground">Đến ngày</Label>
+                  <Label className="text-xs text-muted-foreground">{t("transactions.dateTo")}</Label>
                   <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1) }} />
                 </div>
                 {activeFilterCount > 0 && (
                   <Button variant="ghost" className="shrink-0 text-muted-foreground" onClick={clearFilters}>
                     <X className="mr-2 h-4 w-4" />
-                    Xóa lọc
+                    {t("transactions.clearFilter")}
                   </Button>
                 )}
               </CardContent>
@@ -241,7 +254,7 @@ export default function TransactionsPage() {
                           {tx.type === "income" ? "+" : "-"}{tx.amount.toLocaleString("vi-VN")} ₫
                         </p>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {tx.type === "income" ? "Thu nhập" : "Chi phí"}
+                          {tx.type === "income" ? t("transactions.income") : t("transactions.expense")}
                         </p>
                       </div>
 
@@ -262,7 +275,7 @@ export default function TransactionsPage() {
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
                   <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center text-2xl">📭</div>
                   <p className="text-sm text-muted-foreground">
-                    {isFetching ? "Đang tải..." : "Không tìm thấy giao dịch nào."}
+                    {isFetching ? t("transactions.loading") : t("transactions.noTransactions")}
                   </p>
                 </div>
               )}
@@ -271,11 +284,11 @@ export default function TransactionsPage() {
               {pagination && pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
                   <p className="text-xs text-muted-foreground">
-                    {pagination.total} giao dịch · Trang {pagination.page}/{pagination.totalPages}
+                    {pagination.total} {t("transactions.title").toLowerCase()} · {t("transactions.page")} {pagination.page}/{pagination.totalPages}
                   </p>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Trước</Button>
-                    <Button variant="outline" size="sm" disabled={page >= pagination.totalPages} onClick={() => setPage(p => p + 1)}>Tiếp</Button>
+                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>{t("transactions.prev")}</Button>
+                    <Button variant="outline" size="sm" disabled={page >= pagination.totalPages} onClick={() => setPage(p => p + 1)}>{t("transactions.next")}</Button>
                   </div>
                 </div>
               )}
@@ -297,10 +310,10 @@ export default function TransactionsPage() {
                 <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
                   <RefreshCw className="h-4 w-4 text-primary" />
                 </div>
-                Giao dịch định kỳ
+                {t("transactions.recurringTitle")}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">
-                Các giao dịch tự động theo lịch.
+                {t("transactions.recurringSubtitle")}
               </p>
             </div>
 
@@ -345,7 +358,7 @@ export default function TransactionsPage() {
                           )}
                           {tx.frequency && (
                             <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground">
-                              {tx.frequency === "daily" ? "Hàng ngày" : tx.frequency === "weekly" ? "Hàng tuần" : tx.frequency === "monthly" ? "Hàng tháng" : "Hàng năm"}
+                              {tx.frequency === "daily" ? t("transactions.daily") : tx.frequency === "weekly" ? t("transactions.weekly") : tx.frequency === "monthly" ? t("transactions.monthly") : t("transactions.yearly")}
                             </span>
                           )}
                           <span className="text-[11px] text-muted-foreground">{formatDate(tx.date)}</span>
@@ -381,7 +394,7 @@ export default function TransactionsPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
                   <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center text-2xl">🔄</div>
-                  <p className="text-sm text-muted-foreground">Không có giao dịch định kỳ nào.</p>
+                  <p className="text-sm text-muted-foreground">{t("transactions.noRecurring")}</p>
                 </div>
               )}
             </div>
@@ -393,34 +406,34 @@ export default function TransactionsPage() {
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="Thêm giao dịch"
-        description="Điền thông tin bên dưới để thêm khoản thu nhập hoặc chi phí mới."
+        title={t("transactions.addModalTitle")}
+        description={t("transactions.addModalDesc")}
       >
         <form className="space-y-4 pt-4" onSubmit={handleAddSubmit}>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="type">Loại</Label>
+              <Label htmlFor="type">{t("transactions.type")}</Label>
               <Select id="type" name="type">
-                <option value="expense">Chi phí</option>
-                <option value="income">Thu nhập</option>
+                <option value="expense">{t("transactions.expense")}</option>
+                <option value="income">{t("transactions.income")}</option>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="date">Ngày</Label>
+              <Label htmlFor="date">{t("transactions.date")}</Label>
               <Input id="date" name="date" type="date" defaultValue={new Date().toISOString().split("T")[0]} />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="amount">Số tiền (₫)</Label>
+            <Label htmlFor="amount">{t("transactions.amount")}</Label>
             <Input id="amount" name="amount" type="number" step="0.01" placeholder="0.00" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="categoryId">Mã danh mục (ID)</Label>
-            <Input id="categoryId" name="categoryId" placeholder="UUID danh mục từ Backend" required />
+            <Label htmlFor="categoryId">{t("transactions.categoryId")}</Label>
+            <Input id="categoryId" name="categoryId" placeholder="UUID" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="desc">Mô tả / Tên</Label>
-            <Input id="desc" name="desc" placeholder="VD: Mua cafe Starbucks" required />
+            <Label htmlFor="desc">{t("transactions.desc")}</Label>
+            <Input id="desc" name="desc" placeholder="Starbucks..." required />
           </div>
 
           <div className="flex items-center space-x-2 pt-2">
@@ -431,29 +444,41 @@ export default function TransactionsPage() {
               checked={isRecurring}
               onChange={(e) => setIsRecurring(e.target.checked)}
             />
-            <Label htmlFor="recurring" className="font-normal">Thiết lập làm giao dịch định kỳ</Label>
+            <Label htmlFor="recurring" className="font-normal">{t("transactions.setRecurring")}</Label>
           </div>
 
           {isRecurring && (
             <div className="space-y-2 p-3 bg-muted/50 rounded-md border">
-              <Label htmlFor="frequency">Tần suất</Label>
+              <Label htmlFor="frequency">{t("transactions.frequency")}</Label>
               <Select id="frequency" name="frequency">
-                <option value="weekly">Hàng tuần</option>
-                <option value="monthly">Hàng tháng</option>
-                <option value="yearly">Hàng năm</option>
+                <option value="weekly">{t("transactions.weekly")}</option>
+                <option value="monthly">{t("transactions.monthly")}</option>
+                <option value="yearly">{t("transactions.yearly")}</option>
               </Select>
             </div>
           )}
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>Hủy</Button>
+            <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>{t("transactions.cancel")}</Button>
             <Button type="submit" disabled={isCreating}>
               {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Lưu giao dịch
+              {isCreating ? t("transactions.saving") : t("transactions.save")}
             </Button>
           </div>
         </form>
       </Modal>
     </div>
+  )
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    }>
+      <TransactionsContent />
+    </Suspense>
   )
 }

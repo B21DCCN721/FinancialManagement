@@ -37,6 +37,7 @@ interface ResetPasswordRequest {
 }
 
 export const authApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     login: builder.mutation<AuthTokens, LoginRequest>({
       query: (credentials) => ({

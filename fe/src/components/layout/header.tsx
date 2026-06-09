@@ -1,18 +1,31 @@
 "use client"
 
 import * as React from "react"
-import { Bell, Search, Sparkles, User } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Search, Sparkles } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/store/store"
+import { useRouter } from "next/navigation"
 
 export function Header() {
   const user = useSelector((state: RootState) => state.auth.user)
+  const router = useRouter()
+  const { t } = useTranslation()
+  const [searchValue, setSearchValue] = React.useState("")
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchValue.trim()) {
+      router.push(`/transactions?search=${encodeURIComponent(searchValue.trim())}`)
+    } else {
+      router.push(`/transactions`)
+    }
+  }
 
   const displayName = user
-    ? [user.firstName, user.lastName].filter(Boolean).join(" ") || user.name || "Người dùng"
-    : "Người dùng"
+    ? [user.firstName, user.lastName].filter(Boolean).join(" ") || user.name || "User"
+    : "User"
 
   const initials = displayName
     .split(" ")
@@ -27,7 +40,7 @@ export function Header() {
     >
       {/* Search bar */}
       <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-        <form className="relative flex flex-1 max-w-md" action="#" method="GET">
+        <form className="relative flex flex-1 max-w-md" onSubmit={handleSearch}>
           <label htmlFor="search-field" className="sr-only">Tìm kiếm</label>
           <div className="relative flex items-center w-full">
             <Search
@@ -37,9 +50,11 @@ export function Header() {
             <input
               id="search-field"
               className="input-modern flex h-9 w-full pl-9 pr-4 text-sm"
-              placeholder="Tìm kiếm giao dịch..."
+              placeholder={t("header.searchPlaceholder")}
               type="search"
               name="search"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
             />
           </div>
         </form>
@@ -47,27 +62,16 @@ export function Header() {
         {/* Right actions */}
         <div className="flex items-center gap-x-3 ml-auto">
           {/* AI hint badge */}
-          <div
+          {/* <div
             className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-all hover:scale-105 bg-accent text-primary border border-primary/20"
           >
             <Sparkles className="h-3 w-3" />
-            Phân tích AI
-          </div>
+            {t("header.aiAnalysis")}
+          </div> */}
 
           <ThemeToggle />
 
-          {/* Notification bell */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative h-9 w-9 rounded-xl transition-all hover:scale-105 bg-card border border-border text-muted-foreground hover:text-foreground"
-          >
-            <span className="sr-only">Xem thông báo</span>
-            <Bell className="h-4 w-4" aria-hidden="true" />
-            <span
-              className="absolute right-2 top-2 h-2 w-2 rounded-full pulse-dot bg-destructive"
-            />
-          </Button>
+
 
           {/* Separator */}
           <div

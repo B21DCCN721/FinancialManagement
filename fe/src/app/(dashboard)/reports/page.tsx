@@ -20,6 +20,7 @@ import {
 } from "@/services/reportsApi"
 import { useGetTransactionsQuery } from "@/services/transactionsApi"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 
 function currentPeriod() {
   const now = new Date()
@@ -29,6 +30,7 @@ function currentPeriod() {
 const CHART_COLORS = ["#7c5cfc", "#10d9a0", "#ff4d6d", "#f59e0b", "#38bdf8", "#a78bfa", "#34d399"]
 
 export default function ReportsPage() {
+  const { t } = useTranslation()
   const [period, setPeriod] = useState(currentPeriod())
   const [exportDateFrom, setExportDateFrom] = useState("")
   const [exportDateTo, setExportDateTo] = useState("")
@@ -79,12 +81,12 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Báo cáo & Phân tích</h1>
-          <p className="text-muted-foreground">Phân tích sâu dữ liệu tài chính của bạn theo thời gian thực.</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("reports.title")}</h1>
+          <p className="text-muted-foreground">{t("reports.subtitle")}</p>
         </div>
         {/* Period selector */}
         <div className="flex items-center gap-2">
-          <Label className="text-sm shrink-0">Kỳ báo cáo:</Label>
+          <Label className="text-sm shrink-0">{t("reports.reportPeriod")}</Label>
           <MonthPicker value={period} onChange={setPeriod} />
         </div>
       </div>
@@ -93,19 +95,19 @@ export default function ReportsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         {[
           {
-            label: "Thu nhập", value: summary?.totalIncome, icon: TrendingUp,
+            label: t("reports.income"), value: summary?.totalIncome, icon: TrendingUp,
             color: "#10d9a0", bg: "rgba(16,217,160,0.1)",
           },
           {
-            label: "Chi phí", value: summary?.totalExpense, icon: TrendingDown,
+            label: t("reports.expense"), value: summary?.totalExpense, icon: TrendingDown,
             color: "#ff4d6d", bg: "rgba(255,77,109,0.1)",
           },
           {
-            label: "Số dư ròng", value: summary?.netBalance, icon: Wallet,
+            label: t("reports.netBalance"), value: summary?.netBalance, icon: Wallet,
             color: "#7c5cfc", bg: "rgba(124,92,252,0.1)",
           },
           {
-            label: "Giao dịch", value: summary?.transactionCount, icon: Activity,
+            label: t("reports.transactions"), value: summary?.transactionCount, icon: Activity,
             color: "#f59e0b", bg: "rgba(245,158,11,0.1)", isCount: true,
           },
         ].map((stat) => (
@@ -134,8 +136,8 @@ export default function ReportsPage() {
         {/* Monthly Trend Bar Chart */}
         <div className="lg:col-span-2 glass-card rounded-2xl p-5">
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Thu nhập & Chi phí theo tháng</h3>
-            <p className="text-xs mt-0.5 text-muted-foreground">6 tháng gần nhất</p>
+            <h3 className="text-sm font-semibold text-foreground">{t("reports.monthlyTrend")}</h3>
+            <p className="text-xs mt-0.5 text-muted-foreground">{t("reports.last6Months")}</p>
           </div>
           {isTrendLoading ? (
             <div className="h-[260px] flex items-center justify-center">
@@ -152,8 +154,8 @@ export default function ReportsPage() {
                     contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", backgroundColor: "var(--popover)", color: "var(--popover-foreground)", fontSize: "12px" }}
                     formatter={(value: any) => [`${Number(value).toLocaleString("vi-VN")} ₫`]}
                   />
-                  <Bar dataKey="income" name="Thu nhập" fill="#10d9a0" radius={[6, 6, 0, 0]} maxBarSize={28} />
-                  <Bar dataKey="expense" name="Chi phí" fill="#ff4d6d" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                  <Bar dataKey="income" name={t("reports.income")} fill="#10d9a0" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                  <Bar dataKey="expense" name={t("reports.expense")} fill="#ff4d6d" radius={[6, 6, 0, 0]} maxBarSize={28} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -163,15 +165,15 @@ export default function ReportsPage() {
         {/* Category Breakdown Pie */}
         <div className="glass-card rounded-2xl p-5">
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Chi tiêu theo danh mục</h3>
-            <p className="text-xs mt-0.5 text-muted-foreground">Kỳ {period}</p>
+            <h3 className="text-sm font-semibold text-foreground">{t("reports.categoryBreakdown")}</h3>
+            <p className="text-xs mt-0.5 text-muted-foreground">{t("reports.period")} {period}</p>
           </div>
           {isBreakdownLoading ? (
             <div className="h-[260px] flex items-center justify-center">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : breakdown.length === 0 ? (
-            <div className="h-[260px] flex items-center justify-center text-sm text-muted-foreground">Chưa có dữ liệu</div>
+            <div className="h-[260px] flex items-center justify-center text-sm text-muted-foreground">{t("reports.noData")}</div>
           ) : (
             <div className="flex flex-col items-center">
               <div className="h-[180px] w-full">
@@ -210,8 +212,8 @@ export default function ReportsPage() {
         {/* Cash Flow Area Chart */}
         <div className="lg:col-span-2 glass-card rounded-2xl p-5">
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Dòng tiền theo ngày</h3>
-            <p className="text-xs mt-0.5 text-muted-foreground">Kỳ {period}</p>
+            <h3 className="text-sm font-semibold text-foreground">{t("reports.cashFlow")}</h3>
+            <p className="text-xs mt-0.5 text-muted-foreground">{t("reports.period")} {period}</p>
           </div>
           {isCashFlowLoading ? (
             <div className="h-[200px] flex items-center justify-center">
@@ -235,8 +237,8 @@ export default function ReportsPage() {
                   <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} stroke="currentColor" className="text-muted-foreground" />
                   <YAxis fontSize={10} tickLine={false} axisLine={false} stroke="currentColor" className="text-muted-foreground" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k ₫`} />
                   <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", backgroundColor: "var(--popover)", color: "var(--popover-foreground)", fontSize: "12px" }} formatter={(value: any) => [`${Number(value).toLocaleString("vi-VN")} ₫`]} />
-                  <Area type="monotone" dataKey="income" name="Thu nhập" stroke="#10d9a0" strokeWidth={2} fill="url(#incomeGrad)" />
-                  <Area type="monotone" dataKey="expense" name="Chi phí" stroke="#ff4d6d" strokeWidth={2} fill="url(#expenseGrad)" />
+                  <Area type="monotone" dataKey="income" name={t("reports.income")} stroke="#10d9a0" strokeWidth={2} fill="url(#incomeGrad)" />
+                  <Area type="monotone" dataKey="expense" name={t("reports.expense")} stroke="#ff4d6d" strokeWidth={2} fill="url(#expenseGrad)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -246,32 +248,32 @@ export default function ReportsPage() {
         {/* Export Panel */}
         <Card>
           <CardHeader>
-            <CardTitle>Xuất báo cáo</CardTitle>
-            <CardDescription>Tải dữ liệu giao dịch theo khoảng thời gian.</CardDescription>
+            <CardTitle>{t("reports.exportTitle")}</CardTitle>
+            <CardDescription>{t("reports.exportSubtitle")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="export-from">Từ ngày</Label>
+              <Label htmlFor="export-from">{t("reports.dateFrom")}</Label>
               <Input id="export-from" type="date" value={exportDateFrom} onChange={(e) => setExportDateFrom(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="export-to">Đến ngày</Label>
+              <Label htmlFor="export-to">{t("reports.dateTo")}</Label>
               <Input id="export-to" type="date" value={exportDateTo} onChange={(e) => setExportDateTo(e.target.value)} />
             </div>
             <div className="grid grid-cols-1 gap-2 pt-2">
               <Button variant="outline" className="justify-start w-full" onClick={handleExportCSV}>
                 <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
-                Xuất CSV
+                {t("reports.exportCSV")}
                 <ArrowRight className="ml-auto h-4 w-4 opacity-50" />
               </Button>
-              <Button variant="outline" className="justify-start w-full" onClick={() => toast.info("Tính năng PDF đang phát triển.")}>
+              <Button variant="outline" className="justify-start w-full" onClick={() => toast.info(t("reports.pdfDev"))}>
                 <FileJson className="mr-2 h-4 w-4 text-muted-foreground" />
-                Xuất PDF
+                {t("reports.exportPDF")}
                 <ArrowRight className="ml-auto h-4 w-4 opacity-50" />
               </Button>
-              <Button variant="outline" className="justify-start w-full" onClick={() => toast.info("Tính năng Excel đang phát triển.")}>
+              <Button variant="outline" className="justify-start w-full" onClick={() => toast.info(t("reports.excelDev"))}>
                 <FileSpreadsheet className="mr-2 h-4 w-4 text-muted-foreground" />
-                Xuất Excel
+                {t("reports.exportExcel")}
                 <ArrowRight className="ml-auto h-4 w-4 opacity-50" />
               </Button>
             </div>
@@ -282,8 +284,8 @@ export default function ReportsPage() {
       {/* Net Balance Line Chart */}
       <div className="glass-card rounded-2xl p-5">
         <div className="mb-4">
-          <h3 className="text-sm font-semibold text-foreground">Số dư ròng theo tháng</h3>
-          <p className="text-xs mt-0.5 text-muted-foreground">Xu hướng tài chính của bạn</p>
+          <h3 className="text-sm font-semibold text-foreground">{t("reports.netBalanceTrend")}</h3>
+          <p className="text-xs mt-0.5 text-muted-foreground">{t("reports.financialTrend")}</p>
         </div>
         {isTrendLoading ? (
           <div className="h-[200px] flex items-center justify-center">
@@ -296,8 +298,8 @@ export default function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" vertical={false} />
                 <XAxis dataKey="period" tickFormatter={formatPeriodLabel} stroke="currentColor" className="text-muted-foreground" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="currentColor" className="text-muted-foreground" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k ₫`} />
-                <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid var(--border)", backgroundColor: "var(--background)" }} formatter={(value: any) => [`${Number(value).toLocaleString("vi-VN")} ₫`, "Số dư ròng"]} />
-                <Line type="monotone" dataKey="net" name="Số dư ròng" stroke="#7c5cfc" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: "var(--background)" }} activeDot={{ r: 6, strokeWidth: 0, fill: "#7c5cfc" }} />
+                <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid var(--border)", backgroundColor: "var(--background)" }} formatter={(value: any) => [`${Number(value).toLocaleString("vi-VN")} ₫`, t("reports.netBalance")]} />
+                <Line type="monotone" dataKey="net" name={t("reports.netBalance")} stroke="#7c5cfc" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: "var(--background)" }} activeDot={{ r: 6, strokeWidth: 0, fill: "#7c5cfc" }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

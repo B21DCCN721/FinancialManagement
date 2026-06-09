@@ -1,14 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify"
 import { getMeService, updateProfileService, changePasswordService, deleteAccountService } from "./users.service"
 import { UpdateProfileInput, ChangePasswordInput } from "./users.schema"
-import { AppError } from "../../utils/errors"
-
-function handleError(err: unknown, reply: FastifyReply) {
-  if (err instanceof AppError) {
-    return reply.code(err.statusCode).send({ statusCode: err.statusCode, message: err.message })
-  }
-  throw err
-}
+import { handleError } from "../../utils/errors"
 
 export async function getMeController(request: FastifyRequest, reply: FastifyReply) {
   try {

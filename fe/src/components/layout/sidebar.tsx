@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
@@ -24,16 +25,17 @@ function currentPeriod() {
 }
 
 const navigation = [
-  { name: "Tổng quan", href: "/", icon: LayoutDashboard },
-  { name: "Giao dịch", href: "/transactions", icon: ReceiptText },
-  { name: "Danh mục", href: "/categories", icon: Tags },
-  { name: "Ngân sách", href: "/budgets", icon: Wallet },
-  { name: "Mục tiêu", href: "/goals", icon: Target },
-  { name: "Báo cáo", href: "/reports", icon: PieChart },
+  { nameKey: "dashboard", href: "/", icon: LayoutDashboard },
+  { nameKey: "transactions", href: "/transactions", icon: ReceiptText },
+  { nameKey: "categories", href: "/categories", icon: Tags },
+  { nameKey: "budgets", href: "/budgets", icon: Wallet },
+  { nameKey: "goals", href: "/goals", icon: Target },
+  { nameKey: "reports", href: "/reports", icon: PieChart },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { t } = useTranslation()
   const { data: summary, isLoading } = useGetReportSummaryQuery({ period: currentPeriod() })
 
   return (
@@ -57,7 +59,7 @@ export function Sidebar() {
           </div>
           <div>
             <span className="text-base font-bold tracking-tight text-foreground">FinManage</span>
-            <p className="text-[10px] text-primary/80 font-medium tracking-wider uppercase">Tài chính thông minh</p>
+            <p className="text-[10px] text-primary/80 font-medium tracking-wider uppercase">Finance</p>
           </div>
         </Link>
       </div>
@@ -65,7 +67,7 @@ export function Sidebar() {
       {/* Section label */}
       <div className="px-5 mb-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-          Điều hướng
+          {t("sidebar.navigation")}
         </p>
       </div>
 
@@ -76,7 +78,7 @@ export function Sidebar() {
             const isActive = pathname === item.href
             return (
               <Link
-                key={item.name}
+                key={item.nameKey}
                 href={item.href}
                 className={cn("sidebar-nav-item group", isActive && "active")}
               >
@@ -87,7 +89,7 @@ export function Sidebar() {
                   )}
                   aria-hidden="true"
                 />
-                <span className="flex-1">{item.name}</span>
+                <span className="flex-1">{t(`sidebar.${item.nameKey}`)}</span>
                 {isActive && (
                   <ChevronRight className="h-3.5 w-3.5 text-primary/60" />
                 )}
@@ -105,7 +107,7 @@ export function Sidebar() {
             className="rounded-xl p-3 mb-3 bg-accent border border-primary/20"
           >
             <p className="text-[10px] font-semibold uppercase tracking-wider text-primary mb-1">
-              Số dư ròng
+              {t("sidebar.netBalance")}
             </p>
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mt-2 mb-1" />
@@ -115,7 +117,7 @@ export function Sidebar() {
               </p>
             )}
             <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-              Tháng này
+              {t("sidebar.thisMonth")}
             </p>
           </div>
         </div>
@@ -129,7 +131,7 @@ export function Sidebar() {
               pathname === "/profile" ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
             )}
           />
-          <span>Cài đặt tài khoản</span>
+          <span>{t("sidebar.settings")}</span>
         </Link>
       </div>
     </div>

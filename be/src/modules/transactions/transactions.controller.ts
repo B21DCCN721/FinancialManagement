@@ -5,12 +5,7 @@ import {
   autoCategorizeService,
 } from "./transactions.service"
 import { CreateTransactionInput, UpdateTransactionInput, TransactionQuery } from "./transactions.schema"
-import { AppError } from "../../utils/errors"
-
-function handleError(err: unknown, reply: FastifyReply) {
-  if (err instanceof AppError) return reply.code(err.statusCode).send({ statusCode: err.statusCode, message: err.message })
-  throw err
-}
+import { handleError } from "../../utils/errors"
 
 export async function getAllTransactionsController(
   request: FastifyRequest<{ Querystring: TransactionQuery }>,

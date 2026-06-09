@@ -4,12 +4,7 @@ import {
   upsertBudgetService, updateBudgetService, deleteBudgetService,
 } from "./budgets.service"
 import { CreateBudgetInput, UpdateBudgetInput, BudgetQuery } from "./budgets.schema"
-import { AppError } from "../../utils/errors"
-
-function handleError(err: unknown, reply: FastifyReply) {
-  if (err instanceof AppError) return reply.code(err.statusCode).send({ statusCode: err.statusCode, message: err.message })
-  throw err
-}
+import { handleError } from "../../utils/errors"
 
 export async function getAllBudgetsController(
   request: FastifyRequest<{ Querystring: BudgetQuery }>,

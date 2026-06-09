@@ -13,6 +13,7 @@ interface ChangePasswordRequest {
 }
 
 export const usersApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getMe: builder.query<User, void>({
       query: () => "/users/me",

@@ -1,3 +1,5 @@
+import { FastifyReply } from "fastify"
+
 export class AppError extends Error {
   constructor(
     public statusCode: number,
@@ -15,4 +17,9 @@ export const errors = {
   notFound: (message = "Not found") => new AppError(404, message),
   conflict: (message = "Conflict") => new AppError(409, message),
   internal: (message = "Internal server error") => new AppError(500, message),
+}
+
+export function handleError(err: unknown, reply: FastifyReply) {
+  if (err instanceof AppError) return reply.code(err.statusCode).send({ statusCode: err.statusCode, message: err.message })
+  throw err
 }

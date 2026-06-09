@@ -38,6 +38,7 @@ function buildQueryString(params: TransactionQuery): string {
 }
 
 export const transactionsApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getTransactions: builder.query<PaginatedResponse<Transaction>, TransactionQuery>({
       query: (params = {}) => `/transactions${buildQueryString(params)}`,

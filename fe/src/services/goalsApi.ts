@@ -24,6 +24,7 @@ interface ContributeRequest {
 }
 
 export const goalsApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getGoals: builder.query<Goal[], void>({
       query: () => "/goals",

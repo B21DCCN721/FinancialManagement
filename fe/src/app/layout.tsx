@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { ReduxProvider } from "@/store/provider";
+import I18nProvider from "@/components/providers/I18nProvider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 
@@ -38,8 +39,10 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <ReduxProvider>
-              {children}
-              <Toaster position="top-right" richColors />
+              <I18nProvider>
+                {children}
+                <Toaster position="top-right" richColors />
+              </I18nProvider>
             </ReduxProvider>
           </ThemeProvider>
         </body>

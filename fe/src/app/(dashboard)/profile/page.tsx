@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Loader2, Save, KeyRound, Trash2, User2, CheckCircle2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Loader2, Save, KeyRound, Trash2, User2, CheckCircle2, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Modal } from "@/components/ui/modal"
@@ -14,10 +14,13 @@ import { useDispatch } from "react-redux"
 import { updateUser, clearAuth } from "@/store/authSlice"
 import { logger } from "@/lib/logger"
 import { useRouter } from "next/navigation"
+import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
 
 export default function ProfilePage() {
   const dispatch = useDispatch()
   const router = useRouter()
+  const { t, i18n } = useTranslation()
 
   const { data: user, isLoading } = useGetMeQuery()
   const [updateProfile, { isLoading: isSaving }] = useUpdateProfileMutation()
@@ -33,6 +36,26 @@ export default function ProfilePage() {
   const [pwdSuccess, setPwdSuccess] = useState(false)
   const [pwdError, setPwdError] = useState("")
 
+  const [selectedCurrency, setSelectedCurrency] = useState("VND")
+  const [selectedLanguage, setSelectedLanguage] = useState(i18n.resolvedLanguage || "vi")
+
+  useEffect(() => {
+    const handleLangChange = (lng: string) => {
+      setSelectedLanguage(lng)
+    }
+    i18n.on('languageChanged', handleLangChange)
+    return () => {
+      i18n.off('languageChanged', handleLangChange)
+    }
+  }, [i18n])
+
+  const handleSavePreferences = () => {
+    if (selectedLanguage !== i18n.resolvedLanguage) {
+      i18n.changeLanguage(selectedLanguage)
+    }
+    toast.success(t("profile.savePreferences"))
+  }
+
   const handleProfileSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setProfileSuccess(false)
@@ -44,9 +67,11 @@ export default function ProfilePage() {
       const updatedUser = await updateProfile({ firstName, lastName }).unwrap()
       dispatch(updateUser(updatedUser))
       setProfileSuccess(true)
+      toast.success(t("profile.profileSaved"))
       logger.info("Profile updated")
       setTimeout(() => setProfileSuccess(false), 3000)
     } catch (err) {
+      toast.error(t("common.error") || "Có lỗi xảy ra")
       logger.error("Failed to update profile", err)
     }
   }
@@ -55,17 +80,20 @@ export default function ProfilePage() {
     e.preventDefault()
     setPwdError("")
     setPwdSuccess(false)
-    if (newPwd.length < 8) { setPwdError("Mật khẩu mới phải có ít nhất 8 ký tự."); return }
+    if (newPwd.length < 8) { setPwdError(t("auth.passwordMinLength")); return }
     try {
       await changePassword({ currentPassword: currentPwd, newPassword: newPwd }).unwrap()
       setPwdSuccess(true)
       setCurrentPwd("")
       setNewPwd("")
+      toast.success(t("profile.passwordSaved"))
       logger.info("Password changed")
       setTimeout(() => setPwdSuccess(false), 3000)
     } catch (err) {
       const apiErr = err as { data?: { message?: string } }
-      setPwdError(apiErr?.data?.message ?? "Đổi mật khẩu thất bại. Kiểm tra lại mật khẩu hiện tại.")
+      const msg = apiErr?.data?.message ?? t("profile.changePwdError")
+      setPwdError(msg)
+      toast.error(msg)
       logger.error("Failed to change password", err)
     }
   }
@@ -80,10 +108,13 @@ export default function ProfilePage() {
     try {
       await deleteAccount().unwrap()
       dispatch(clearAuth())
+      toast.success(t("profile.deleteAccountBtn"))
       router.push("/login")
     } catch (err) {
       logger.error("Failed to delete account", err)
-      setDeleteError("Có lỗi xảy ra khi xóa tài khoản. Vui lòng thử lại sau.")
+      const msg = t("common.error") || "Có lỗi xảy ra"
+      setDeleteError(msg)
+      toast.error(msg)
     }
   }
 
@@ -99,9 +130,9 @@ export default function ProfilePage() {
     <div className="space-y-8 max-w-3xl mx-auto pb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div>
         <h1 className="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/60">
-          Cài đặt tài khoản
+          {t("profile.title")}
         </h1>
-        <p className="text-muted-foreground mt-2 text-lg">Quản lý thông tin cá nhân và thiết lập bảo mật của bạn.</p>
+        <p className="text-muted-foreground mt-2 text-lg">{t("profile.subtitle")}</p>
       </div>
 
       {/* Avatar Header */}
@@ -123,11 +154,11 @@ export default function ProfilePage() {
           <p className="text-3xl font-bold text-foreground tracking-tight">
             {user?.firstName || user?.lastName
               ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
-              : "Chưa đặt tên"}
+              : t("profile.unnamed")}
           </p>
           <p className="text-base text-muted-foreground mt-1.5">{user?.email}</p>
           <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-primary/15 text-primary mt-4 border border-primary/20 backdrop-blur-sm">
-            Thành viên từ {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("vi-VN") : "—"}
+            {t("profile.memberSince")} {user?.createdAt ? new Date(user.createdAt).toLocaleDateString(i18n.language === 'vi' ? "vi-VN" : "en-US") : "—"}
           </div>
         </div>
       </div>
@@ -138,15 +169,15 @@ export default function ProfilePage() {
           <CardHeader className="bg-muted/20 pb-6 border-b border-border/40">
             <CardTitle className="text-xl flex items-center gap-2">
               <User2 className="h-5 w-5 text-primary" />
-              Thông tin cá nhân
+              {t("profile.personalInfo")}
             </CardTitle>
-            <CardDescription>Cập nhật tên hiển thị của bạn trên hệ thống.</CardDescription>
+            <CardDescription>{t("profile.personalInfoDesc")}</CardDescription>
           </CardHeader>
           <form onSubmit={handleProfileSave}>
             <CardContent className="space-y-6 pt-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-2.5">
-                  <Label htmlFor="firstName" className="font-medium">Tên</Label>
+                  <Label htmlFor="firstName" className="font-medium">{t("profile.firstName")}</Label>
                   <Input
                     id="firstName"
                     name="firstName"
@@ -156,7 +187,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="space-y-2.5">
-                  <Label htmlFor="lastName" className="font-medium">Họ</Label>
+                  <Label htmlFor="lastName" className="font-medium">{t("profile.lastName")}</Label>
                   <Input
                     id="lastName"
                     name="lastName"
@@ -167,21 +198,21 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className="space-y-2.5">
-                <Label htmlFor="email" className="font-medium">Email liên hệ</Label>
+                <Label htmlFor="email" className="font-medium">{t("profile.email")}</Label>
                 <Input id="email" type="email" value={user?.email ?? ""} disabled className="opacity-70 bg-muted/50" />
-                <p className="text-xs text-muted-foreground">Email là định danh duy nhất và không thể thay đổi.</p>
+                <p className="text-xs text-muted-foreground">{t("profile.emailHelp")}</p>
               </div>
               {profileSuccess && (
                 <div className="flex items-center gap-2 text-sm text-emerald-500 font-medium animate-in fade-in slide-in-from-left-2 duration-300">
                   <CheckCircle2 className="h-5 w-5" />
-                  Hồ sơ đã được lưu thành công!
+                  {t("profile.profileSaved")}
                 </div>
               )}
             </CardContent>
             <CardFooter className="bg-muted/10 pt-4 pb-6">
               <Button type="submit" disabled={isSaving} className="w-full sm:w-auto ml-auto px-8 transition-transform active:scale-95">
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Lưu thay đổi
+                {t("common.saveChanges")}
               </Button>
             </CardFooter>
           </form>
@@ -193,14 +224,14 @@ export default function ProfilePage() {
             <CardHeader className="bg-muted/20 pb-6 border-b border-border/40">
               <CardTitle className="text-xl flex items-center gap-2">
                 <KeyRound className="h-5 w-5 text-primary" />
-                Mật khẩu & Bảo mật
+                {t("profile.security")}
               </CardTitle>
-              <CardDescription>Bảo vệ tài khoản của bạn bằng một mật khẩu mạnh (ít nhất 8 ký tự).</CardDescription>
+              <CardDescription>{t("profile.securityDesc")}</CardDescription>
             </CardHeader>
             <form onSubmit={handleChangePassword}>
               <CardContent className="space-y-6 pt-6">
                 <div className="space-y-2.5">
-                  <Label htmlFor="current-pwd" className="font-medium">Mật khẩu hiện tại</Label>
+                  <Label htmlFor="current-pwd" className="font-medium">{t("profile.currentPassword")}</Label>
                   <Input
                     id="current-pwd"
                     type="password"
@@ -211,13 +242,13 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="space-y-2.5">
-                  <Label htmlFor="new-pwd" className="font-medium">Mật khẩu mới</Label>
+                  <Label htmlFor="new-pwd" className="font-medium">{t("profile.newPassword")}</Label>
                   <Input
                     id="new-pwd"
                     type="password"
                     value={newPwd}
                     onChange={(e) => setNewPwd(e.target.value)}
-                    placeholder="Nhập tối thiểu 8 ký tự..."
+                    placeholder={t("profile.newPasswordPlaceholder")}
                     required
                     className="max-w-md transition-all focus-visible:ring-primary/50"
                   />
@@ -226,14 +257,14 @@ export default function ProfilePage() {
                 {pwdSuccess && (
                   <div className="flex items-center gap-2 text-sm text-emerald-500 font-medium animate-in fade-in slide-in-from-left-2 duration-300">
                     <CheckCircle2 className="h-5 w-5" />
-                    Mật khẩu đã được cập nhật an toàn!
+                    {t("profile.passwordSaved")}
                   </div>
                 )}
               </CardContent>
               <CardFooter className="bg-muted/10 pt-4 pb-6">
                 <Button type="submit" disabled={isChangingPwd} className="w-full sm:w-auto ml-auto px-8 transition-transform active:scale-95">
                   {isChangingPwd ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
-                  Đổi mật khẩu
+                  {t("profile.changePasswordBtn")}
                 </Button>
               </CardFooter>
             </form>
@@ -245,23 +276,31 @@ export default function ProfilePage() {
           <CardHeader className="bg-muted/20 pb-6 border-b border-border/40">
             <CardTitle className="text-xl flex items-center gap-2">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-              Tùy chọn hiển thị
+              {t("profile.preferences")}
             </CardTitle>
-            <CardDescription>Cá nhân hoá trải nghiệm sử dụng của bạn.</CardDescription>
+            <CardDescription>{t("profile.preferencesDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2.5">
-                <Label htmlFor="currency" className="font-medium">Đơn vị tiền tệ</Label>
-                <Select id="currency" defaultValue="VND">
+                <Label htmlFor="currency" className="font-medium">{t("profile.currency")}</Label>
+                <Select 
+                  id="currency" 
+                  value={selectedCurrency}
+                  onChange={(e) => setSelectedCurrency(e.target.value)}
+                >
                   <option value="VND">VND – Đồng Việt Nam</option>
                   <option value="USD">USD – US Dollar</option>
                   <option value="EUR">EUR – Euro</option>
                 </Select>
               </div>
               <div className="space-y-2.5">
-                <Label htmlFor="language" className="font-medium">Ngôn ngữ</Label>
-                <Select id="language" defaultValue="vi">
+                <Label htmlFor="language" className="font-medium">{t("profile.language")}</Label>
+                <Select 
+                  id="language" 
+                  value={selectedLanguage} 
+                  onChange={(e) => setSelectedLanguage(e.target.value)}
+                >
                   <option value="vi">🇻🇳 Tiếng Việt</option>
                   <option value="en">🇬🇧 English</option>
                 </Select>
@@ -269,7 +308,10 @@ export default function ProfilePage() {
             </div>
           </CardContent>
           <CardFooter className="bg-muted/10 pt-4 pb-6">
-            <Button variant="outline" className="w-full sm:w-auto ml-auto px-8 transition-all hover:bg-primary/10 hover:text-primary">Lưu tùy chọn</Button>
+            <Button className="w-full sm:w-auto ml-auto px-8 transition-transform active:scale-95 text-primary-foreground bg-primary hover:bg-primary/90" onClick={handleSavePreferences}>
+              <Save className="mr-2 h-4 w-4" />
+              {t("profile.savePreferences")}
+            </Button>
           </CardFooter>
         </Card>
 
@@ -278,25 +320,26 @@ export default function ProfilePage() {
           <CardHeader className="border-b border-destructive/10 pb-6">
             <CardTitle className="text-xl flex items-center gap-2 text-destructive">
               <Trash2 className="h-5 w-5" />
-              Vùng nguy hiểm
+              {t("profile.dangerZone")}
             </CardTitle>
-            <CardDescription className="text-destructive/80">Cẩn trọng! Những hành động dưới đây không thể hoàn tác lại.</CardDescription>
+            <CardDescription className="text-destructive/80">{t("profile.dangerZoneDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl border border-border/50 bg-background/50 hover:bg-muted/30 transition-colors">
               <div>
-                <p className="font-medium text-foreground">Đăng xuất khỏi thiết bị</p>
-                <p className="text-sm text-muted-foreground mt-1">Kết thúc phiên làm việc hiện tại của bạn một cách an toàn.</p>
+                <p className="font-medium text-foreground">{t("profile.logout")}</p>
+                <p className="text-sm text-muted-foreground mt-1">{t("profile.logoutDesc")}</p>
               </div>
-              <Button variant="secondary" className="mt-4 sm:mt-0 px-6 transition-transform active:scale-95" onClick={handleLogout}>
-                Đăng xuất
+              <Button variant="destructive" className="mt-4 sm:mt-0 px-6 transition-transform active:scale-95" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                {t("profile.logoutBtn")}
               </Button>
             </div>
             
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 transition-colors">
               <div>
-                <p className="font-medium text-destructive">Xoá vĩnh viễn tài khoản</p>
-                <p className="text-sm text-destructive/80 mt-1">Mọi dữ liệu tài chính, mục tiêu và báo cáo sẽ bị xoá sạch không thể khôi phục.</p>
+                <p className="font-medium text-destructive">{t("profile.deleteAccount")}</p>
+                <p className="text-sm text-destructive/80 mt-1">{t("profile.deleteAccountDesc")}</p>
               </div>
               <Button
                 variant="destructive"
@@ -304,7 +347,7 @@ export default function ProfilePage() {
                 onClick={() => setShowDeleteModal(true)}
               >
                 {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Xóa tài khoản
+                {t("profile.deleteAccountBtn")}
               </Button>
             </div>
           </CardContent>
@@ -315,8 +358,8 @@ export default function ProfilePage() {
       <Modal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
-        title="Xóa tài khoản vĩnh viễn"
-        description="Hành động này tuyệt đối không thể hoàn tác. Mọi dữ liệu tài chính của bạn sẽ bị xóa sạch khỏi hệ thống."
+        title={t("profile.deleteConfirmTitle")}
+        description={t("profile.deleteConfirmDesc")}
       >
         <div className="space-y-4 pt-4 border-t mt-2">
           {deleteError && (
@@ -330,7 +373,7 @@ export default function ProfilePage() {
               onClick={() => setShowDeleteModal(false)}
               disabled={isDeleting}
             >
-              Hủy bỏ
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -339,7 +382,7 @@ export default function ProfilePage() {
               className="shadow-md"
             >
               {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-              Xác nhận xóa
+              {t("profile.confirmDelete")}
             </Button>
           </div>
         </div>

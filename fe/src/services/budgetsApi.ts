@@ -12,6 +12,7 @@ interface UpdateBudgetRequest {
 }
 
 export const budgetsApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getBudgets: builder.query<Budget[], { period?: string }>({
       query: ({ period } = {}) => (period ? `/budgets?period=${period}` : "/budgets"),

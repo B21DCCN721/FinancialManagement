@@ -15,6 +15,7 @@ interface UpdateCategoryRequest {
 }
 
 export const categoriesApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getCategories: builder.query<Category[], { type?: "income" | "expense" } | void>({
       query: (params) => {

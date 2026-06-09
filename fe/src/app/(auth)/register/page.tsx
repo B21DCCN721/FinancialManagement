@@ -10,8 +10,10 @@ import { useRegisterMutation } from "@/services/authApi"
 import { setCredentials } from "@/store/authSlice"
 import { logger } from "@/lib/logger"
 import { useClerk } from "@clerk/nextjs"
+import { useTranslation } from "react-i18next"
 
 export default function RegisterPage() {
+  const { t } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -44,7 +46,7 @@ export default function RegisterPage() {
         return
       }
 
-      setErrorMsg(`Lỗi kết nối Google: ${clerkErr}`)
+      setErrorMsg(`${t("register.googleError")}${clerkErr}`)
     }
   }
 
@@ -53,7 +55,7 @@ export default function RegisterPage() {
     setErrorMsg("")
 
     if (password.length < 8) {
-      setErrorMsg("Mật khẩu phải có ít nhất 8 ký tự.")
+      setErrorMsg(t("register.passwordLength"))
       return
     }
 
@@ -68,7 +70,7 @@ export default function RegisterPage() {
       router.push("/")
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string }; status?: number }
-      const msg = apiErr?.data?.message ?? "Đăng ký thất bại. Vui lòng thử lại."
+      const msg = apiErr?.data?.message ?? t("register.failed")
       setErrorMsg(msg)
       logger.error("Registration failed", err, { email })
     }
@@ -114,9 +116,9 @@ export default function RegisterPage() {
             backdropFilter: "blur(20px)",
           }}>
           <div className="text-center mb-7">
-            <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">Tạo tài khoản của bạn</h1>
+            <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">{t("register.title")}</h1>
             <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
-              Bắt đầu quản lý tài chính của bạn miễn phí
+              {t("register.subtitle")}
             </p>
           </div>
 
@@ -152,20 +154,19 @@ export default function RegisterPage() {
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
             )}
-            {isGoogleLoading ? "Đang chuyển hướng..." : "Đăng ký với Google"}
+            {isGoogleLoading ? t("register.redirecting") : t("register.google")}
           </button>
 
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.1))" }} />
-            <span className="text-xs uppercase font-medium tracking-widest" style={{ color: "rgba(255,255,255,0.3)" }}>Hoặc</span>
+            <span className="text-xs uppercase font-medium tracking-widest" style={{ color: "rgba(255,255,255,0.3)" }}>{t("register.or")}</span>
             <div className="flex-1 h-px" style={{ background: "linear-gradient(270deg, transparent, rgba(255,255,255,0.1))" }} />
           </div>
 
-          {/* Form */}
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label htmlFor="first-name" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>Tên</label>
+                <label htmlFor="first-name" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>{t("register.firstName")}</label>
                 <input
                   id="first-name"
                   placeholder="John"
@@ -175,7 +176,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="last-name" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>Họ</label>
+                <label htmlFor="last-name" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>{t("register.lastName")}</label>
                 <input
                   id="last-name"
                   placeholder="Doe"
@@ -187,7 +188,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="email" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>Địa chỉ email</label>
+              <label htmlFor="email" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>{t("register.email")}</label>
               <input
                 id="email"
                 type="email"
@@ -200,12 +201,12 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="password" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>Mật khẩu</label>
+              <label htmlFor="password" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>{t("register.password")}</label>
               <div className="relative">
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Tối thiểu 8 ký tự"
+                  placeholder={t("register.passwordPlaceholder")}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -228,17 +229,17 @@ export default function RegisterPage() {
               className="btn-primary-gradient flex items-center justify-center gap-2 h-11 w-full rounded-xl text-sm mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-              {isLoading ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
+              {isLoading ? t("register.creating") : t("register.create")}
             </button>
 
             <p className="text-center text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
-              Bằng việc tạo tài khoản, bạn đồng ý với{" "}
+              {t("register.terms1")}
               <Link href="#" className="underline underline-offset-2" style={{ color: "rgba(167,139,250,0.7)" }}>
-                Điều khoản Dịch vụ
-              </Link>{" "}
-              và{" "}
+                {t("register.terms2")}
+              </Link>
+              {t("register.terms3")}
               <Link href="#" className="underline underline-offset-2" style={{ color: "rgba(167,139,250,0.7)" }}>
-                Chính sách Bảo mật
+                {t("register.terms4")}
               </Link>
               .
             </p>
@@ -248,9 +249,9 @@ export default function RegisterPage() {
 
         {/* Footer */}
         <p className="text-center text-sm mt-6" style={{ color: "rgba(255,255,255,0.35)" }}>
-          Đã có tài khoản?{" "}
+          {t("register.alreadyAccount")}
           <Link href="/login" className="font-semibold transition-colors hover:text-white" style={{ color: "#a78bfa" }}>
-            Đăng nhập
+            {t("register.login")}
           </Link>
         </p>
       </div>

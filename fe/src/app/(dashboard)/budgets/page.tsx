@@ -14,6 +14,7 @@ import {
 } from "@/services/budgetsApi"
 import { logger } from "@/lib/logger"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 
 function currentPeriod() {
   const now = new Date()
@@ -33,6 +34,7 @@ const getCategoryConfig = (name: string) => {
 }
 
 export default function BudgetsPage() {
+  const { t } = useTranslation()
   const period = currentPeriod()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
@@ -52,10 +54,10 @@ export default function BudgetsPage() {
       setIsAddModalOpen(false)
       e.currentTarget.reset()
       logger.info("Budget created")
-      toast.success("Tạo ngân sách thành công")
+      toast.success(t("budgets.addSuccess"))
     } catch (err) {
       logger.error("Failed to create budget", err)
-      toast.error("Tạo ngân sách thất bại. Vui lòng thử lại.")
+      toast.error(t("budgets.addError"))
     }
   }
 
@@ -63,15 +65,15 @@ export default function BudgetsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Ngân sách</h1>
-          <p className="text-muted-foreground">Thiết lập giới hạn chi tiêu và theo dõi mức độ hoàn thành.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t("budgets.title")}</h1>
+          <p className="text-muted-foreground">{t("budgets.subtitle")}</p>
         </div>
         <button
           onClick={() => setIsAddModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-[0_4px_15px_rgba(124,92,252,0.4)]"
         >
           <Plus className="h-4 w-4" />
-          Tạo ngân sách
+          {t("budgets.createBudget")}
         </button>
       </div>
 
@@ -100,15 +102,15 @@ export default function BudgetsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-muted-foreground">
-                      {budget.amount.toLocaleString("vi-VN")} ₫ giới hạn
+                      {budget.amount.toLocaleString("vi-VN")} ₫ {t("budgets.limit")}
                     </span>
                     <button
                       onClick={async () => {
                         try {
                           await deleteBudget(budget.id).unwrap()
-                          toast.success("Xóa ngân sách thành công")
+                          toast.success(t("budgets.deleteSuccess"))
                         } catch (err) {
-                          toast.error("Xóa ngân sách thất bại")
+                          toast.error(t("budgets.deleteError"))
                         }
                       }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger text-xs"
@@ -119,9 +121,9 @@ export default function BudgetsPage() {
                 </div>
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="font-bold text-foreground">{budget.spentAmount.toLocaleString("vi-VN")} ₫ đã chi</span>
+                    <span className="font-bold text-foreground">{budget.spentAmount.toLocaleString("vi-VN")} ₫ {t("budgets.spent")}</span>
                     <span className="text-muted-foreground font-medium">
-                      {Math.max(budget.remaining, 0).toLocaleString("vi-VN")} ₫ còn lại
+                      {Math.max(budget.remaining, 0).toLocaleString("vi-VN")} ₫ {t("budgets.remaining")}
                     </span>
                   </div>
                   <div className="h-2.5 w-full overflow-hidden rounded-full bg-secondary">
@@ -139,13 +141,13 @@ export default function BudgetsPage() {
                   {isOverBudget && (
                     <div className="flex items-center text-xs font-semibold text-danger mt-2 bg-danger/10 px-2 py-1.5 rounded-md">
                       <AlertCircle className="mr-1.5 h-3.5 w-3.5" />
-                      Bạn đã vượt quá ngân sách {Math.abs(budget.remaining).toLocaleString("vi-VN")} ₫.
+                      {t("budgets.overBudget")} {Math.abs(budget.remaining).toLocaleString("vi-VN")} ₫.
                     </div>
                   )}
                   {isNearLimit && (
                     <div className="flex items-center text-xs font-semibold text-amber-500 mt-2 bg-amber-500/10 px-2 py-1.5 rounded-md">
                       <AlertCircle className="mr-1.5 h-3.5 w-3.5" />
-                      Cảnh báo: Bạn sắp đạt giới hạn chi tiêu ({budget.percentUsed.toFixed(0)}%).
+                      {t("budgets.nearLimit")} ({budget.percentUsed.toFixed(0)}%).
                     </div>
                   )}
                 </div>
@@ -154,7 +156,7 @@ export default function BudgetsPage() {
           })}
           {budgets.length === 0 && (
             <div className="col-span-full py-12 text-center text-muted-foreground glass-card rounded-2xl">
-              Chưa có ngân sách nào được thiết lập. Hãy nhấn &quot;Tạo ngân sách&quot; để bắt đầu!
+              {t("budgets.empty")}
             </div>
           )}
         </div>
@@ -163,23 +165,23 @@ export default function BudgetsPage() {
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="Tạo ngân sách"
-        description="Thiết lập giới hạn chi tiêu hàng tháng cho một danh mục."
+        title={t("budgets.addModalTitle")}
+        description={t("budgets.addModalDesc")}
       >
         <form className="space-y-4 pt-4" onSubmit={handleAddSubmit}>
           <div className="space-y-2">
-            <Label htmlFor="categoryId">Mã danh mục (ID)</Label>
-            <Input id="categoryId" name="categoryId" placeholder="UUID danh mục từ Backend" required />
+            <Label htmlFor="categoryId">{t("budgets.categoryId")}</Label>
+            <Input id="categoryId" name="categoryId" placeholder="UUID" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="limit">Hạn mức hàng tháng (₫)</Label>
+            <Label htmlFor="limit">{t("budgets.amountLimit")}</Label>
             <Input id="limit" name="limit" type="number" step="10" placeholder="VD: 500" required />
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>Hủy</Button>
+            <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>{t("budgets.cancel")}</Button>
             <Button type="submit" disabled={isCreating}>
               {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Lưu Ngân Sách
+              {t("budgets.save")}
             </Button>
           </div>
         </form>
