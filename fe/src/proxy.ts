@@ -1,18 +1,19 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export function proxy(request: NextRequest) {
+// ĐỔI TÊN HÀM THÀNH middleware ĐỂ NEXT.JS NHẬN DIỆN ĐƯỢC
+export function middleware(request: NextRequest) {
   // Sinh nonce ngẫu nhiên bằng Web Crypto API tích hợp sẵn của Edge Runtime
   const nonce = crypto.randomUUID()
   const isDev = process.env.NODE_ENV !== 'production'
 
-  // Xây dựng chuỗi CSP nghiêm ngặt
+  // Xây dựng chuỗi CSP nghiêm ngặt (Đã bổ sung Clerk và Google Fonts)
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isDev ? "'unsafe-eval'" : ""};
-    style-src 'self' 'unsafe-inline';
-    img-src 'self' blob: data: https:;
-    font-src 'self' data:;
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://*.clerk.accounts.dev ${isDev ? "'unsafe-eval'" : ""};
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    img-src 'self' blob: data: https: https://img.clerk.com;
+    font-src 'self' data: https://fonts.gstatic.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
