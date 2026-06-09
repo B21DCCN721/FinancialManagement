@@ -5,12 +5,11 @@ import type { NextRequest } from 'next/server'
 export function proxy(request: NextRequest) {
   // Sinh nonce ngẫu nhiên bằng Web Crypto API tích hợp sẵn của Edge Runtime
   const nonce = crypto.randomUUID()
-  const isDev = process.env.NODE_ENV !== 'production'
 
   // Xây dựng chuỗi CSP nghiêm ngặt
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://*.clerk.accounts.dev ${isDev ? "'unsafe-eval'" : ""};
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://*.clerk.accounts.dev;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' blob: data: https: https://img.clerk.com;
     font-src 'self' data: https://fonts.gstatic.com;
