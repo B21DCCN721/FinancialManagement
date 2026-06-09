@@ -62,6 +62,9 @@
     "deleteConfirmTitle": "Permanently Delete Account",
     "deleteConfirmDesc": "This action is absolutely irreversible. All your financial data will be scrubbed from the system.",
     "confirmDelete": "Confirm Deletion",
+    "logoutConfirmTitle": "Confirm Sign Out",
+    "logoutConfirmDesc": "Are you sure you want to sign out from your account?",
+    "confirmLogout": "Sign Out",
     "changePwdError": "Failed to change password. Please check your current password."
   },
   "auth": {

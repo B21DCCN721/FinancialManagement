@@ -29,6 +29,7 @@ export default function ProfilePage() {
 
   const [profileSuccess, setProfileSuccess] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [deleteError, setDeleteError] = useState("")
 
   const [currentPwd, setCurrentPwd] = useState("")
@@ -330,7 +331,7 @@ export default function ProfilePage() {
                 <p className="font-medium text-foreground">{t("profile.logout")}</p>
                 <p className="text-sm text-muted-foreground mt-1">{t("profile.logoutDesc")}</p>
               </div>
-              <Button variant="destructive" className="mt-4 sm:mt-0 px-6 transition-transform active:scale-95" onClick={handleLogout}>
+              <Button variant="destructive" className="mt-4 sm:mt-0 px-6 transition-transform active:scale-95" onClick={() => setShowLogoutModal(true)}>
                 <LogOut className="mr-2 h-4 w-4" />
                 {t("profile.logoutBtn")}
               </Button>
@@ -383,6 +384,33 @@ export default function ProfilePage() {
             >
               {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
               {t("profile.confirmDelete")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        title={t("profile.logoutConfirmTitle")}
+        description={t("profile.logoutConfirmDesc")}
+      >
+        <div className="space-y-4 pt-4 border-t mt-2">
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowLogoutModal(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleLogout}
+              className="shadow-md"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              {t("profile.confirmLogout")}
             </Button>
           </div>
         </div>

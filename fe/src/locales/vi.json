@@ -62,6 +62,9 @@
     "deleteConfirmTitle": "Xóa tài khoản vĩnh viễn",
     "deleteConfirmDesc": "Hành động này tuyệt đối không thể hoàn tác. Mọi dữ liệu tài chính của bạn sẽ bị xóa sạch khỏi hệ thống.",
     "confirmDelete": "Xác nhận xóa",
+    "logoutConfirmTitle": "Xác nhận đăng xuất",
+    "logoutConfirmDesc": "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản của mình không?",
+    "confirmLogout": "Đăng xuất",
     "changePwdError": "Đổi mật khẩu thất bại. Kiểm tra lại mật khẩu hiện tại."
   },
   "auth": {

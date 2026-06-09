@@ -51,7 +51,7 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 }
 
 export default function Dashboard() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const [period, setPeriod] = useState(currentPeriod())
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
@@ -160,15 +160,12 @@ export default function Dashboard() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("dashboard.title")}</h1>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-accent text-primary border border-primary/20">
-              {t("dashboard.live")}
-            </span>
           </div>
           <p className="text-sm text-muted-foreground">{t("dashboard.subtitle")} {selectedMonthLabel.toLowerCase()}, {periodYStr}</p>
         </div>
         <div className="flex items-center gap-2">
           <MonthPicker value={period} onChange={setPeriod} />
-          <button 
+          <button
             onClick={handleOpenAiModal}
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-[0_4px_15px_rgba(124,92,252,0.4)]"
           >
@@ -386,8 +383,8 @@ export default function Dashboard() {
           ) : aiData ? (
             <div className="space-y-4">
               {/* Vùng chứa nội dung Markdown để in PDF */}
-              <div 
-                ref={reportRef} 
+              <div
+                ref={reportRef}
                 className="bg-card rounded-lg p-5 border border-border shadow-sm text-sm space-y-3 
                   [&>h1]:text-lg [&>h1]:font-bold [&>h1]:mb-3
                   [&>h2]:text-base [&>h2]:font-semibold [&>h2]:mb-2 [&>h2]:mt-4

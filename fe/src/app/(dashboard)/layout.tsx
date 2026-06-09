@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { AuthGuard } from "@/components/auth-guard"
+import { SidebarProvider } from "@/contexts/SidebarContext"
 
 export default function DashboardLayout({
   children,
@@ -9,17 +10,19 @@ export default function DashboardLayout({
 }) {
   return (
     <AuthGuard>
-      <div className="flex h-screen overflow-hidden bg-mesh">
-        <Sidebar />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <Header />
-          <main className="flex-1 overflow-y-auto p-6" style={{ background: "transparent" }}>
-            <div className="mx-auto max-w-7xl">
-              {children}
-            </div>
-          </main>
+      <SidebarProvider>
+        <div className="flex h-screen overflow-hidden bg-mesh relative">
+          <Sidebar />
+          <div className="flex flex-1 flex-col overflow-hidden w-full">
+            <Header />
+            <main className="flex-1 overflow-y-auto p-6" style={{ background: "transparent" }}>
+              <div className="mx-auto max-w-7xl">
+                {children}
+              </div>
+            </main>
+          </div>
         </div>
-      </div>
+      </SidebarProvider>
     </AuthGuard>
   )
 }

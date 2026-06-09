@@ -14,10 +14,12 @@ import {
   Settings,
   TrendingUp,
   ChevronRight,
+  ChevronLeft,
   Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useGetReportSummaryQuery } from "@/services/reportsApi"
+import { useSidebar } from "@/contexts/SidebarContext"
 
 function currentPeriod() {
   const now = new Date()
@@ -37,17 +39,37 @@ export function Sidebar() {
   const pathname = usePathname()
   const { t } = useTranslation()
   const { data: summary, isLoading } = useGetReportSummaryQuery({ period: currentPeriod() })
+  const { isOpen, setIsOpen } = useSidebar()
+
+  React.useEffect(() => {
+    if (window.innerWidth < 768) {
+      setIsOpen(false)
+    }
+  }, [pathname, setIsOpen])
 
   return (
-    <div
-      className="flex h-full w-64 flex-col border-r border-border"
-      style={{
-        background: "var(--gradient-sidebar)",
-      }}
-    >
-      {/* Logo */}
-      <div className="flex h-16 shrink-0 items-center px-5">
-        <Link href="/" className="flex items-center gap-3 group">
+    <>
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 h-full transition-all duration-300 ease-in-out md:static md:overflow-hidden",
+          isOpen ? "w-64 translate-x-0 opacity-100" : "-translate-x-full w-64 md:w-0 md:translate-x-0 md:opacity-0 md:border-none"
+        )}
+      >
+        <div 
+          className="flex h-full w-64 flex-col border-r border-border"
+          style={{
+            background: "var(--gradient-sidebar)",
+          }}
+        >
+          {/* Logo */}
+        <div className="flex h-16 shrink-0 items-center justify-between px-5">
+          <Link href="/" className="flex items-center gap-3 group">
           <div
             className="flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-105"
             style={{
@@ -62,6 +84,13 @@ export function Sidebar() {
             <p className="text-[10px] text-primary/80 font-medium tracking-wider uppercase">Finance</p>
           </div>
         </Link>
+        <button
+          onClick={() => setIsOpen(false)}
+          className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          aria-label="Close sidebar"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Section label */}
@@ -134,6 +163,8 @@ export function Sidebar() {
           <span>{t("sidebar.settings")}</span>
         </Link>
       </div>
+        </div>
     </div>
+    </>
   )
 }

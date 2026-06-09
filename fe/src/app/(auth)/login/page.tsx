@@ -11,6 +11,7 @@ import { setCredentials } from "@/store/authSlice"
 import { logger } from "@/lib/logger"
 import { useClerk } from "@clerk/nextjs"
 import { useTranslation } from "react-i18next"
+import { TermsModal } from "@/components/auth/terms-modal"
 
 function LoginContent() {
   const { t } = useTranslation()
@@ -24,6 +25,7 @@ function LoginContent() {
   const [login, { isLoading }] = useLoginMutation()
   const clerk = useClerk()
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [modalType, setModalType] = useState<"terms" | "privacy" | null>(null)
   
   const searchParams = useSearchParams()
   const errorParam = searchParams.get("error")
@@ -229,6 +231,28 @@ function LoginContent() {
             )}
             {isGoogleLoading ? t("common.loading") : t("auth.loginWithGoogle")}
           </button>
+
+          <div className="mt-6 text-center text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
+            {t("register.terms1")}
+            <button 
+              type="button" 
+              onClick={() => setModalType("terms")}
+              className="underline underline-offset-2 hover:text-white transition-colors mx-1" 
+              style={{ color: "rgba(167,139,250,0.7)" }}
+            >
+              {t("register.terms2")}
+            </button>
+            {t("register.terms3")}
+            <button 
+              type="button" 
+              onClick={() => setModalType("privacy")}
+              className="underline underline-offset-2 hover:text-white transition-colors mx-1" 
+              style={{ color: "rgba(167,139,250,0.7)" }}
+            >
+              {t("register.terms4")}
+            </button>
+            .
+          </div>
         </div>
 
         {/* Footer */}
@@ -239,6 +263,11 @@ function LoginContent() {
           </Link>
         </p>
       </div>
+      <TermsModal 
+        isOpen={modalType !== null} 
+        onClose={() => setModalType(null)} 
+        type={modalType || "terms"} 
+      />
     </div>
   )
 }

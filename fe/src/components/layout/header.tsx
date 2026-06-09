@@ -1,14 +1,16 @@
 "use client"
 
 import * as React from "react"
-import { Search, Sparkles } from "lucide-react"
+import { Search, Menu } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/store/store"
 import { useRouter } from "next/navigation"
+import { useSidebar } from "@/contexts/SidebarContext"
 
 export function Header() {
+  const { toggle, isOpen } = useSidebar()
   const user = useSelector((state: RootState) => state.auth.user)
   const router = useRouter()
   const { t } = useTranslation()
@@ -36,11 +38,22 @@ export function Header() {
 
   return (
     <header
-      className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 px-6 bg-background/80 backdrop-blur-[20px] border-b border-border"
+      className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 px-4 md:px-6 bg-background/80 backdrop-blur-[20px] border-b border-border transition-all"
     >
+      {!isOpen && (
+        <button
+          type="button"
+          className="-m-2.5 p-2.5 text-foreground hover:bg-accent rounded-md transition-colors"
+          onClick={toggle}
+        >
+          <span className="sr-only">Toggle sidebar</span>
+          <Menu className="h-5 w-5" aria-hidden="true" />
+        </button>
+      )}
+
       {/* Search bar */}
       <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-        <form className="relative flex flex-1 max-w-md" onSubmit={handleSearch}>
+        <form className="relative flex flex-1 max-w-md items-center" onSubmit={handleSearch}>
           <label htmlFor="search-field" className="sr-only">Tìm kiếm</label>
           <div className="relative flex items-center w-full">
             <Search
@@ -84,7 +97,7 @@ export function Header() {
             className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all hover:scale-105 bg-card border border-border"
           >
             <div
-              className="h-7 w-7 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-primary to-primary-light overflow-hidden"
+              className="h-7 w-7 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-linear-to-br from-primary to-primary-light overflow-hidden"
             >
               {user?.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element

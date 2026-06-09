@@ -2,7 +2,7 @@
 
 import { useState, Suspense, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
-import { Plus, Search, Filter, MoreHorizontal, RefreshCw, X, Trash2, Loader2 } from "lucide-react"
+import { Plus, Search, Filter, MoreHorizontal, RefreshCw, X, Trash2, Loader2, Inbox } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -273,7 +273,9 @@ function TransactionsContent() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
-                  <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center text-2xl">📭</div>
+                  <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
+                    <Inbox className="h-6 w-6" />
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {isFetching ? t("transactions.loading") : t("transactions.noTransactions")}
                   </p>
@@ -393,7 +395,9 @@ function TransactionsContent() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
-                  <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center text-2xl">🔄</div>
+                  <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
+                    <RefreshCw className="h-6 w-6" />
+                  </div>
                   <p className="text-sm text-muted-foreground">{t("transactions.noRecurring")}</p>
                 </div>
               )}

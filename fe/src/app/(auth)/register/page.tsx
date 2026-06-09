@@ -11,6 +11,7 @@ import { setCredentials } from "@/store/authSlice"
 import { logger } from "@/lib/logger"
 import { useClerk } from "@clerk/nextjs"
 import { useTranslation } from "react-i18next"
+import { TermsModal } from "@/components/auth/terms-modal"
 
 export default function RegisterPage() {
   const { t } = useTranslation()
@@ -26,6 +27,7 @@ export default function RegisterPage() {
   const [register, { isLoading }] = useRegisterMutation()
   const clerk = useClerk()
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [modalType, setModalType] = useState<"terms" | "privacy" | null>(null)
 
   const handleGoogleLogin = async () => {
     if (!clerk.loaded) return
@@ -234,13 +236,23 @@ export default function RegisterPage() {
 
             <p className="text-center text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
               {t("register.terms1")}
-              <Link href="#" className="underline underline-offset-2" style={{ color: "rgba(167,139,250,0.7)" }}>
+              <button 
+                type="button" 
+                onClick={() => setModalType("terms")}
+                className="underline underline-offset-2 hover:text-white transition-colors" 
+                style={{ color: "rgba(167,139,250,0.7)" }}
+              >
                 {t("register.terms2")}
-              </Link>
+              </button>
               {t("register.terms3")}
-              <Link href="#" className="underline underline-offset-2" style={{ color: "rgba(167,139,250,0.7)" }}>
+              <button 
+                type="button" 
+                onClick={() => setModalType("privacy")}
+                className="underline underline-offset-2 hover:text-white transition-colors" 
+                style={{ color: "rgba(167,139,250,0.7)" }}
+              >
                 {t("register.terms4")}
-              </Link>
+              </button>
               .
             </p>
             <div id="clerk-captcha"></div>
@@ -255,6 +267,11 @@ export default function RegisterPage() {
           </Link>
         </p>
       </div>
+      <TermsModal 
+        isOpen={modalType !== null} 
+        onClose={() => setModalType(null)} 
+        type={modalType || "terms"} 
+      />
     </div>
   )
 }
