@@ -19,29 +19,13 @@ export function Modal({ isOpen, onClose, title, description, children, className
   React.useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      
-      // Push a dummy state to intercept the Android back button
-      window.history.pushState({ modalOpen: true }, "");
-      
-      const handlePopState = (e: PopStateEvent) => {
-        // If the state is popped (user pressed back), close the modal
-        onClose();
-      };
-      
-      window.addEventListener("popstate", handlePopState);
-      
-      return () => {
-        document.body.style.overflow = "unset";
-        window.removeEventListener("popstate", handlePopState);
-        // If modal was closed via X button, we need to clean up the dummy state
-        if (window.history.state && window.history.state.modalOpen) {
-          window.history.back();
-        }
-      };
     } else {
       document.body.style.overflow = "unset";
     }
-  }, [isOpen, onClose]);
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
 
   return (
     <AnimatePresence>
