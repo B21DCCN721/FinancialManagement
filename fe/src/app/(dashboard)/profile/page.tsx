@@ -71,8 +71,8 @@ export default function ProfilePage() {
       toast.success(t("profile.profileSaved"))
       logger.info("Profile updated")
       setTimeout(() => setProfileSuccess(false), 3000)
-    } catch (err) {
-      toast.error(t("common.error") || "Có lỗi xảy ra")
+    } catch (err: any) {
+      toast.error(err?.data?.message || t("common.error") || "Có lỗi xảy ra")
       logger.error("Failed to update profile", err)
     }
   }
@@ -111,9 +111,9 @@ export default function ProfilePage() {
       dispatch(clearAuth())
       toast.success(t("profile.deleteAccountBtn"))
       router.push("/login")
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to delete account", err)
-      const msg = t("common.error") || "Có lỗi xảy ra"
+      const msg = err?.data?.message || t("common.error") || "Có lỗi xảy ra"
       setDeleteError(msg)
       toast.error(msg)
     }
@@ -362,7 +362,7 @@ export default function ProfilePage() {
         title={t("profile.deleteConfirmTitle")}
         description={t("profile.deleteConfirmDesc")}
       >
-        <div className="space-y-4 pt-4 border-t mt-2">
+        <div className="space-y-4 pt-4">
           {deleteError && (
             <p className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 animate-in fade-in">
               {deleteError}
@@ -396,7 +396,7 @@ export default function ProfilePage() {
         title={t("profile.logoutConfirmTitle")}
         description={t("profile.logoutConfirmDesc")}
       >
-        <div className="space-y-4 pt-4 border-t mt-2">
+        <div className="space-y-4 pt-4">
           <div className="flex justify-end gap-3 pt-2">
             <Button
               variant="outline"

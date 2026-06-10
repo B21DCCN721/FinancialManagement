@@ -6,10 +6,11 @@ import { TrendingUp, ArrowRight, Eye, EyeOff, AlertCircle, Loader2 } from "lucid
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDispatch } from "react-redux"
-import { useRegisterMutation } from "@/services/authApi"
+import { useRegisterMutation, useGoogleLoginMutation } from "@/services/authApi"
 import { setCredentials } from "@/store/authSlice"
 import { logger } from "@/lib/logger"
-import { useClerk } from "@clerk/nextjs"
+import { auth, googleProvider } from "@/lib/firebase"
+import { signInWithPopup } from "firebase/auth"
 import { useTranslation } from "react-i18next"
 import { TermsModal } from "@/components/auth/terms-modal"
 
@@ -25,31 +26,31 @@ export default function RegisterPage() {
   const router = useRouter()
   const dispatch = useDispatch()
   const [register, { isLoading }] = useRegisterMutation()
-  const clerk = useClerk()
+  const [googleLogin] = useGoogleLoginMutation()
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [modalType, setModalType] = useState<"terms" | "privacy" | null>(null)
 
   const handleGoogleLogin = async () => {
-    if (!clerk.loaded) return
     setIsGoogleLoading(true)
     try {
-      await (clerk.client.signIn as any).authenticateWithRedirect({
-        strategy: "oauth_google",
-        redirectUrl: "/sso-callback",
-        forceRedirectUrl: "/auth-sync",
-        signUpForceRedirectUrl: "/auth-sync",
-      })
-    } catch (err) {
-      setIsGoogleLoading(false)
-      logger.error("Clerk Google Login initiated failed", err)
-      const clerkErr = err instanceof Error ? err.message : (err && typeof err === 'object' && 'errors' in err) ? (err as any).errors[0]?.longMessage : JSON.stringify(err)
+      const result = await signInWithPopup(auth, googleProvider)
+      const token = await result.user.getIdToken()
       
-      if (clerkErr && clerkErr.includes("already signed in")) {
-        router.push("/auth-sync")
-        return
-      }
-
-      setErrorMsg(`${t("register.googleError")}${clerkErr}`)
+      const apiResult = await googleLogin({ token }).unwrap()
+      
+      dispatch(setCredentials({
+        accessToken: apiResult.accessToken,
+        refreshToken: apiResult.refreshToken,
+        user: apiResult.user,
+      }))
+      
+      logger.info("Google Register successful", { userId: apiResult.user.id })
+      router.push("/")
+    } catch (err: any) {
+      setIsGoogleLoading(false)
+      logger.error("Firebase Google Register failed", err)
+      const errMessage = err?.message || JSON.stringify(err)
+      setErrorMsg(`${t("register.googleError")} ${errMessage}`)
     }
   }
 

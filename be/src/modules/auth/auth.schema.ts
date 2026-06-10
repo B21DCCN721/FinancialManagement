@@ -19,7 +19,7 @@ export const loginSchema = z.object({
 })
 
 export const googleLoginSchema = z.object({
-  token: z.string().min(1, "Google/Clerk token is required"),
+  token: z.string().min(1, "Google/Firebase token is required"),
 })
 
 export const refreshTokenSchema = z.object({

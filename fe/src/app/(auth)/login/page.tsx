@@ -3,15 +3,16 @@
 
 import Link from "next/link"
 import { TrendingUp, ArrowRight, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react"
-import { useState, Suspense, useEffect } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useDispatch } from "react-redux"
-import { useLoginMutation } from "@/services/authApi"
+import { useLoginMutation, useGoogleLoginMutation } from "@/services/authApi"
 import { setCredentials } from "@/store/authSlice"
 import { logger } from "@/lib/logger"
-import { useClerk } from "@clerk/nextjs"
+import { auth, googleProvider } from "@/lib/firebase"
+import { signInWithPopup } from "firebase/auth"
 import { useTranslation } from "react-i18next"
 import { TermsModal } from "@/components/auth/terms-modal"
+import { useDispatch } from "react-redux"
 
 function LoginContent() {
   const { t } = useTranslation()
@@ -23,10 +24,10 @@ function LoginContent() {
   const router = useRouter()
   const dispatch = useDispatch()
   const [login, { isLoading }] = useLoginMutation()
-  const clerk = useClerk()
+  const [googleLogin] = useGoogleLoginMutation()
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [modalType, setModalType] = useState<"terms" | "privacy" | null>(null)
-  
+
   const searchParams = useSearchParams()
   const errorParam = searchParams.get("error")
 
@@ -40,26 +41,26 @@ function LoginContent() {
   }
 
   const handleGoogleLogin = async () => {
-    if (!clerk.loaded) return
     setIsGoogleLoading(true)
     try {
-      await (clerk.client.signIn as any).authenticateWithRedirect({
-        strategy: "oauth_google",
-        redirectUrl: "/sso-callback",
-        forceRedirectUrl: "/auth-sync",
-        signUpForceRedirectUrl: "/auth-sync",
-      })
-    } catch (err) {
-      setIsGoogleLoading(false)
-      logger.error("Clerk Google Login initiated failed", err)
-      const clerkErr = err instanceof Error ? err.message : (err && typeof err === 'object' && 'errors' in err) ? (err as any).errors[0]?.longMessage : JSON.stringify(err)
-      
-      if (clerkErr && clerkErr.includes("already signed in")) {
-        router.push("/auth-sync")
-        return
-      }
+      const result = await signInWithPopup(auth, googleProvider)
+      const token = await result.user.getIdToken()
 
-      setErrorMsg(`Lỗi kết nối Google: ${clerkErr}`)
+      const apiResult = await googleLogin({ token }).unwrap()
+
+      dispatch(setCredentials({
+        accessToken: apiResult.accessToken,
+        refreshToken: apiResult.refreshToken,
+        user: apiResult.user,
+      }))
+
+      logger.info("Google Login successful", { userId: apiResult.user.id })
+      router.push("/")
+    } catch (err: any) {
+      setIsGoogleLoading(false)
+      logger.error("Firebase Google Login failed", err)
+      const errMessage = err?.message || JSON.stringify(err)
+      setErrorMsg(`Lỗi kết nối Google: ${errMessage}`)
     }
   }
 
@@ -235,19 +236,19 @@ function LoginContent() {
 
           <div className="mt-6 text-center text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
             {t("register.terms1")}
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setModalType("terms")}
-              className="underline underline-offset-2 hover:text-white transition-colors mx-1" 
+              className="underline underline-offset-2 hover:text-white transition-colors mx-1"
               style={{ color: "rgba(167,139,250,0.7)" }}
             >
               {t("register.terms2")}
             </button>
             {t("register.terms3")}
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setModalType("privacy")}
-              className="underline underline-offset-2 hover:text-white transition-colors mx-1" 
+              className="underline underline-offset-2 hover:text-white transition-colors mx-1"
               style={{ color: "rgba(167,139,250,0.7)" }}
             >
               {t("register.terms4")}
@@ -264,10 +265,10 @@ function LoginContent() {
           </Link>
         </p>
       </div>
-      <TermsModal 
-        isOpen={modalType !== null} 
-        onClose={() => setModalType(null)} 
-        type={modalType || "terms"} 
+      <TermsModal
+        isOpen={modalType !== null}
+        onClose={() => setModalType(null)}
+        type={modalType || "terms"}
       />
     </div>
   )

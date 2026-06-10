@@ -16,7 +16,6 @@ export const metadata: Metadata = {
 import { ThemeProvider } from "@/components/theme-provider";
 import { ReduxProvider } from "@/store/provider";
 import I18nProvider from "@/components/providers/I18nProvider";
-import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 
 export default function RootLayout({
@@ -25,8 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html
+    <html
         lang="vi"
         suppressHydrationWarning
         className={`${inter.variable} h-full antialiased`}
@@ -47,6 +45,5 @@ export default function RootLayout({
           </ThemeProvider>
         </body>
       </html>
-    </ClerkProvider>
   );
 }

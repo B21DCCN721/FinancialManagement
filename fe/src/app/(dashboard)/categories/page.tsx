@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { ConfirmModal } from "@/components/ui/confirm-modal"
 import {
   useGetCategoriesQuery,
   useCreateCategoryMutation,
@@ -52,13 +53,14 @@ export default function CategoriesPage() {
   const { t } = useTranslation()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   const [selectedIcon, setSelectedIcon] = useState("FileText")
   const [selectedColor, setSelectedColor] = useState("#7c5cfc")
 
   const { data: categories = [], isLoading } = useGetCategoriesQuery()
   const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation()
   const [updateCategory, { isLoading: isUpdating }] = useUpdateCategoryMutation()
-  const [deleteCategory] = useDeleteCategoryMutation()
+  const [deleteCategory, { isLoading: isDeleting }] = useDeleteCategoryMutation()
 
   const editingCategory = categories.find((c) => c.id === editingId)
 
@@ -86,20 +88,22 @@ export default function CategoriesPage() {
         toast.success(t("categories.addSuccess"))
       }
       resetModal()
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to save category", err)
-      toast.error(t("categories.addError"))
+      toast.error(err?.data?.message || t("categories.addError"))
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteConfirm = async () => {
+    if (!deleteId) return
     try {
-      await deleteCategory(id).unwrap()
-      logger.info("Category deleted", { id })
-      toast.success(t("categories.deleteSuccess"))
-    } catch (err) {
+      await deleteCategory(deleteId).unwrap()
+      logger.info("Category deleted", { id: deleteId })
+      toast.success(t("categories.deleteSuccess") || "Xóa danh mục thành công")
+      setDeleteId(null)
+    } catch (err: any) {
       logger.error("Failed to delete category", err)
-      toast.error(t("categories.deleteError"))
+      toast.error(err?.data?.message || t("categories.deleteError") || "Xóa danh mục thất bại.")
     }
   }
 
@@ -143,7 +147,7 @@ export default function CategoriesPage() {
               <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 px-1">{t("categories.income")}</h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {incomeCategories.map((cat) => (
-                  <CategoryCard key={cat.id} cat={cat} onEdit={openEdit} onDelete={handleDelete} />
+                  <CategoryCard key={cat.id} cat={cat} onEdit={openEdit} onDelete={() => setDeleteId(cat.id)} />
                 ))}
               </div>
             </section>
@@ -155,7 +159,7 @@ export default function CategoriesPage() {
               <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 px-1">{t("categories.expense")}</h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {expenseCategories.map((cat) => (
-                  <CategoryCard key={cat.id} cat={cat} onEdit={openEdit} onDelete={handleDelete} />
+                  <CategoryCard key={cat.id} cat={cat} onEdit={openEdit} onDelete={() => setDeleteId(cat.id)} />
                 ))}
               </div>
             </section>
@@ -252,6 +256,18 @@ export default function CategoriesPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Delete Confirm Modal */}
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDeleteConfirm}
+        title={t("categories.deleteConfirmTitle") || "Xóa danh mục"}
+        description={t("categories.deleteConfirmDesc") || "Bạn có chắc chắn muốn xóa danh mục này? Hành động này không thể hoàn tác."}
+        confirmText={t("categories.delete") || "Xóa"}
+        cancelText={t("categories.cancel") || "Hủy"}
+        isLoading={isDeleting}
+      />
     </div>
   )
 }

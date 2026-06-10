@@ -7,6 +7,7 @@ import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { DatePicker } from "@/components/ui/date-picker"
+import { ConfirmModal } from "@/components/ui/confirm-modal"
 import {
   useGetGoalsQuery,
   useCreateGoalMutation,
@@ -22,11 +23,12 @@ export default function GoalsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isAddFundsOpen, setIsAddFundsOpen] = useState(false)
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const { data: goals = [], isLoading } = useGetGoalsQuery()
   const [createGoal, { isLoading: isCreating }] = useCreateGoalMutation()
   const [contributeToGoal, { isLoading: isContributing }] = useContributeToGoalMutation()
-  const [deleteGoal] = useDeleteGoalMutation()
+  const [deleteGoal, { isLoading: isDeleting }] = useDeleteGoalMutation()
 
   const handleAddGoal = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -44,9 +46,9 @@ export default function GoalsPage() {
       e.currentTarget.reset()
       logger.info("Goal created")
       toast.success(t("goals.addSuccess"))
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to create goal", err)
-      toast.error(t("goals.addError"))
+      toast.error(err?.data?.message || t("goals.addError"))
     }
   }
 
@@ -63,9 +65,20 @@ export default function GoalsPage() {
       e.currentTarget.reset()
       logger.info("Contributed to goal", { goalId: selectedGoalId, amount })
       toast.success(t("goals.fundsSuccess"))
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to contribute to goal", err)
-      toast.error(t("goals.fundsError"))
+      toast.error(err?.data?.message || t("goals.fundsError"))
+    }
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteId) return
+    try {
+      await deleteGoal(deleteId).unwrap()
+      toast.success(t("goals.deleteSuccess") || "Xóa mục tiêu thành công")
+      setDeleteId(null)
+    } catch (err: any) {
+      toast.error(err?.data?.message || t("goals.deleteError") || "Có lỗi xảy ra khi xóa mục tiêu")
     }
   }
 
@@ -124,14 +137,7 @@ export default function GoalsPage() {
                         </span>
                       )}
                       <button
-                        onClick={async () => {
-                          try {
-                            await deleteGoal(goal.id).unwrap()
-                            toast.success(t("goals.deleteSuccess"))
-                          } catch (err) {
-                            toast.error(t("goals.deleteError"))
-                          }
-                        }}
+                        onClick={() => setDeleteId(goal.id)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger ml-2"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -240,6 +246,18 @@ export default function GoalsPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Delete Confirm Modal */}
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDeleteConfirm}
+        title={t("goals.deleteConfirmTitle") || "Xóa mục tiêu"}
+        description={t("goals.deleteConfirmDesc") || "Bạn có chắc chắn muốn xóa mục tiêu này? Hành động này không thể hoàn tác."}
+        confirmText={t("goals.delete") || "Xóa"}
+        cancelText={t("goals.cancel") || "Hủy"}
+        isLoading={isDeleting}
+      />
     </div>
   )
 }

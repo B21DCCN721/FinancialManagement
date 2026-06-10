@@ -7,6 +7,7 @@ import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
+import { ConfirmModal } from "@/components/ui/confirm-modal"
 import { DynamicIcon } from "@/components/ui/dynamic-icon"
 import {
   useGetBudgetSummaryQuery,
@@ -39,11 +40,12 @@ export default function BudgetsPage() {
   const { t } = useTranslation()
   const period = currentPeriod()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const { data: budgets = [], isLoading } = useGetBudgetSummaryQuery({ period })
   const { data: categories = [] } = useGetCategoriesQuery({ type: "expense" })
   const [createBudget, { isLoading: isCreating }] = useCreateBudgetMutation()
-  const [deleteBudget] = useDeleteBudgetMutation()
+  const [deleteBudget, { isLoading: isDeleting }] = useDeleteBudgetMutation()
 
   const handleAddSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -58,9 +60,20 @@ export default function BudgetsPage() {
       e.currentTarget.reset()
       logger.info("Budget created")
       toast.success(t("budgets.addSuccess"))
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to create budget", err)
-      toast.error(t("budgets.addError"))
+      toast.error(err?.data?.message || t("budgets.addError"))
+    }
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteId) return
+    try {
+      await deleteBudget(deleteId).unwrap()
+      toast.success(t("budgets.deleteSuccess") || "Xóa ngân sách thành công")
+      setDeleteId(null)
+    } catch (err: any) {
+      toast.error(err?.data?.message || t("budgets.deleteError") || "Có lỗi xảy ra khi xóa ngân sách")
     }
   }
 
@@ -110,14 +123,7 @@ export default function BudgetsPage() {
                       {budget.amount.toLocaleString("vi-VN")} ₫ {t("budgets.limit")}
                     </span>
                     <button
-                      onClick={async () => {
-                        try {
-                          await deleteBudget(budget.id).unwrap()
-                          toast.success(t("budgets.deleteSuccess"))
-                        } catch (err) {
-                          toast.error(t("budgets.deleteError"))
-                        }
-                      }}
+                      onClick={() => setDeleteId(budget.id)}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger text-xs"
                     >
                       ✕
@@ -212,6 +218,18 @@ export default function BudgetsPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Delete Confirm Modal */}
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDeleteConfirm}
+        title={t("budgets.deleteConfirmTitle") || "Xóa ngân sách"}
+        description={t("budgets.deleteConfirmDesc") || "Bạn có chắc chắn muốn xóa ngân sách này? Hành động này không thể hoàn tác."}
+        confirmText={t("budgets.delete") || "Xóa"}
+        cancelText={t("budgets.cancel") || "Hủy"}
+        isLoading={isDeleting}
+      />
     </div>
   )
 }

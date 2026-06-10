@@ -3,12 +3,17 @@ import { FastifyInstance } from "fastify"
 import { verifyPassword, hashPassword } from "../../utils/hash"
 import { errors } from "../../utils/errors"
 import { RegisterInput, LoginInput } from "./auth.schema"
-import { createClerkClient, verifyToken } from "@clerk/backend"
 import crypto from "crypto"
 import { sendMail } from "../../utils/mailer"
 import { ForgotPasswordInput, ResetPasswordInput } from "./auth.schema"
+import * as admin from "firebase-admin"
 
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })
+// Khởi tạo Firebase Admin với Project ID của dự án
+if (!admin.apps.length) {
+  admin.initializeApp({
+    projectId: "financialmanagement-498504"
+  })
+}
 
 /**
  * Register a new user.
@@ -76,14 +81,14 @@ export async function loginService(
   const prisma: PrismaClient = server.prisma
 
   const user = await prisma.user.findUnique({ where: { email: data.email } })
-  if (!user) throw errors.unauthorized("Email hoặc mật khẩu không hợp lệ")
+  if (!user) throw errors.unauthorized("Tài khoản email không tồn tại")
 
   if (user.authProvider === "google") {
     throw errors.unauthorized("Email này được đăng ký bằng Google. Vui lòng đăng nhập bằng Google.")
   }
 
   const valid = await verifyPassword(data.password, user.password)
-  if (!valid) throw errors.unauthorized("Invalid email or password")
+  if (!valid) throw errors.unauthorized("Mật khẩu không chính xác")
 
   const { accessToken, refreshToken } = await issueTokens(server, user.id, user.email)
 
@@ -109,7 +114,7 @@ export async function loginService(
 }
 
 /**
- * Login with Google / Clerk token
+ * Login with Google / Firebase token
  */
 export async function googleLoginService(
   server: FastifyInstance,
@@ -117,29 +122,24 @@ export async function googleLoginService(
 ) {
   const prisma: PrismaClient = server.prisma
 
-  if (!process.env.CLERK_SECRET_KEY) {
-    throw errors.internal("CLERK_SECRET_KEY is not configured on the server")
-  }
-
-  let providerId: string
+  let decodedToken: admin.auth.DecodedIdToken
   try {
-    // Xác thực token do Clerk trả về từ frontend
-    const verified = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY })
-    providerId = verified.sub
+    // Xác thực token do Firebase trả về từ frontend
+    decodedToken = await admin.auth().verifyIdToken(token)
   } catch (err) {
-    server.log.error(err, "Clerk token verification failed")
+    server.log.error(err, "Firebase token verification failed")
     throw errors.unauthorized("Invalid Google authentication token")
   }
 
-  // Lấy thông tin user từ Clerk
-  const clerkUser = await clerk.users.getUser(providerId)
-  const email = clerkUser.emailAddresses[0]?.emailAddress
+  const providerId = decodedToken.uid
+  const email = decodedToken.email
   if (!email) throw errors.badRequest("Google account does not have an email")
 
-  const firstName = clerkUser.firstName
-  const lastName = clerkUser.lastName
-  const name = [firstName, lastName].filter(Boolean).join(" ") || email.split("@")[0]
-  const avatarUrl = clerkUser.imageUrl
+  const name = decodedToken.name || email.split("@")[0]
+  // Firebase Auth providers display name might not be split into first/last easily, so we just use name.
+  const firstName = null
+  const lastName = null
+  const avatarUrl = decodedToken.picture || null
 
   return await prisma.$transaction(async (tx) => {
     // Tìm user theo providerId hoặc email

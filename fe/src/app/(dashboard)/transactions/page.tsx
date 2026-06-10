@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DynamicIcon } from "@/components/ui/dynamic-icon"
+import { ConfirmModal } from "@/components/ui/confirm-modal"
 import {
   useGetTransactionsQuery,
   useCreateTransactionMutation,
@@ -32,7 +33,9 @@ function TransactionsContent() {
   const [isRecurring, setIsRecurring] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState(urlSearch)
-  const [filterType, setFilterType] = useState("")
+  const [filterType, setFilterType] = useState<string>("all")
+  const [filterCategory, setFilterCategory] = useState<string>("all")
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined)
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined)
   const [page, setPage] = useState(1)
@@ -108,20 +111,22 @@ function TransactionsContent() {
       setIsRecurring(false)
       logger.info("Transaction created")
       toast.success(t("transactions.addSuccess"))
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to create transaction", err)
-      toast.error(t("transactions.addError"))
+      toast.error(err?.data?.message || t("transactions.addError"))
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteConfirm = async () => {
+    if (!deleteId) return
     try {
-      await deleteTransaction(id).unwrap()
-      logger.info("Transaction deleted", { id })
-      toast.success(t("transactions.deleteSuccess"))
-    } catch (err) {
+      await deleteTransaction(deleteId).unwrap()
+      logger.info("Transaction deleted", { id: deleteId })
+      toast.success(t("transactions.deleteSuccess") || "Xóa giao dịch thành công")
+      setDeleteId(null)
+    } catch (err: any) {
       logger.error("Failed to delete transaction", err)
-      toast.error(t("transactions.deleteError"))
+      toast.error(err?.data?.message || t("transactions.deleteError") || "Lỗi khi xóa giao dịch")
     }
   }
 
@@ -271,7 +276,7 @@ function TransactionsContent() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger hover:bg-danger/10"
-                        onClick={() => handleDelete(tx.id)}
+                        onClick={() => setDeleteId(tx.id)}
                         disabled={isDeleting}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -393,7 +398,7 @@ function TransactionsContent() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger hover:bg-danger/10"
-                        onClick={() => handleDelete(tx.id)}
+                        onClick={() => setDeleteId(tx.id)}
                         disabled={isDeleting}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -497,6 +502,18 @@ function TransactionsContent() {
           </div>
         </form>
       </Modal>
+
+      {/* Delete Confirm Modal */}
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDeleteConfirm}
+        title={t("transactions.deleteConfirmTitle") || "Xóa giao dịch"}
+        description={t("transactions.deleteConfirmDesc") || "Bạn có chắc chắn muốn xóa giao dịch này? Hành động này không thể hoàn tác."}
+        confirmText={t("transactions.delete") || "Xóa"}
+        cancelText={t("transactions.cancel") || "Hủy"}
+        isLoading={isDeleting}
+      />
     </div>
   )
 }
