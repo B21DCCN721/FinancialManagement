@@ -35,19 +35,19 @@ export function Modal({ isOpen, onClose, title, description, children, className
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
             className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
           />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-              className={cn(
-                "w-full max-w-lg pointer-events-auto rounded-xl border bg-background p-6 shadow-lg shadow-black/20",
-                className
-              )}
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+                className={cn(
+                  "relative w-full max-w-lg pointer-events-auto rounded-xl border bg-background p-6 shadow-lg shadow-black/20 text-left",
+                  className
+                )}
               style={{ WebkitFontSmoothing: "antialiased", transform: "translateZ(0)" }}
             >
               <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-4">
@@ -61,7 +61,8 @@ export function Modal({ isOpen, onClose, title, description, children, className
                 {description && <p className="text-sm text-muted-foreground">{description}</p>}
               </div>
               {children}
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
         </>
       )}

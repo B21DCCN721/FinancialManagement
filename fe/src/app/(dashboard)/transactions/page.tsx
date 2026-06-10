@@ -417,7 +417,7 @@ function TransactionsContent() {
         title={t("transactions.addModalTitle")}
         description={t("transactions.addModalDesc")}
       >
-        <form className="space-y-4 pt-4 max-h-[75vh] overflow-y-auto px-1 scrollbar-thin" onSubmit={handleAddSubmit}>
+        <form className="space-y-4 pt-4" onSubmit={handleAddSubmit}>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="type">{t("transactions.type")}</Label>
