@@ -68,6 +68,7 @@ server.register(compress, { global: true })
 server.register(cors, {
   origin: env.CORS_ORIGIN.split(",").map((o) => o.trim()),
   credentials: true,
+  methods: ["GET", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
 })
 
 server.register(jwt, {
