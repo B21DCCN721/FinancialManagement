@@ -30,7 +30,7 @@ CREATE TABLE "User" (
     "name"         TEXT,                        -- computed / display name
     "avatarUrl"    TEXT,
     "authProvider" TEXT         NOT NULL DEFAULT 'local', -- 'local' or 'google'
-    "providerId"   TEXT,                        -- Clerk's Google user ID
+    "providerId"   TEXT,                        -- Firebase/Google user ID
     "refreshToken" TEXT,                        -- hashed refresh token (nullable)
     "createdAt"    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     "updatedAt"    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),

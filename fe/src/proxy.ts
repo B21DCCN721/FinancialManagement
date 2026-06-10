@@ -12,16 +12,16 @@ export function proxy(request: NextRequest) {
   // Xây dựng chuỗi CSP nghiêm ngặt
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://*.clerk.accounts.dev https://challenges.cloudflare.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://apis.google.com https://www.gstatic.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https: https://img.clerk.com;
+    img-src 'self' blob: data: https:;
     font-src 'self' data: https://fonts.gstatic.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
-    frame-src 'self' https://challenges.cloudflare.com https://www.google.com/recaptcha/;
-    connect-src 'self' http://localhost:* ${additionalConnectSrc} https://*.clerk.com https://*.clerk.accounts.dev https://clerk-telemetry.com https://challenges.cloudflare.com https://*.sentry.io;
+    frame-src 'self' https://challenges.cloudflare.com https://www.google.com/recaptcha/ https://financialmanagement-498504.firebaseapp.com;
+    connect-src 'self' http://localhost:* ${additionalConnectSrc} https://challenges.cloudflare.com https://*.sentry.io https://www.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com;
     worker-src 'self' blob:;
   `
   

@@ -199,7 +199,7 @@ function LoginContent() {
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
               {isLoading ? t("common.loading") : t("auth.login")}
             </button>
-            <div id="clerk-captcha"></div>
+
           </form>
 
           <div className="flex items-center gap-3 mb-6">

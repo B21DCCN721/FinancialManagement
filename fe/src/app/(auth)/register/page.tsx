@@ -257,7 +257,7 @@ export default function RegisterPage() {
               </button>
               .
             </p>
-            <div id="clerk-captcha"></div>
+
           </form>
         </div>
 

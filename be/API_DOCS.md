@@ -50,7 +50,7 @@ This document outlines the RESTful API endpoints available in the backend of the
 
 ### 1.3 Google Login
 - **Endpoint:** `POST /auth/google`
-- **Description:** Sync/Authenticate user using a token from Google (or Clerk).
+- **Description:** Sync/Authenticate user using a token from Google (Firebase).
 - **Request Body:**
   ```json
   {

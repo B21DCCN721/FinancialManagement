@@ -16,7 +16,7 @@ model User {
   name         String?
   avatarUrl    String?
   authProvider String   @default("local") // 'local' or 'google'
-  providerId             String?  @unique           // Clerk's Google user ID
+  providerId             String?  @unique           // Firebase/Google user ID
   refreshToken           String?  // stored as hashed token
   resetPasswordOtp       String?
   resetPasswordExpiresAt DateTime?
