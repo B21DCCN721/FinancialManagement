@@ -20,6 +20,8 @@ export function DatePicker({ value, onChange, name, required, id }: DatePickerPr
   const [panelYear, setPanelYear] = useState(initialDate.getFullYear())
   const [panelMonth, setPanelMonth] = useState(initialDate.getMonth())
 
+  const [view, setView] = useState<"calendar" | "months" | "years">("calendar")
+
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -50,21 +52,33 @@ export function DatePicker({ value, onChange, name, required, id }: DatePickerPr
     setOpen(false)
   }
 
-  function handlePrevMonth() {
-    if (panelMonth === 0) {
-      setPanelMonth(11)
+  function handlePrev() {
+    if (view === "months") {
       setPanelYear(panelYear - 1)
+    } else if (view === "years") {
+      setPanelYear(panelYear - 12)
     } else {
-      setPanelMonth(panelMonth - 1)
+      if (panelMonth === 0) {
+        setPanelMonth(11)
+        setPanelYear(panelYear - 1)
+      } else {
+        setPanelMonth(panelMonth - 1)
+      }
     }
   }
 
-  function handleNextMonth() {
-    if (panelMonth === 11) {
-      setPanelMonth(0)
+  function handleNext() {
+    if (view === "months") {
       setPanelYear(panelYear + 1)
+    } else if (view === "years") {
+      setPanelYear(panelYear + 12)
     } else {
-      setPanelMonth(panelMonth + 1)
+      if (panelMonth === 11) {
+        setPanelMonth(0)
+        setPanelYear(panelYear + 1)
+      } else {
+        setPanelMonth(panelMonth + 1)
+      }
     }
   }
 
@@ -74,9 +88,12 @@ export function DatePicker({ value, onChange, name, required, id }: DatePickerPr
       <button
         type="button"
         onClick={() => {
-          const d = currentValue ? new Date(currentValue) : new Date()
-          setPanelYear(d.getFullYear())
-          setPanelMonth(d.getMonth())
+          if (!open) {
+            const d = currentValue ? new Date(currentValue) : new Date()
+            setPanelYear(d.getFullYear())
+            setPanelMonth(d.getMonth())
+            setView("calendar")
+          }
           setOpen((o) => !o)
         }}
         className="flex w-full items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-all bg-card border border-input text-foreground hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -99,57 +116,128 @@ export function DatePicker({ value, onChange, name, required, id }: DatePickerPr
             }}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <button type="button" onClick={handlePrevMonth} className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-accent text-muted-foreground hover:text-foreground"><ChevronLeft className="h-4 w-4" /></button>
-              <span className="text-sm font-semibold">Tháng {panelMonth + 1}, {panelYear}</span>
-              <button type="button" onClick={handleNextMonth} className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-accent text-muted-foreground hover:text-foreground"><ChevronRight className="h-4 w-4" /></button>
+              <button type="button" onClick={handlePrev} className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft className="h-4 w-4" /></button>
+              <div className="flex gap-1 text-sm font-semibold">
+                <button 
+                  type="button" 
+                  onClick={() => setView(view === "months" ? "calendar" : "months")} 
+                  className={`px-1.5 py-0.5 rounded-md transition-colors ${view === "months" ? "bg-primary/20 text-primary" : "hover:bg-accent hover:text-primary"}`}
+                >
+                  Tháng {panelMonth + 1}
+                </button>
+                <span>,</span>
+                <button 
+                  type="button" 
+                  onClick={() => setView(view === "years" ? "calendar" : "years")} 
+                  className={`px-1.5 py-0.5 rounded-md transition-colors ${view === "years" ? "bg-primary/20 text-primary" : "hover:bg-accent hover:text-primary"}`}
+                >
+                  {panelYear}
+                </button>
+              </div>
+              <button type="button" onClick={handleNext} className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><ChevronRight className="h-4 w-4" /></button>
             </div>
 
-            <div className="grid grid-cols-7 gap-1 p-3 pb-1 text-center text-xs font-medium text-muted-foreground">
-              <div>T2</div><div>T3</div><div>T4</div><div>T5</div><div>T6</div><div>T7</div><div>CN</div>
-            </div>
+            {view === "calendar" && (
+              <>
+                <div className="grid grid-cols-7 gap-1 p-3 pb-1 text-center text-xs font-medium text-muted-foreground">
+                  <div>T2</div><div>T3</div><div>T4</div><div>T5</div><div>T6</div><div>T7</div><div>CN</div>
+                </div>
 
-            <div className="grid grid-cols-7 gap-1 p-3 pt-0">
-              {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} />)}
-              {Array.from({ length: daysInMonth }).map((_, i) => {
-                const day = i + 1
-                const isSelected = !!currentValue && displayDate.getDate() === day && displayDate.getMonth() === panelMonth && displayDate.getFullYear() === panelYear
-                const isToday = new Date().getDate() === day && new Date().getMonth() === panelMonth && new Date().getFullYear() === panelYear
+                <div className="grid grid-cols-7 gap-1 p-3 pt-0">
+                  {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} />)}
+                  {Array.from({ length: daysInMonth }).map((_, i) => {
+                    const day = i + 1
+                    const isSelected = !!currentValue && displayDate.getDate() === day && displayDate.getMonth() === panelMonth && displayDate.getFullYear() === panelYear
+                    const isToday = new Date().getDate() === day && new Date().getMonth() === panelMonth && new Date().getFullYear() === panelYear
 
-                return (
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => selectDate(day)}
+                        className={[
+                          "relative h-9 w-full rounded-xl text-sm font-medium transition-all hover:scale-105 flex items-center justify-center",
+                          isSelected
+                            ? "bg-primary text-white shadow-[0_4px_12px_rgba(124,92,252,0.4)]"
+                            : isToday
+                            ? "border border-primary/40 text-primary bg-primary/5"
+                            : "hover:bg-accent text-foreground",
+                        ].join(" ")}
+                      >
+                        {day}
+                        {isToday && !isSelected && <span className="absolute bottom-1 h-1 w-1 rounded-full bg-primary" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            {view === "months" && (
+              <div className="grid grid-cols-3 gap-2 p-3">
+                {Array.from({ length: 12 }).map((_, i) => (
                   <button
-                    key={day}
+                    key={i}
                     type="button"
-                    onClick={() => selectDate(day)}
+                    onClick={() => {
+                      setPanelMonth(i)
+                      setView("calendar")
+                    }}
                     className={[
-                      "relative h-9 w-full rounded-xl text-sm font-medium transition-all hover:scale-105 flex items-center justify-center",
-                      isSelected
+                      "h-10 rounded-xl text-sm font-medium transition-all hover:scale-105 flex items-center justify-center",
+                      panelMonth === i
                         ? "bg-primary text-white shadow-[0_4px_12px_rgba(124,92,252,0.4)]"
-                        : isToday
-                        ? "border border-primary/40 text-primary bg-primary/5"
                         : "hover:bg-accent text-foreground",
                     ].join(" ")}
                   >
-                    {day}
-                    {isToday && !isSelected && <span className="absolute bottom-1 h-1 w-1 rounded-full bg-primary" />}
+                    Tháng {i + 1}
                   </button>
-                )
-              })}
-            </div>
+                ))}
+              </div>
+            )}
 
-            <div className="border-t border-border px-3 py-2 flex justify-center">
-              <button
-                type="button"
-                onClick={() => {
-                  const now = new Date()
-                  setPanelYear(now.getFullYear())
-                  setPanelMonth(now.getMonth())
-                  selectDate(now.getDate())
-                }}
-                className="text-xs text-primary hover:underline font-medium"
-              >
-                Hôm nay
-              </button>
-            </div>
+            {view === "years" && (
+              <div className="grid grid-cols-3 gap-2 p-3">
+                {Array.from({ length: 12 }).map((_, i) => {
+                  const year = panelYear - 5 + i
+                  return (
+                    <button
+                      key={year}
+                      type="button"
+                      onClick={() => {
+                        setPanelYear(year)
+                        setView("calendar")
+                      }}
+                      className={[
+                        "h-10 rounded-xl text-sm font-medium transition-all hover:scale-105 flex items-center justify-center",
+                        panelYear === year
+                          ? "bg-primary text-white shadow-[0_4px_12px_rgba(124,92,252,0.4)]"
+                          : "hover:bg-accent text-foreground",
+                      ].join(" ")}
+                    >
+                      {year}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {view === "calendar" && (
+              <div className="border-t border-border px-3 py-2 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const now = new Date()
+                    setPanelYear(now.getFullYear())
+                    setPanelMonth(now.getMonth())
+                    selectDate(now.getDate())
+                  }}
+                  className="text-xs text-primary hover:underline font-medium"
+                >
+                  Hôm nay
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}
