@@ -9,7 +9,7 @@ export function proxy(request: NextRequest) {
   // Xây dựng chuỗi CSP nghiêm ngặt
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://*.clerk.accounts.dev;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://*.clerk.accounts.dev https://challenges.cloudflare.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' blob: data: https: https://img.clerk.com;
     font-src 'self' data: https://fonts.gstatic.com;
@@ -17,7 +17,9 @@ export function proxy(request: NextRequest) {
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
-    connect-src 'self' http://localhost:* https://*.clerk.com https://*.clerk.accounts.dev https://*.sentry.io;
+    frame-src 'self' https://challenges.cloudflare.com https://www.google.com/recaptcha/;
+    connect-src 'self' http://localhost:* https://*.clerk.com https://*.clerk.accounts.dev https://clerk-telemetry.com https://challenges.cloudflare.com https://*.sentry.io;
+    worker-src 'self' blob:;
   `
   
   // Chuẩn hoá chuỗi CSP (loại bỏ khoảng trắng thừa và dòng trống)
