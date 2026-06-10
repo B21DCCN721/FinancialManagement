@@ -60,8 +60,13 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
 
       {/* Dropdown panel */}
       {open && (
-        <div
-          className="absolute left-0 right-auto sm:left-auto sm:right-0 top-[calc(100%+8px)] z-50 w-[280px] rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.25)] border border-border overflow-hidden"
+        <>
+          <div 
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm sm:hidden" 
+            onClick={(e) => { e.stopPropagation(); setOpen(false); }} 
+          />
+          <div
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl sm:rounded-2xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-[calc(100%+8px)] sm:w-[280px] sm:z-50 shadow-[0_8px_40px_rgba(0,0,0,0.25)] border border-border overflow-hidden animate-in slide-in-from-bottom-2 sm:slide-in-from-top-2"
           style={{
             background: "var(--popover)",
             color: "var(--popover-foreground)",
@@ -126,7 +131,8 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
               Tháng hiện tại
             </button>
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   )
