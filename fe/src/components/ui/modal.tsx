@@ -19,13 +19,29 @@ export function Modal({ isOpen, onClose, title, description, children, className
   React.useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      
+      // Push a dummy state to intercept the Android back button
+      window.history.pushState({ modalOpen: true }, "");
+      
+      const handlePopState = (e: PopStateEvent) => {
+        // If the state is popped (user pressed back), close the modal
+        onClose();
+      };
+      
+      window.addEventListener("popstate", handlePopState);
+      
+      return () => {
+        document.body.style.overflow = "unset";
+        window.removeEventListener("popstate", handlePopState);
+        // If modal was closed via X button, we need to clean up the dummy state
+        if (window.history.state && window.history.state.modalOpen) {
+          window.history.back();
+        }
+      };
     } else {
       document.body.style.overflow = "unset";
     }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   return (
     <AnimatePresence>
@@ -38,14 +54,14 @@ export function Modal({ isOpen, onClose, title, description, children, className
             className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
           />
           <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4 text-center pointer-events-none">
+            <div className="flex min-h-full items-start justify-center p-4 text-center pointer-events-none">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
                 className={cn(
-                  "relative w-full max-w-lg pointer-events-auto rounded-t-2xl sm:rounded-xl border bg-background p-6 shadow-lg shadow-black/20 text-left mt-auto sm:mt-0",
+                  "relative w-full max-w-lg pointer-events-auto rounded-xl border bg-background p-6 shadow-lg shadow-black/20 text-left mt-16 sm:mt-24",
                   className
                 )}
               style={{ WebkitFontSmoothing: "antialiased", transform: "translateZ(0)" }}
