@@ -38,14 +38,14 @@ export function Modal({ isOpen, onClose, title, description, children, className
             className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
           />
           <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center pointer-events-none">
+            <div className="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4 text-center pointer-events-none">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
                 className={cn(
-                  "relative w-full max-w-lg pointer-events-auto rounded-xl border bg-background p-6 shadow-lg shadow-black/20 text-left",
+                  "relative w-full max-w-lg pointer-events-auto rounded-t-2xl sm:rounded-xl border bg-background p-6 shadow-lg shadow-black/20 text-left mt-auto sm:mt-0",
                   className
                 )}
               style={{ WebkitFontSmoothing: "antialiased", transform: "translateZ(0)" }}
