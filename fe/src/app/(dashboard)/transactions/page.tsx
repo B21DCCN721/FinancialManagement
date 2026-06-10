@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
@@ -31,8 +32,8 @@ function TransactionsContent() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState(urlSearch)
   const [filterType, setFilterType] = useState("")
-  const [dateFrom, setDateFrom] = useState("")
-  const [dateTo, setDateTo] = useState("")
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined)
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined)
   const [page, setPage] = useState(1)
   const [txType, setTxType] = useState<"income" | "expense">("expense")
 
@@ -50,8 +51,8 @@ function TransactionsContent() {
     page,
     limit: 20,
     ...(filterType && { type: filterType as "income" | "expense" }),
-    ...(dateFrom && { dateFrom: new Date(dateFrom).toISOString() }),
-    ...(dateTo && { dateTo: new Date(dateTo + "T23:59:59").toISOString() }),
+    ...(dateFrom && { dateFrom: dateFrom.toISOString() }),
+    ...(dateTo && { dateTo: dateTo.toISOString() }),
     ...(searchTerm && { search: searchTerm }),
   })
 
@@ -63,8 +64,8 @@ function TransactionsContent() {
 
   const clearFilters = () => {
     setFilterType("")
-    setDateFrom("")
-    setDateTo("")
+    setDateFrom(undefined)
+    setDateTo(undefined)
     setPage(1)
   }
 
@@ -82,7 +83,7 @@ function TransactionsContent() {
   const handleAddSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
-    const description = formData.get("desc") as string
+    const description = formData.get("description") as string
     const amount = parseFloat(formData.get("amount") as string)
     const type = formData.get("type") as "income" | "expense"
     const categoryId = formData.get("categoryId") as string
@@ -133,8 +134,8 @@ function TransactionsContent() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("transactions.title")}</h1>
-          <p className="text-muted-foreground">{t("transactions.subtitle")}</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("transactions.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("transactions.subtitle")}</p>
         </div>
         <Button onClick={() => setIsAddModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
@@ -159,6 +160,7 @@ function TransactionsContent() {
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setPage(1) }}
+                autoComplete="off"
               />
             </div>
             <Button
@@ -184,11 +186,11 @@ function TransactionsContent() {
                 </div>
                 <div className="space-y-1.5 flex-1 min-w-[150px]">
                   <Label className="text-xs text-muted-foreground">{t("transactions.dateFrom")}</Label>
-                  <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1) }} />
+                  <DatePicker value={dateFrom ? dateFrom.toISOString().split("T")[0] : undefined} onChange={(d) => { setDateFrom(new Date(d)); setPage(1) }} />
                 </div>
                 <div className="space-y-1.5 flex-1 min-w-[150px]">
                   <Label className="text-xs text-muted-foreground">{t("transactions.dateTo")}</Label>
-                  <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1) }} />
+                  <DatePicker value={dateTo ? dateTo.toISOString().split("T")[0] : undefined} onChange={(d) => { setDateTo(new Date(d)); setPage(1) }} />
                 </div>
                 {activeFilterCount > 0 && (
                   <Button variant="ghost" className="shrink-0 text-muted-foreground" onClick={clearFilters}>
@@ -276,11 +278,11 @@ function TransactionsContent() {
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-16 gap-3">
-                  <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
+                <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-6">
+                  <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
                     <Inbox className="h-6 w-6" />
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
                     {isFetching ? t("transactions.loading") : t("transactions.noTransactions")}
                   </p>
                 </div>
@@ -398,11 +400,13 @@ function TransactionsContent() {
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 gap-3">
-                  <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
+                <div className="flex flex-col items-center justify-center py-12 gap-3 text-center px-6">
+                  <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
                     <RefreshCw className="h-6 w-6" />
                   </div>
-                  <p className="text-sm text-muted-foreground">{t("transactions.noRecurring")}</p>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    {t("transactions.noRecurring")}
+                  </p>
                 </div>
               )}
             </div>
@@ -428,12 +432,12 @@ function TransactionsContent() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="date">{t("transactions.date")}</Label>
-              <Input id="date" name="date" type="date" defaultValue={new Date().toISOString().split("T")[0]} />
+              <DatePicker name="date" value={new Date().toISOString().split("T")[0]} />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="amount">{t("transactions.amount")}</Label>
-            <Input id="amount" name="amount" type="number" step="0.01" placeholder="0.00" required />
+            <Input id="amount" name="amount" type="number" inputMode="decimal" autoComplete="off" step="10" placeholder="0.00" required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="categoryId">{t("transactions.categoryId") || "Danh mục"}</Label>
@@ -445,8 +449,8 @@ function TransactionsContent() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="desc">{t("transactions.desc")}</Label>
-            <Input id="desc" name="desc" placeholder="Starbucks..." required />
+            <Label htmlFor="description">{t("transactions.description")}</Label>
+            <Input id="description" name="description" autoComplete="off" placeholder="VD: Lương tháng 5, Ăn trưa..." required />
           </div>
 
           <div className="flex items-center space-x-2 pt-2">

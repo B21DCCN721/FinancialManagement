@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, TrendingDown, Sparkles, Loader2, MoreHorizontal, Download } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, TrendingDown, Sparkles, Loader2, MoreHorizontal, Download, Inbox } from "lucide-react"
 import {
   Bar,
   BarChart,
@@ -357,7 +357,14 @@ export default function Dashboard() {
                 </div>
               ))
             ) : (
-              <div className="text-center py-6 text-sm text-muted-foreground">{t("dashboard.noTransactions")}</div>
+              <div className="flex flex-col items-center justify-center py-6 gap-2 text-center px-6">
+                <div className="h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center text-muted-foreground">
+                  <Inbox className="h-5 w-5" />
+                </div>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  {t("dashboard.noTransactions")}
+                </p>
+              </div>
             )}
           </div>
         </div>

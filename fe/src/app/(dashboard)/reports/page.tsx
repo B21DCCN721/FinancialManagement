@@ -81,8 +81,8 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("reports.title")}</h1>
-          <p className="text-muted-foreground">{t("reports.subtitle")}</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("reports.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("reports.subtitle")}</p>
         </div>
         {/* Period selector */}
         <div className="flex items-center gap-2">

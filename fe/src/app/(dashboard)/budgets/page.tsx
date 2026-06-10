@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AlertCircle, Plus, Utensils, Car, ShoppingBag, Gamepad2, ReceiptText, Home, Zap, Loader2 } from "lucide-react"
+import { AlertCircle, Plus, Utensils, Car, ShoppingBag, Gamepad2, ReceiptText, Home, Zap, Loader2, Inbox } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
@@ -12,6 +12,7 @@ import {
   useCreateBudgetMutation,
   useDeleteBudgetMutation,
 } from "@/services/budgetsApi"
+import { useGetCategoriesQuery } from "@/services/categoriesApi"
 import { logger } from "@/lib/logger"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
@@ -39,6 +40,7 @@ export default function BudgetsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   const { data: budgets = [], isLoading } = useGetBudgetSummaryQuery({ period })
+  const { data: categories = [] } = useGetCategoriesQuery({ type: "expense" })
   const [createBudget, { isLoading: isCreating }] = useCreateBudgetMutation()
   const [deleteBudget] = useDeleteBudgetMutation()
 
@@ -65,8 +67,8 @@ export default function BudgetsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t("budgets.title")}</h1>
-          <p className="text-muted-foreground">{t("budgets.subtitle")}</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t("budgets.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("budgets.subtitle")}</p>
         </div>
         <button
           onClick={() => setIsAddModalOpen(true)}
@@ -155,8 +157,13 @@ export default function BudgetsPage() {
             )
           })}
           {budgets.length === 0 && (
-            <div className="col-span-full py-12 text-center text-muted-foreground glass-card rounded-2xl">
-              {t("budgets.empty")}
+            <div className="col-span-full py-12 flex flex-col items-center justify-center gap-3 text-center glass-card rounded-2xl px-6">
+              <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
+                <Inbox className="h-6 w-6" />
+              </div>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                {t("budgets.empty")}
+              </p>
             </div>
           )}
         </div>
@@ -170,12 +177,17 @@ export default function BudgetsPage() {
       >
         <form className="space-y-4 pt-4" onSubmit={handleAddSubmit}>
           <div className="space-y-2">
-            <Label htmlFor="categoryId">{t("budgets.categoryId")}</Label>
-            <Input id="categoryId" name="categoryId" placeholder="UUID" required />
+            <Label htmlFor="categoryId">{t("budgets.categoryId") || "Danh mục"}</Label>
+            <Select id="categoryId" name="categoryId" required>
+              <option value="">-- Chọn danh mục --</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+              ))}
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="limit">{t("budgets.amountLimit")}</Label>
-            <Input id="limit" name="limit" type="number" step="10" placeholder="VD: 500" required />
+            <Input id="limit" name="limit" type="number" inputMode="decimal" autoComplete="off" step="10" placeholder="VD: 500000" required />
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>{t("budgets.cancel")}</Button>

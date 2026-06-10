@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Target, Plus, TrendingUp, CalendarDays, Loader2, Trash2 } from "lucide-react"
+import { Target, Plus, TrendingUp, CalendarDays, Loader2, Trash2, Inbox } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { DatePicker } from "@/components/ui/date-picker"
 import {
   useGetGoalsQuery,
   useCreateGoalMutation,
@@ -87,8 +88,8 @@ export default function GoalsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t("goals.title")}</h1>
-          <p className="text-muted-foreground">{t("goals.subtitle")}</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t("goals.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("goals.subtitle")}</p>
         </div>
         <button
           onClick={() => setIsAddModalOpen(true)}
@@ -181,8 +182,13 @@ export default function GoalsPage() {
             )
           })}
           {goals.length === 0 && (
-            <div className="col-span-full py-12 text-center text-muted-foreground glass-card rounded-2xl">
-              {t("goals.empty")}
+            <div className="col-span-full py-12 flex flex-col items-center justify-center gap-3 text-center glass-card rounded-2xl px-6">
+              <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
+                <Inbox className="h-6 w-6" />
+              </div>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                {t("goals.empty")}
+              </p>
             </div>
           )}
         </div>
@@ -193,15 +199,15 @@ export default function GoalsPage() {
         <form className="space-y-4 pt-4" onSubmit={handleAddGoal}>
           <div className="space-y-2">
             <Label htmlFor="title">{t("goals.goalName")}</Label>
-            <Input id="title" name="title" placeholder="VD: Du lịch hè" required />
+            <Input id="title" name="title" autoComplete="off" placeholder="VD: Du lịch hè" required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="target">{t("goals.targetAmount")}</Label>
-            <Input id="target" name="target" type="number" placeholder="5000" required />
+            <Input id="target" name="target" type="number" inputMode="decimal" autoComplete="off" placeholder="5000000" required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="deadline">{t("goals.deadlineLabel")}</Label>
-            <Input id="deadline" name="deadline" type="date" required />
+            <DatePicker id="deadline" name="deadline" required />
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>{t("goals.cancel")}</Button>
@@ -223,7 +229,7 @@ export default function GoalsPage() {
         <form className="space-y-4 pt-4" onSubmit={handleAddFunds}>
           <div className="space-y-2">
             <Label htmlFor="deposit">{t("goals.deposit")}</Label>
-            <Input id="deposit" name="deposit" type="number" step="0.01" placeholder="100.00" autoFocus required />
+            <Input id="deposit" name="deposit" type="number" inputMode="decimal" autoComplete="off" step="0.01" placeholder="100000" autoFocus required />
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setIsAddFundsOpen(false)}>{t("goals.cancel")}</Button>

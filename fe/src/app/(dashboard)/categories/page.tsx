@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Tag, Pencil, Trash2, Loader2 } from "lucide-react"
+import { Plus, Tag, Pencil, Trash2, Loader2, Inbox } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Modal } from "@/components/ui/modal"
@@ -114,8 +114,8 @@ export default function CategoriesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t("categories.title")}</h1>
-          <p className="text-muted-foreground">{t("categories.subtitle")}</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t("categories.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("categories.subtitle")}</p>
         </div>
         <button
           onClick={() => { setEditingId(null); setIsAddModalOpen(true) }}
@@ -157,8 +157,13 @@ export default function CategoriesPage() {
           )}
 
           {categories.length === 0 && (
-            <div className="py-12 text-center text-muted-foreground glass-card rounded-2xl">
-              {t("categories.empty")}
+            <div className="py-12 flex flex-col items-center justify-center gap-3 text-center glass-card rounded-2xl px-6">
+              <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
+                <Inbox className="h-6 w-6" />
+              </div>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                {t("categories.empty")}
+              </p>
             </div>
           )}
         </div>
