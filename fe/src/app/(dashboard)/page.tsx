@@ -2,6 +2,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import { DynamicIcon } from "@/components/ui/dynamic-icon"
 import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, TrendingDown, Sparkles, Loader2, MoreHorizontal, Download, Inbox } from "lucide-react"
 import {
   Bar,
@@ -343,7 +344,7 @@ export default function Dashboard() {
               transactions.map((tx) => (
                 <div key={tx.id} className="flex items-center gap-3 p-3 rounded-xl transition-all hover:scale-[1.01] bg-card border border-border">
                   <div className="h-9 w-9 rounded-xl flex items-center justify-center text-base shrink-0 bg-secondary">
-                    {tx.category?.icon ?? "📝"}
+                    <DynamicIcon name={tx.category?.icon ?? "FileText"} className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{tx.description ?? "—"}</p>

@@ -16,9 +16,14 @@ import {
 import { logger } from "@/lib/logger"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
+import { DynamicIcon } from "@/components/ui/dynamic-icon"
 
-// Bảng emoji icon gợi ý
-const ICON_SUGGESTIONS = ["🍔", "🚗", "🛍️", "🎬", "🏠", "⚡", "💊", "✈️", "📚", "💰", "🎓", "💳", "🎁", "📝"]
+// Bảng icon gợi ý
+const ICON_SUGGESTIONS = [
+  "Utensils", "Car", "ShoppingBag", "Film", "Home", "Zap", 
+  "Pill", "Plane", "Book", "Wallet", "GraduationCap", 
+  "CreditCard", "Gift", "FileText"
+]
 const COLOR_SUGGESTIONS = [
   "#7c5cfc", "#10d9a0", "#ff4d6d", "#f59e0b",
   "#38bdf8", "#a78bfa", "#34d399", "#fb923c",
@@ -47,7 +52,7 @@ export default function CategoriesPage() {
   const { t } = useTranslation()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [selectedIcon, setSelectedIcon] = useState("📝")
+  const [selectedIcon, setSelectedIcon] = useState("FileText")
   const [selectedColor, setSelectedColor] = useState("#7c5cfc")
 
   const { data: categories = [], isLoading } = useGetCategoriesQuery()
@@ -102,7 +107,7 @@ export default function CategoriesPage() {
     const cat = categories.find((c) => c.id === id)
     if (!cat) return
     setEditingId(id)
-    setSelectedIcon(cat.icon ?? "📝")
+    setSelectedIcon(cat.icon ?? "FileText")
     setSelectedColor(cat.color ?? "#7c5cfc")
     setIsAddModalOpen(true)
   }
@@ -213,7 +218,7 @@ export default function CategoriesPage() {
                       : { background: "var(--secondary)", border: "2px solid transparent" }
                   }
                 >
-                  {icon}
+                  <DynamicIcon name={icon} className="h-5 w-5" />
                 </button>
               ))}
             </div>
@@ -267,16 +272,16 @@ function CategoryCard({
           <div className="flex items-center gap-3">
             <div
               className="flex h-11 w-11 items-center justify-center rounded-xl text-xl"
-              style={{ background: (cat.color ?? "#7c5cfc") + "22" }}
+              style={{ background: (cat.color ?? "#7c5cfc") + "22", color: cat.color ?? "#7c5cfc" }}
             >
-              {cat.icon ?? <Tag className="h-5 w-5" />}
+              <DynamicIcon name={cat.icon} className="h-5 w-5" />
             </div>
             <div>
               <h3 className="font-semibold text-foreground">{cat.name}</h3>
               <CategoryTypeBadge type={cat.type} />
             </div>
           </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1 opacity-100 sm:opacity-50 sm:group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => onEdit(cat.id)}
               className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
@@ -285,7 +290,7 @@ function CategoryCard({
             </button>
             <button
               onClick={() => onDelete(cat.id)}
-              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-danger hover:bg-danger/10 transition-colors"
+              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>

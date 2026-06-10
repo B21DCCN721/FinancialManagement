@@ -5,10 +5,12 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { ChevronDown, Check } from "lucide-react"
 
-export type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement>
+export type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
+  options?: { value: string; label: React.ReactNode }[];
+}
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, children, value, defaultValue, onChange, name, ...props }, ref) => {
+  ({ className, children, value, defaultValue, onChange, name, options: customOptions, ...props }, ref) => {
     const [isOpen, setIsOpen] = React.useState(false)
     const [internalValue, setInternalValue] = React.useState(value || defaultValue || "")
     const dropdownRef = React.useRef<HTMLDivElement>(null)
@@ -35,19 +37,19 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
 
-    const options = React.Children.toArray(children).map((child: any) => ({
+    const parsedOptions = customOptions || React.Children.toArray(children).map((child: any) => ({
       value: child.props?.value,
       label: child.props?.children
     })).filter(opt => opt.value !== undefined)
 
     // Fallback if internalValue is not set but options exist
     React.useEffect(() => {
-      if (!internalValue && options.length > 0) {
-        setInternalValue(options[0].value)
+      if (!internalValue && parsedOptions.length > 0) {
+        setInternalValue(parsedOptions[0].value)
       }
-    }, [options, internalValue])
+    }, [parsedOptions, internalValue])
 
-    const selectedOption = options.find(opt => opt.value === internalValue)
+    const selectedOption = parsedOptions.find(opt => opt.value === internalValue)
 
     const handleSelect = (val: string) => {
       if (value === undefined) {
@@ -74,7 +76,11 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           onChange={() => { }}
           {...props}
         >
-          {children}
+          {customOptions ? customOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>
+              {typeof opt.label === 'string' ? opt.label : opt.value}
+            </option>
+          )) : children}
         </select>
 
         <button
@@ -93,7 +99,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         {isOpen && (
           <div className="absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-xl border border-border/50 bg-popover/95 backdrop-blur-xl text-popover-foreground shadow-xl animate-in fade-in-80 zoom-in-95 slide-in-from-top-2">
             <div className="p-1">
-              {options.map((opt) => (
+              {parsedOptions.map((opt) => (
                 <div
                   key={opt.value}
                   onClick={() => handleSelect(opt.value)}

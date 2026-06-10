@@ -7,6 +7,7 @@ import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
+import { DynamicIcon } from "@/components/ui/dynamic-icon"
 import {
   useGetBudgetSummaryQuery,
   useCreateBudgetMutation,
@@ -97,8 +98,10 @@ export default function BudgetsPage() {
               >
                 <div className="flex flex-row items-center justify-between pb-4">
                   <div className="text-sm font-bold text-foreground flex items-center gap-3">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl text-white ${config.color} shadow-lg`}>
-                      {config.icon}
+                    <div
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm text-white ${config.color}`}
+                    >
+                      {budget.category.icon ? <DynamicIcon name={budget.category.icon} className="h-6 w-6" /> : config.icon}
                     </div>
                     {budget.category.name}
                   </div>
@@ -178,12 +181,23 @@ export default function BudgetsPage() {
         <form className="space-y-4 pt-4" onSubmit={handleAddSubmit}>
           <div className="space-y-2">
             <Label htmlFor="categoryId">{t("budgets.categoryId") || "Danh mục"}</Label>
-            <Select id="categoryId" name="categoryId" required>
-              <option value="">-- Chọn danh mục --</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-              ))}
-            </Select>
+            <Select 
+              id="categoryId" 
+              name="categoryId" 
+              required
+              options={[
+                { value: "", label: "-- Chọn danh mục --" },
+                ...categories.map(c => ({
+                  value: c.id,
+                  label: (
+                    <div className="flex items-center gap-2">
+                      <DynamicIcon name={c.icon} className="h-4 w-4" />
+                      <span>{c.name}</span>
+                    </div>
+                  )
+                }))
+              ]}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="limit">{t("budgets.amountLimit")}</Label>

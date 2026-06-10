@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { DynamicIcon } from "@/components/ui/dynamic-icon"
 import {
   useGetTransactionsQuery,
   useCreateTransactionMutation,
@@ -225,9 +226,10 @@ function TransactionsContent() {
                           background: tx.type === "income"
                             ? "rgba(16,217,160,0.12)"
                             : "rgba(255,77,109,0.12)",
+                          color: tx.type === "income" ? "#10d9a0" : "#ff4d6d"
                         }}
                       >
-                        {tx.category?.icon ?? (tx.type === "income" ? "💰" : "💸")}
+                        {tx.category?.icon ? <DynamicIcon name={tx.category.icon} className="h-5 w-5" /> : (tx.type === "income" ? "💰" : "💸")}
                       </div>
 
                       {/* Info */}
@@ -339,12 +341,12 @@ function TransactionsContent() {
                     >
                       {/* Icon */}
                       <div
-                        className="h-10 w-10 rounded-xl flex items-center justify-center text-base shrink-0"
+                        className="h-10 w-10 rounded-xl flex items-center justify-center text-base shrink-0 font-medium text-primary"
                         style={{
-                          background: tx.type === "income" ? "rgba(16,217,160,0.12)" : "rgba(255,77,109,0.12)",
+                          background: "rgba(124,92,252,0.12)",
                         }}
                       >
-                        {tx.category?.icon ?? "🔄"}
+                        {tx.category?.icon ? <DynamicIcon name={tx.category.icon} className="h-5 w-5" /> : "🔄"}
                       </div>
 
                       {/* Info */}
@@ -441,12 +443,23 @@ function TransactionsContent() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="categoryId">{t("transactions.categoryId") || "Danh mục"}</Label>
-            <Select id="categoryId" name="categoryId" required>
-              <option value="">{t("transactions.selectCategory") || "-- Chọn danh mục --"}</option>
-              {categories.map(c => (
-                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-              ))}
-            </Select>
+            <Select 
+              id="categoryId" 
+              name="categoryId" 
+              required
+              options={[
+                { value: "", label: t("transactions.selectCategory") || "-- Chọn danh mục --" },
+                ...categories.map(c => ({
+                  value: c.id,
+                  label: (
+                    <div className="flex items-center gap-2">
+                      <DynamicIcon name={c.icon} className="h-4 w-4" />
+                      <span>{c.name}</span>
+                    </div>
+                  )
+                }))
+              ]}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">{t("transactions.description")}</Label>
