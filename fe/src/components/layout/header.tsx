@@ -92,9 +92,8 @@ export function Header() {
             aria-hidden="true"
           />
 
-          {/* Profile button */}
           <button
-            className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all hover:scale-105 bg-card border border-border"
+            className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all hover:scale-105 bg-card border border-border"
           >
             <div
               className="h-7 w-7 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-linear-to-br from-primary to-primary-light overflow-hidden"

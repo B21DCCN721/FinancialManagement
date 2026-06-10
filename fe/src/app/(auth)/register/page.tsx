@@ -36,7 +36,8 @@ export default function RegisterPage() {
       await (clerk.client.signIn as any).authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: "/sso-callback",
-        redirectUrlComplete: "/auth-sync",
+        forceRedirectUrl: "/auth-sync",
+        signUpForceRedirectUrl: "/auth-sync",
       })
     } catch (err) {
       setIsGoogleLoading(false)

@@ -8,7 +8,10 @@ export default function SSOCallbackPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0a0f] text-white">
       <Loader2 className="h-8 w-8 animate-spin mb-4 text-[#7c5cfc]" />
       <p className="text-sm text-white/50">Đang xác thực với Google...</p>
-      <AuthenticateWithRedirectCallback />
+      <AuthenticateWithRedirectCallback 
+        signInForceRedirectUrl="/auth-sync" 
+        signUpForceRedirectUrl="/auth-sync" 
+      />
     </div>
   )
 }

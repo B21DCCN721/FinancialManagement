@@ -61,7 +61,7 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
       {/* Dropdown panel */}
       {open && (
         <div
-          className="absolute right-0 top-[calc(100%+8px)] z-50 w-[280px] rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.25)] border border-border overflow-hidden"
+          className="absolute left-0 right-auto sm:left-auto sm:right-0 top-[calc(100%+8px)] z-50 w-[280px] rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.25)] border border-border overflow-hidden"
           style={{
             background: "var(--popover)",
             color: "var(--popover-foreground)",

@@ -156,7 +156,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 py-2">
       {/* Page header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("dashboard.title")}</h1>
@@ -203,7 +203,7 @@ export default function Dashboard() {
       {/* Charts row */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         {/* Bar chart */}
-        <div className="col-span-4 rounded-2xl p-5 glass-card">
+        <div className="md:col-span-2 lg:col-span-4 rounded-2xl p-5 glass-card">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-semibold text-foreground">{t("dashboard.incomeAndExpense")}</h3>
@@ -244,7 +244,7 @@ export default function Dashboard() {
         </div>
 
         {/* Pie chart */}
-        <div className="col-span-3 rounded-2xl p-5 glass-card">
+        <div className="md:col-span-2 lg:col-span-3 rounded-2xl p-5 glass-card">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-semibold text-foreground">{t("dashboard.expenseByCategory")}</h3>

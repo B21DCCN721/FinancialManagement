@@ -16,6 +16,7 @@ import {
   useCreateTransactionMutation,
   useDeleteTransactionMutation,
 } from "@/services/transactionsApi"
+import { useGetCategoriesQuery } from "@/services/categoriesApi"
 import { logger } from "@/lib/logger"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
@@ -33,6 +34,9 @@ function TransactionsContent() {
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
   const [page, setPage] = useState(1)
+  const [txType, setTxType] = useState<"income" | "expense">("expense")
+
+  const { data: categories = [] } = useGetCategoriesQuery({ type: txType })
 
   const [prevUrlSearch, setPrevUrlSearch] = useState(urlSearch)
 
@@ -413,11 +417,11 @@ function TransactionsContent() {
         title={t("transactions.addModalTitle")}
         description={t("transactions.addModalDesc")}
       >
-        <form className="space-y-4 pt-4" onSubmit={handleAddSubmit}>
+        <form className="space-y-4 pt-4 max-h-[75vh] overflow-y-auto px-1 scrollbar-thin" onSubmit={handleAddSubmit}>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="type">{t("transactions.type")}</Label>
-              <Select id="type" name="type">
+              <Select id="type" name="type" value={txType} onChange={(e) => setTxType(e.target.value as "income" | "expense")}>
                 <option value="expense">{t("transactions.expense")}</option>
                 <option value="income">{t("transactions.income")}</option>
               </Select>
@@ -432,8 +436,13 @@ function TransactionsContent() {
             <Input id="amount" name="amount" type="number" step="0.01" placeholder="0.00" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="categoryId">{t("transactions.categoryId")}</Label>
-            <Input id="categoryId" name="categoryId" placeholder="UUID" required />
+            <Label htmlFor="categoryId">{t("transactions.categoryId") || "Danh mục"}</Label>
+            <Select id="categoryId" name="categoryId" required>
+              <option value="">{t("transactions.selectCategory") || "-- Chọn danh mục --"}</option>
+              {categories.map(c => (
+                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+              ))}
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="desc">{t("transactions.desc")}</Label>
