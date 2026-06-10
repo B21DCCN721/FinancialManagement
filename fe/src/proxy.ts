@@ -6,6 +6,9 @@ export function proxy(request: NextRequest) {
   // Sinh nonce ngẫu nhiên bằng Web Crypto API tích hợp sẵn của Edge Runtime
   const nonce = crypto.randomUUID()
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
+  const additionalConnectSrc = apiUrl ? `${apiUrl}` : ''
+
   // Xây dựng chuỗi CSP nghiêm ngặt
   const cspHeader = `
     default-src 'self';
@@ -18,7 +21,7 @@ export function proxy(request: NextRequest) {
     form-action 'self';
     frame-ancestors 'none';
     frame-src 'self' https://challenges.cloudflare.com https://www.google.com/recaptcha/;
-    connect-src 'self' http://localhost:* https://*.clerk.com https://*.clerk.accounts.dev https://clerk-telemetry.com https://challenges.cloudflare.com https://*.sentry.io;
+    connect-src 'self' http://localhost:* ${additionalConnectSrc} https://*.clerk.com https://*.clerk.accounts.dev https://clerk-telemetry.com https://challenges.cloudflare.com https://*.sentry.io;
     worker-src 'self' blob:;
   `
   
