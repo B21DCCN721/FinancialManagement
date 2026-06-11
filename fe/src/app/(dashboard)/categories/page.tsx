@@ -306,7 +306,7 @@ function CategoryCard({
             </button>
             <button
               onClick={() => onDelete(cat.id)}
-              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              className="h-8 w-8 rounded-lg flex items-center justify-center text-danger hover:bg-destructive/10 transition-colors"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>

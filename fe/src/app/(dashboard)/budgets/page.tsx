@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AlertCircle, Plus, Utensils, Car, ShoppingBag, Gamepad2, ReceiptText, Home, Zap, Loader2, Inbox } from "lucide-react"
+import { AlertCircle, Plus, Utensils, Car, ShoppingBag, Gamepad2, ReceiptText, Home, Zap, Loader2, Inbox, Pencil, Trash2, CalendarDays } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
@@ -12,6 +12,7 @@ import { DynamicIcon } from "@/components/ui/dynamic-icon"
 import {
   useGetBudgetSummaryQuery,
   useCreateBudgetMutation,
+  useUpdateBudgetMutation,
   useDeleteBudgetMutation,
 } from "@/services/budgetsApi"
 import { useGetCategoriesQuery } from "@/services/categoriesApi"
@@ -19,9 +20,13 @@ import { logger } from "@/lib/logger"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 
-function currentPeriod() {
+function currentPeriodMonth() {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+}
+
+function currentPeriodYear() {
+  return `${new Date().getFullYear()}`
 }
 
 const getCategoryConfig = (name: string) => {
@@ -38,30 +43,51 @@ const getCategoryConfig = (name: string) => {
 
 export default function BudgetsPage() {
   const { t } = useTranslation()
-  const period = currentPeriod()
+  const [budgetType, setBudgetType] = useState<"monthly" | "yearly">("monthly")
+  const [period, setPeriod] = useState(currentPeriodMonth())
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const { data: budgets = [], isLoading } = useGetBudgetSummaryQuery({ period })
   const { data: categories = [] } = useGetCategoriesQuery({ type: "expense" })
   const [createBudget, { isLoading: isCreating }] = useCreateBudgetMutation()
+  const [updateBudget, { isLoading: isUpdating }] = useUpdateBudgetMutation()
   const [deleteBudget, { isLoading: isDeleting }] = useDeleteBudgetMutation()
+
+  const handleTypeChange = (type: "monthly" | "yearly") => {
+    setBudgetType(type)
+    if (type === "monthly") {
+      setPeriod(currentPeriodMonth())
+    } else {
+      setPeriod(currentPeriodYear())
+    }
+  }
 
   const handleAddSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
-    const amount = parseFloat(formData.get("limit") as string)
+    const amountStr = formData.get("limit") as string
+    const amount = amountStr ? parseFloat(amountStr.replace(/\./g, '')) : NaN
     const categoryId = formData.get("categoryId") as string
-    if (isNaN(amount) || !categoryId) return
+    if (isNaN(amount)) return
 
     try {
-      await createBudget({ amount, categoryId, period }).unwrap()
+      if (editingId) {
+        await updateBudget({ id: editingId, body: { amount } }).unwrap()
+        toast.success(t("budgets.updateSuccess") || "Cập nhật ngân sách thành công")
+      } else {
+        if (!categoryId) return
+        await createBudget({ amount, categoryId, period, type: budgetType }).unwrap()
+        logger.info("Budget created")
+        toast.success(t("budgets.addSuccess"))
+      }
       setIsAddModalOpen(false)
+      setEditingId(null)
       e.currentTarget.reset()
-      logger.info("Budget created")
-      toast.success(t("budgets.addSuccess"))
     } catch (err: any) {
-      logger.error("Failed to create budget", err)
+      logger.error("Failed to save budget", err)
       toast.error(err?.data?.message || t("budgets.addError"))
     }
   }
@@ -70,12 +96,24 @@ export default function BudgetsPage() {
     if (!deleteId) return
     try {
       await deleteBudget(deleteId).unwrap()
-      toast.success(t("budgets.deleteSuccess") || "Xóa ngân sách thành công")
+      toast.success(t("budgets.deleteSuccess"))
       setDeleteId(null)
     } catch (err: any) {
-      toast.error(err?.data?.message || t("budgets.deleteError") || "Có lỗi xảy ra khi xóa ngân sách")
+      toast.error(err?.data?.message || t("budgets.deleteError"))
     }
   }
+
+  const openEdit = (budget: any) => {
+    setEditingId(budget.id)
+    setIsAddModalOpen(true)
+  }
+
+  const openCreate = () => {
+    setEditingId(null)
+    setIsAddModalOpen(true)
+  }
+
+  const editingBudget = editingId ? budgets.find(b => b.id === editingId) : null
 
   return (
     <div className="space-y-6">
@@ -85,12 +123,42 @@ export default function BudgetsPage() {
           <p className="text-sm text-muted-foreground">{t("budgets.subtitle")}</p>
         </div>
         <button
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={openCreate}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-[0_4px_15px_rgba(124,92,252,0.4)]"
         >
           <Plus className="h-4 w-4" />
           {t("budgets.createBudget")}
         </button>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-center bg-card border border-border p-2 rounded-2xl shadow-sm">
+        <div className="flex p-1 bg-muted/50 rounded-xl w-full sm:w-auto">
+          <button
+            onClick={() => handleTypeChange("monthly")}
+            className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${budgetType === "monthly" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Ngân sách Tháng
+          </button>
+          <button
+            onClick={() => handleTypeChange("yearly")}
+            className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${budgetType === "yearly" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Ngân sách Năm
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 ml-auto w-full sm:w-auto">
+          <CalendarDays className="h-4 w-4 text-muted-foreground ml-2 sm:ml-0" />
+          <Input
+            type={budgetType === "monthly" ? "month" : "number"}
+            min={budgetType === "yearly" ? "2000" : undefined}
+            max={budgetType === "yearly" ? "2100" : undefined}
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="w-full sm:w-[160px] h-9 border-transparent bg-muted/30 focus-visible:bg-background"
+          />
+        </div>
       </div>
 
       {isLoading ? (
@@ -107,45 +175,53 @@ export default function BudgetsPage() {
             return (
               <div
                 key={budget.id}
-                className={`glass-card rounded-2xl p-5 transition-all group ${isOverBudget ? "border-danger/50 shadow-[0_0_15px_rgba(255,77,109,0.2)]" : ""}`}
+                className={`glass-card rounded-2xl p-5 transition-all group hover:scale-[1.02] ${isOverBudget ? "border-danger shadow-[0_0_15px_rgba(255,77,109,0.15)] bg-danger/5" : ""}`}
               >
                 <div className="flex flex-row items-center justify-between pb-4">
                   <div className="text-sm font-bold text-foreground flex items-center gap-3">
                     <div
-                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm text-white ${config.color}`}
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm text-white ${!budget.category.color ? config.color : ""}`}
+                      style={budget.category.color ? { backgroundColor: budget.category.color } : {}}
                     >
                       {budget.category.icon ? <DynamicIcon name={budget.category.icon} className="h-6 w-6" /> : config.icon}
                     </div>
                     {budget.category.name}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-muted-foreground">
-                      {budget.amount.toLocaleString("vi-VN")} ₫ {t("budgets.limit")}
-                    </span>
+                  <div className="flex items-center gap-1 opacity-100 sm:opacity-50 sm:group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => openEdit(budget)}
+                      className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                      title="Sửa ngân sách"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
                     <button
                       onClick={() => setDeleteId(budget.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger text-xs"
+                      className="h-8 w-8 rounded-lg flex items-center justify-center text-danger hover:bg-danger/10 transition-colors"
+                      title="Xóa ngân sách"
                     >
-                      ✕
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
                 <div className="space-y-3">
+                  <div className="text-sm text-muted-foreground mb-1">
+                    {t("budgets.limit")}: <span className="font-semibold text-foreground">{budget.amount.toLocaleString("vi-VN")} ₫</span>
+                  </div>
                   <div className="flex justify-between text-sm">
                     <span className="font-bold text-foreground">{budget.spentAmount.toLocaleString("vi-VN")} ₫ {t("budgets.spent")}</span>
-                    <span className="text-muted-foreground font-medium">
+                    <span className={`font-medium ${isOverBudget ? "text-danger" : "text-muted-foreground"}`}>
                       {Math.max(budget.remaining, 0).toLocaleString("vi-VN")} ₫ {t("budgets.remaining")}
                     </span>
                   </div>
                   <div className="h-2.5 w-full overflow-hidden rounded-full bg-secondary">
                     <div
-                      className={`h-full transition-all duration-500 rounded-full ${
-                        isOverBudget
+                      className={`h-full transition-all duration-500 rounded-full ${isOverBudget
                           ? "bg-danger shadow-[0_0_10px_rgba(255,77,109,0.5)]"
                           : isNearLimit
-                          ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
-                          : "bg-primary shadow-[0_0_10px_rgba(124,92,252,0.5)]"
-                      }`}
+                            ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                            : "bg-primary shadow-[0_0_10px_rgba(124,92,252,0.5)]"
+                        }`}
                       style={{ width: `${Math.min(budget.percentUsed, 100)}%` }}
                     />
                   </div>
@@ -180,40 +256,53 @@ export default function BudgetsPage() {
 
       <Modal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        title={t("budgets.addModalTitle")}
-        description={t("budgets.addModalDesc")}
+        onClose={() => { setIsAddModalOpen(false); setEditingId(null) }}
+        title={editingId ? "Chỉnh sửa ngân sách" : t("budgets.addModalTitle")}
+        description={editingId ? "Cập nhật giới hạn chi tiêu của bạn." : t("budgets.addModalDesc")}
       >
         <form className="space-y-4 pt-4" onSubmit={handleAddSubmit}>
           <div className="space-y-2">
             <Label htmlFor="categoryId">{t("budgets.categoryId") || "Danh mục"}</Label>
-            <Select 
-              id="categoryId" 
-              name="categoryId" 
-              required
-              options={[
-                { value: "", label: "-- Chọn danh mục --" },
-                ...categories.map(c => ({
-                  value: c.id,
-                  label: (
-                    <div className="flex items-center gap-2">
-                      <DynamicIcon name={c.icon} className="h-4 w-4" />
-                      <span>{c.name}</span>
-                    </div>
-                  )
-                }))
-              ]}
-            />
+            {editingId ? (
+              <Input value={editingBudget?.category?.name || ""} disabled className="bg-muted/50" />
+            ) : (
+              <Select
+                id="categoryId"
+                name="categoryId"
+                required
+                options={[
+                  { value: "", label: "-- Chọn danh mục --" },
+                  ...categories.map(c => ({
+                    value: c.id,
+                    label: (
+                      <div className="flex items-center gap-2">
+                        <DynamicIcon name={c.icon} className="h-4 w-4" />
+                        <span>{c.name}</span>
+                      </div>
+                    )
+                  }))
+                ]}
+              />
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="limit">{t("budgets.amountLimit")}</Label>
-            <Input id="limit" name="limit" type="number" inputMode="decimal" autoComplete="off" step="10" placeholder="VD: 500000" required />
+            <Input
+              id="limit"
+              name="limit"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              defaultValue={editingBudget?.amount}
+              placeholder="VD: 500000"
+              required
+            />
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>{t("budgets.cancel")}</Button>
-            <Button type="submit" disabled={isCreating}>
-              {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t("budgets.save")}
+            <Button type="submit" disabled={isCreating || isUpdating}>
+              {(isCreating || isUpdating) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingId ? "Cập nhật" : t("budgets.save")}
             </Button>
           </div>
         </form>

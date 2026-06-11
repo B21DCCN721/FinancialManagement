@@ -4,7 +4,8 @@ import type { Budget, BudgetSummary } from "@/lib/api/types"
 interface CreateBudgetRequest {
   amount: number
   categoryId: string
-  period: string // "YYYY-MM"
+  period: string // "YYYY-MM" or "YYYY"
+  type: "monthly" | "yearly"
 }
 
 interface UpdateBudgetRequest {

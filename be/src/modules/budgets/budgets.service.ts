@@ -51,9 +51,16 @@ export async function getBudgetSummaryService(
   // Calculate spent amount per budget from transactions
   const result = await Promise.all(
     budgets.map(async (budget) => {
-      const [year, month] = period.split("-").map(Number)
-      const startDate = new Date(year, month - 1, 1)
-      const endDate = new Date(year, month, 1)
+      let startDate: Date, endDate: Date;
+      if (period.length === 4) {
+        const year = Number(period)
+        startDate = new Date(year, 0, 1)
+        endDate = new Date(year + 1, 0, 1)
+      } else {
+        const [year, month] = period.split("-").map(Number)
+        startDate = new Date(year, month - 1, 1)
+        endDate = new Date(year, month, 1)
+      }
 
       const agg = await server.prisma.transaction.aggregate({
         where: {
@@ -106,16 +113,15 @@ export async function upsertBudgetService(
   if (category.type !== "expense") throw errors.badRequest("Budgets can only be set for expense categories")
 
   return await server.prisma.$transaction(async (tx) => {
-    const budget = await tx.budget.upsert({
-      where: {
-        userId_categoryId_period: {
-          userId,
-          categoryId: data.categoryId,
-          period: data.period,
-        },
-      },
-      update: { amount: data.amount },
-      create: { ...data, userId },
+    const existing = await tx.budget.findFirst({
+      where: { userId, categoryId: data.categoryId, period: data.period }
+    })
+    if (existing) {
+      throw errors.badRequest("Danh mục này đã có ngân sách trong kỳ, vui lòng chỉnh sửa thay vì tạo mới")
+    }
+
+    const budget = await tx.budget.create({
+      data: { ...data, userId },
       include: { category: true },
     })
 

@@ -1,12 +1,13 @@
 import { z } from "zod"
 
-const periodRegex = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Period must be YYYY-MM format e.g. 2026-06")
+const periodRegex = z.string().regex(/^\d{4}(-(0[1-9]|1[0-2]))?$/, "Period must be YYYY or YYYY-MM format")
 
 // ─── Request Schemas ────────────────────────────────────────────────
 export const createBudgetSchema = z.object({
   amount: z.number().positive("Budget amount must be positive"),
   categoryId: z.string().uuid("Invalid category ID"),
   period: periodRegex,
+  type: z.enum(["monthly", "yearly"]).default("monthly"),
 })
 
 export const updateBudgetSchema = z.object({
@@ -26,6 +27,7 @@ export const budgetSchema = z.object({
   id: z.string(),
   amount: z.number(),
   period: z.string(),
+  type: z.string(),
   userId: z.string(),
   categoryId: z.string(),
   category: z.object({
@@ -42,6 +44,7 @@ export const budgetWithSpendingSchema = z.object({
   id: z.string(),
   amount: z.number(),
   period: z.string(),
+  type: z.string(),
   categoryId: z.string(),
   category: z.object({
     id: z.string(),

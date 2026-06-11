@@ -71,7 +71,8 @@ model Transaction {
 model Budget {
   id         String   @id @default(uuid())
   amount     Float
-  period     String   // "YYYY-MM" format
+  period     String   // "YYYY-MM" or "YYYY" format
+  type       String   @default("monthly") // "monthly" | "yearly"
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   categoryId String

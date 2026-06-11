@@ -2,7 +2,7 @@
 
 import { useState, Suspense, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
-import { Plus, Search, Filter, FilterX, RefreshCw, Trash2, Loader2, Inbox, StopCircle, ArrowUpRight, ArrowDownRight, Clock, CalendarClock } from "lucide-react"
+import { Plus, Search, Filter, FilterX, RefreshCw, Trash2, Pencil, Loader2, Inbox, StopCircle, ArrowUpRight, ArrowDownRight, Clock, CalendarClock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -17,13 +17,16 @@ import { ConfirmModal } from "@/components/ui/confirm-modal"
 import {
   useGetTransactionsQuery,
   useCreateTransactionMutation,
+  useUpdateTransactionMutation,
   useDeleteTransactionMutation,
   useStopRecurringMutation,
 } from "@/services/transactionsApi"
+import { useGetBudgetSummaryQuery } from "@/services/budgetsApi"
 import { useGetCategoriesQuery } from "@/services/categoriesApi"
 import { logger } from "@/lib/logger"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
+import type { Transaction } from "@/lib/api/types"
 
 const FREQUENCY_LABELS: Record<string, string> = {
   daily: "Hàng ngày",
@@ -44,7 +47,9 @@ function TransactionsContent() {
   const searchParams = useSearchParams()
   const urlSearch = searchParams.get("search") || ""
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null)
+  
   const [isRecurring, setIsRecurring] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState(urlSearch)
@@ -59,6 +64,8 @@ function TransactionsContent() {
   const [txDate, setTxDate] = useState<string>(() => new Date().toISOString().split("T")[0])
 
   const { data: categories = [] } = useGetCategoriesQuery({ type: txType })
+  const { data: budgetsMonth = [] } = useGetBudgetSummaryQuery({ period: txDate.substring(0, 7) }, { skip: txType !== "expense" || !isModalOpen })
+  const { data: budgetsYear = [] } = useGetBudgetSummaryQuery({ period: txDate.substring(0, 4) }, { skip: txType !== "expense" || !isModalOpen })
 
   const [prevUrlSearch, setPrevUrlSearch] = useState(urlSearch)
 
@@ -78,8 +85,11 @@ function TransactionsContent() {
   })
 
   const [createTransaction, { isLoading: isCreating }] = useCreateTransactionMutation()
+  const [updateTransaction, { isLoading: isUpdating }] = useUpdateTransactionMutation()
   const [deleteTransaction, { isLoading: isDeleting }] = useDeleteTransactionMutation()
   const [stopRecurring, { isLoading: isStopping }] = useStopRecurringMutation()
+
+  const isSaving = isCreating || isUpdating
 
   const transactions = data?.data ?? []
   const pagination = data?.pagination
@@ -102,7 +112,23 @@ function TransactionsContent() {
     return matchSearch && matchType
   })
 
-  const handleAddSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddClick = () => {
+    setEditingTx(null)
+    setTxType("expense")
+    setTxDate(new Date().toISOString().split("T")[0])
+    setIsRecurring(false)
+    setIsModalOpen(true)
+  }
+
+  const handleEditClick = (tx: Transaction) => {
+    setEditingTx(tx)
+    setTxType(tx.type)
+    setTxDate(new Date(tx.date).toISOString().split("T")[0])
+    setIsRecurring(tx.isRecurring)
+    setIsModalOpen(true)
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     const description = formData.get("description") as string
@@ -115,7 +141,7 @@ function TransactionsContent() {
     if (!description || isNaN(amount) || !categoryId) return
 
     try {
-      await createTransaction({
+      const payload = {
         description,
         amount,
         type,
@@ -123,16 +149,42 @@ function TransactionsContent() {
         date: dateVal ? new Date(dateVal).toISOString() : new Date().toISOString(),
         isRecurring,
         ...(isRecurring && frequency ? { frequency } : {}),
-      }).unwrap()
-      setIsAddModalOpen(false)
+      }
+
+      if (!editingTx && type === "expense") {
+        const monthBudget = budgetsMonth.find(b => b.categoryId === categoryId)
+        const yearBudget = budgetsYear.find(b => b.categoryId === categoryId)
+        
+        let warning = ""
+        if (monthBudget && monthBudget.remaining - amount < 0) {
+          warning = "Cảnh báo: Khoản chi này làm vượt ngân sách tháng!"
+        } else if (yearBudget && yearBudget.remaining - amount < 0) {
+          warning = "Cảnh báo: Khoản chi này làm vượt ngân sách năm!"
+        }
+
+        if (warning) {
+          toast.warning(warning, { duration: 6000 })
+        }
+      }
+
+      if (editingTx) {
+        await updateTransaction({ id: editingTx.id, body: payload }).unwrap()
+        logger.info("Transaction updated")
+        toast.success(t("transactions.updateSuccess") || "Cập nhật giao dịch thành công")
+      } else {
+        await createTransaction(payload).unwrap()
+        logger.info("Transaction created")
+        toast.success(t("transactions.addSuccess") || "Thêm giao dịch thành công")
+      }
+
+      setIsModalOpen(false)
       e.currentTarget.reset()
+      setEditingTx(null)
       setIsRecurring(false)
       setTxDate(new Date().toISOString().split("T")[0])
-      logger.info("Transaction created")
-      toast.success(t("transactions.addSuccess"))
     } catch (err: any) {
-      logger.error("Failed to create transaction", err)
-      toast.error(err?.data?.message || t("transactions.addError"))
+      logger.error("Failed to save transaction", err)
+      toast.error(err?.data?.message || t("transactions.saveError") || "Có lỗi xảy ra khi lưu")
     }
   }
 
@@ -175,7 +227,7 @@ function TransactionsContent() {
           <h1 className="text-2xl font-bold tracking-tight">{t("transactions.title")}</h1>
           <p className="text-sm text-muted-foreground">{t("transactions.subtitle")}</p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)}>
+        <Button onClick={handleAddClick}>
           <Plus className="mr-2 h-4 w-4" />
           {t("transactions.addTransaction")}
         </Button>
@@ -254,13 +306,13 @@ function TransactionsContent() {
 
         {/* All Transactions Tab */}
         <TabsContent value="all" className="mt-0">
-          <Card>
-            <CardContent className="p-4">
-              {isLoading ? (
-                <div className="flex justify-center items-center py-16">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : transactions.length > 0 ? (
+          <div className="space-y-3">
+            {isLoading ? (
+              <div className="flex justify-center items-center py-16">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : transactions.length > 0 ? (
+              <>
                 <div className="space-y-2">
                   {transactions.map((tx) => (
                     <div
@@ -275,14 +327,18 @@ function TransactionsContent() {
                       <div
                         className="relative h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
                         style={{
-                          background: tx.isRecurring
-                            ? "rgba(124,92,252,0.12)"
-                            : tx.type === "income"
-                              ? "rgba(16,217,160,0.12)"
-                              : "rgba(255,77,109,0.12)",
-                          color: tx.isRecurring
-                            ? "#7c5cfc"
-                            : tx.type === "income" ? "#10d9a0" : "#ff4d6d"
+                          background: tx.category?.color ? `${tx.category.color}20` : (
+                            tx.isRecurring
+                              ? "rgba(124,92,252,0.12)"
+                              : tx.type === "income"
+                                ? "rgba(16,217,160,0.12)"
+                                : "rgba(255,77,109,0.12)"
+                          ),
+                          color: tx.category?.color ? tx.category.color : (
+                            tx.isRecurring
+                              ? "#7c5cfc"
+                              : tx.type === "income" ? "#10d9a0" : "#ff4d6d"
+                          )
                         }}
                       >
                         {tx.category?.icon
@@ -312,12 +368,16 @@ function TransactionsContent() {
                             <span
                               className="text-[11px] px-2 py-0.5 rounded-full font-medium"
                               style={{
-                                background: tx.isRecurring
-                                  ? "rgba(124,92,252,0.1)"
-                                  : tx.type === "income" ? "rgba(16,217,160,0.1)" : "rgba(124,92,252,0.1)",
-                                color: tx.isRecurring
-                                  ? "#a78bfa"
-                                  : tx.type === "income" ? "#10d9a0" : "#a78bfa",
+                                background: tx.category?.color ? `${tx.category.color}1A` : (
+                                  tx.isRecurring
+                                    ? "rgba(124,92,252,0.1)"
+                                    : tx.type === "income" ? "rgba(16,217,160,0.1)" : "rgba(124,92,252,0.1)"
+                                ),
+                                color: tx.category?.color ? tx.category.color : (
+                                  tx.isRecurring
+                                    ? "#a78bfa"
+                                    : tx.type === "income" ? "#10d9a0" : "#a78bfa"
+                                ),
                               }}
                             >
                               {tx.category.name}
@@ -348,57 +408,59 @@ function TransactionsContent() {
                         </p>
                       </div>
 
-                      {/* Delete */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger hover:bg-danger/10"
-                        onClick={() => setDeleteId(tx.id)}
-                        disabled={isDeleting}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                          onClick={() => handleEditClick(tx)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-danger hover:bg-danger/10"
+                          onClick={() => setDeleteId(tx.id)}
+                          disabled={isDeleting}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-6">
-                  <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
-                    <Inbox className="h-6 w-6" />
+                {/* Pagination */}
+                {pagination && pagination.totalPages > 1 && (
+                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
+                    <p className="text-xs text-muted-foreground">
+                      {pagination.total} {t("transactions.title").toLowerCase()} · {t("transactions.page")} {pagination.page}/{pagination.totalPages}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>{t("transactions.prev")}</Button>
+                      <Button variant="outline" size="sm" disabled={page >= pagination.totalPages} onClick={() => setPage(p => p + 1)}>{t("transactions.next")}</Button>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                    {isFetching ? t("transactions.loading") : t("transactions.noTransactions")}
-                  </p>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-6">
+                <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
+                  <Inbox className="h-6 w-6" />
                 </div>
-              )}
-
-              {/* Pagination */}
-              {pagination && pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
-                  <p className="text-xs text-muted-foreground">
-                    {pagination.total} {t("transactions.title").toLowerCase()} · {t("transactions.page")} {pagination.page}/{pagination.totalPages}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>{t("transactions.prev")}</Button>
-                    <Button variant="outline" size="sm" disabled={page >= pagination.totalPages} onClick={() => setPage(p => p + 1)}>{t("transactions.next")}</Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  {isFetching ? t("transactions.loading") : t("transactions.noTransactions")}
+                </p>
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         {/* Recurring Transactions Tab */}
         <TabsContent value="recurring" className="mt-0">
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{
-              background: "linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              backdropFilter: "blur(12px)",
-            }}
-          >
-            <div className="p-5 border-b border-border/50">
+          <div className="space-y-4">
+            <div className="p-2">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-foreground flex items-center gap-2">
@@ -419,13 +481,13 @@ function TransactionsContent() {
               </div>
             </div>
 
-            <div className="p-4">
+            <div className="space-y-3">
               {isRecurringLoading ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : filteredRecurring.length > 0 ? (
-                <div className="space-y-3">
+                <>
                   {filteredRecurring.map((tx) => {
                     const nextRun = formatNextRun(tx.nextRunAt)
                     return (
@@ -437,8 +499,8 @@ function TransactionsContent() {
                         <div
                           className="relative h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
                           style={{
-                            background: tx.type === "income" ? "rgba(16,217,160,0.12)" : "rgba(124,92,252,0.12)",
-                            color: tx.type === "income" ? "#10d9a0" : "#7c5cfc",
+                            background: tx.category?.color ? `${tx.category.color}20` : (tx.type === "income" ? "rgba(16,217,160,0.12)" : "rgba(124,92,252,0.12)"),
+                            color: tx.category?.color ? tx.category.color : (tx.type === "income" ? "#10d9a0" : "#7c5cfc"),
                           }}
                         >
                           {tx.category?.icon
@@ -458,7 +520,10 @@ function TransactionsContent() {
                             {tx.category?.name && (
                               <span
                                 className="text-[11px] px-2 py-0.5 rounded-full font-medium"
-                                style={{ background: "rgba(124,92,252,0.1)", color: "#a78bfa" }}
+                                style={{
+                                  background: tx.category?.color ? `${tx.category.color}1A` : "rgba(124,92,252,0.1)",
+                                  color: tx.category?.color ? tx.category.color : "#a78bfa"
+                                }}
                               >
                                 {tx.category.name}
                               </span>
@@ -496,6 +561,15 @@ function TransactionsContent() {
 
                         {/* Actions */}
                         <div className="flex items-center gap-1 shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                            onClick={() => handleEditClick(tx)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+
                           {/* Stop Recurring */}
                           <Button
                             variant="ghost"
@@ -512,7 +586,7 @@ function TransactionsContent() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-danger hover:bg-danger/10"
+                            className="h-8 w-8 text-danger hover:bg-danger/10"
                             onClick={() => setDeleteId(tx.id)}
                             disabled={isDeleting}
                             title="Xóa giao dịch"
@@ -523,7 +597,7 @@ function TransactionsContent() {
                       </div>
                     )
                   })}
-                </div>
+                </>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 gap-3 text-center px-6">
                   <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
@@ -539,14 +613,14 @@ function TransactionsContent() {
         </TabsContent>
       </Tabs>
 
-      {/* Add Modal */}
+      {/* Add/Edit Modal */}
       <Modal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        title={t("transactions.addModalTitle")}
-        description={t("transactions.addModalDesc")}
+        isOpen={isModalOpen}
+        onClose={() => { setIsModalOpen(false); setEditingTx(null); setIsRecurring(false); }}
+        title={editingTx ? (t("transactions.editModalTitle") || "Sửa giao dịch") : (t("transactions.addModalTitle") || "Thêm giao dịch")}
+        description={editingTx ? (t("transactions.editModalDesc") || "Cập nhật thông tin giao dịch của bạn.") : (t("transactions.addModalDesc") || "Nhập thông tin cho giao dịch mới của bạn.")}
       >
-        <form className="space-y-4 pt-4" onSubmit={handleAddSubmit}>
+        <form className="space-y-4 pt-4" onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="type">{t("transactions.type")}</Label>
@@ -562,13 +636,14 @@ function TransactionsContent() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="amount">{t("transactions.amount")}</Label>
-            <Input id="amount" name="amount" type="number" inputMode="decimal" autoComplete="off" step="10" placeholder="0.00" required />
+            <Input id="amount" name="amount" type="number" inputMode="decimal" autoComplete="off" step="10" placeholder="0.00" defaultValue={editingTx?.amount} required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="categoryId">{t("transactions.categoryId") || "Danh mục"}</Label>
             <Select 
               id="categoryId" 
               name="categoryId" 
+              defaultValue={editingTx?.categoryId}
               required
               options={[
                 { value: "", label: t("transactions.selectCategory") || "-- Chọn danh mục --" },
@@ -586,7 +661,7 @@ function TransactionsContent() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">{t("transactions.description")}</Label>
-            <Input id="description" name="description" autoComplete="off" placeholder="VD: Lương tháng 5, Ăn trưa..." required />
+            <Input id="description" name="description" autoComplete="off" placeholder="VD: Lương tháng 5, Ăn trưa..." defaultValue={editingTx?.description || ""} required />
           </div>
 
           <div className="flex items-center space-x-2 pt-2">
@@ -596,6 +671,7 @@ function TransactionsContent() {
               className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
               checked={isRecurring}
               onChange={(e) => setIsRecurring(e.target.checked)}
+              disabled={!!editingTx && editingTx.isRecurring === false}
             />
             <Label htmlFor="recurring" className="font-normal">{t("transactions.setRecurring")}</Label>
           </div>
@@ -603,7 +679,7 @@ function TransactionsContent() {
           {isRecurring && (
             <div className="space-y-2 p-3 bg-muted/50 rounded-md border">
               <Label htmlFor="frequency">{t("transactions.frequency")}</Label>
-              <Select id="frequency" name="frequency">
+              <Select id="frequency" name="frequency" defaultValue={editingTx?.frequency || "monthly"}>
                 <option value="daily">{t("transactions.daily")}</option>
                 <option value="weekly">{t("transactions.weekly")}</option>
                 <option value="monthly">{t("transactions.monthly")}</option>
@@ -616,10 +692,10 @@ function TransactionsContent() {
           )}
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>{t("transactions.cancel")}</Button>
-            <Button type="submit" disabled={isCreating}>
-              {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isCreating ? t("transactions.saving") : t("transactions.save")}
+            <Button type="button" variant="outline" onClick={() => { setIsModalOpen(false); setEditingTx(null); }}>{t("transactions.cancel")}</Button>
+            <Button type="submit" disabled={isSaving}>
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSaving ? t("transactions.saving") : t("transactions.save")}
             </Button>
           </div>
         </form>

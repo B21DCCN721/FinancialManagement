@@ -163,12 +163,15 @@ export default function GoalsPage() {
                           {t("goals.completed")}
                         </span>
                       )}
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-danger hover:bg-danger/10 ml-2"
                         onClick={() => setDeleteId(goal.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger ml-2"
+                        title="Xóa mục tiêu"
                       >
                         <Trash2 className="h-4 w-4" />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
