@@ -42,7 +42,7 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
         {payload.map((entry) => (
           <p key={entry.name} className="flex items-center gap-2" style={{ color: entry.color }}>
             <span className="h-2 w-2 rounded-full inline-block" style={{ background: entry.color }} />
-            {entry.name}: {entry.value.toLocaleString()} ₫
+            {entry.name}: {entry.value.toLocaleString("vi-VN")} ₫
           </p>
         ))}
       </div>
@@ -204,7 +204,7 @@ export default function Dashboard() {
       {/* Charts row */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         {/* Bar chart */}
-        <div className="md:col-span-2 lg:col-span-4 rounded-2xl p-5 glass-card">
+        <div className="md:col-span-2 lg:col-span-4 rounded-2xl p-5 glass-card min-w-0">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-semibold text-foreground">{t("dashboard.incomeAndExpense")}</h3>
@@ -245,7 +245,7 @@ export default function Dashboard() {
         </div>
 
         {/* Pie chart */}
-        <div className="md:col-span-2 lg:col-span-3 rounded-2xl p-5 glass-card">
+        <div className="md:col-span-2 lg:col-span-3 rounded-2xl p-5 glass-card min-w-0">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-semibold text-foreground">{t("dashboard.expenseByCategory")}</h3>
@@ -300,7 +300,7 @@ export default function Dashboard() {
       {/* Recent transactions + area chart */}
       <div className="grid gap-4 lg:grid-cols-5">
         {/* Area chart */}
-        <div className="lg:col-span-2 rounded-2xl p-5 glass-card">
+        <div className="lg:col-span-2 rounded-2xl p-5 glass-card min-w-0">
           <div className="mb-4">
             <h3 className="text-sm font-semibold text-foreground">{t("dashboard.savingsTrend")}</h3>
             <p className="text-xs mt-0.5 text-muted-foreground">{t("dashboard.netSavings")}</p>
@@ -325,7 +325,7 @@ export default function Dashboard() {
         </div>
 
         {/* Recent transactions */}
-        <div className="lg:col-span-3 rounded-2xl p-5 glass-card">
+        <div className="lg:col-span-3 rounded-2xl p-5 glass-card min-w-0">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-semibold text-foreground">{t("dashboard.recentTransactions")}</h3>
@@ -353,7 +353,7 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <div className="text-sm font-bold shrink-0" style={{ color: tx.type === "income" ? "var(--success)" : "var(--danger)" }}>
-                    {tx.type === "income" ? "+" : "-"}{Math.abs(tx.amount).toLocaleString()} ₫
+                    {tx.type === "income" ? "+" : "-"}{Math.abs(tx.amount).toLocaleString("vi-VN")} ₫
                   </div>
                 </div>
               ))

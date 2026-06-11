@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Loader2, Save, KeyRound, Trash2, User2, CheckCircle2, LogOut } from "lucide-react"
+import { Loader2, Save, KeyRound, Trash2, User2, CheckCircle2, LogOut, Edit2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Modal } from "@/components/ui/modal"
@@ -28,12 +28,14 @@ export default function ProfilePage() {
   const [deleteAccount, { isLoading: isDeleting }] = useDeleteAccountMutation()
 
   const [profileSuccess, setProfileSuccess] = useState(false)
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [deleteError, setDeleteError] = useState("")
 
   const [currentPwd, setCurrentPwd] = useState("")
   const [newPwd, setNewPwd] = useState("")
+  const [confirmNewPwd, setConfirmNewPwd] = useState("")
   const [pwdSuccess, setPwdSuccess] = useState(false)
   const [pwdError, setPwdError] = useState("")
 
@@ -66,6 +68,7 @@ export default function ProfilePage() {
       const updatedUser = await updateProfile({ name }).unwrap()
       dispatch(updateUser(updatedUser))
       setProfileSuccess(true)
+      setIsEditingProfile(false)
       toast.success(t("profile.profileSaved"))
       logger.info("Profile updated")
       setTimeout(() => setProfileSuccess(false), 3000)
@@ -80,11 +83,13 @@ export default function ProfilePage() {
     setPwdError("")
     setPwdSuccess(false)
     if (newPwd.length < 8) { setPwdError(t("auth.passwordMinLength")); return }
+    if (newPwd !== confirmNewPwd) { setPwdError(t("profile.passwordMismatch") || "Mật khẩu xác nhận không khớp"); return }
     try {
       await changePassword({ currentPassword: currentPwd, newPassword: newPwd }).unwrap()
       setPwdSuccess(true)
       setCurrentPwd("")
       setNewPwd("")
+      setConfirmNewPwd("")
       toast.success(t("profile.passwordSaved"))
       logger.info("Password changed")
       setTimeout(() => setPwdSuccess(false), 3000)
@@ -191,6 +196,7 @@ export default function ProfilePage() {
                     name="name"
                     defaultValue={user?.name ?? ""}
                     placeholder="Nguyễn Văn A"
+                    disabled={!isEditingProfile}
                     className="transition-all focus-visible:ring-primary/50"
                   />
                 </div>
@@ -208,10 +214,17 @@ export default function ProfilePage() {
               )}
             </CardContent>
             <CardFooter className="bg-muted/10 pt-4 pb-6">
-              <Button type="submit" disabled={isSaving} className="w-full sm:w-auto ml-auto px-8 transition-transform active:scale-95">
-                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                {t("common.saveChanges")}
-              </Button>
+              {!isEditingProfile ? (
+                <Button type="button" onClick={() => setIsEditingProfile(true)} className="w-full sm:w-auto ml-auto px-8 transition-transform active:scale-95">
+                  <Edit2 className="mr-2 h-4 w-4" />
+                  {t("profile.editBtn") || "Chỉnh sửa"}
+                </Button>
+              ) : (
+                <Button type="submit" disabled={isSaving} className="w-full sm:w-auto ml-auto px-8 transition-transform active:scale-95">
+                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  {t("profile.saveChangesBtn") || "Xác nhận"}
+                </Button>
+              )}
             </CardFooter>
           </form>
         </Card>
@@ -247,6 +260,18 @@ export default function ProfilePage() {
                     value={newPwd}
                     onChange={(e) => setNewPwd(e.target.value)}
                     placeholder={t("profile.newPasswordPlaceholder")}
+                    required
+                    className="max-w-md transition-all focus-visible:ring-primary/50"
+                  />
+                </div>
+                <div className="space-y-2.5">
+                  <Label htmlFor="confirm-pwd" className="font-medium">{t("profile.confirmNewPassword") || "Xác nhận mật khẩu mới"}</Label>
+                  <Input
+                    id="confirm-pwd"
+                    type="password"
+                    value={confirmNewPwd}
+                    onChange={(e) => setConfirmNewPwd(e.target.value)}
+                    placeholder={t("profile.confirmNewPasswordPlaceholder") || "Nhập lại mật khẩu mới"}
                     required
                     className="max-w-md transition-all focus-visible:ring-primary/50"
                   />

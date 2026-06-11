@@ -41,6 +41,12 @@ export interface AiInsightsResponse {
   insights: string
 }
 
+export interface BalanceResponse {
+  totalIncome: number
+  totalExpense: number
+  netBalance: number
+}
+
 // ─── API Service ──────────────────────────────────────────────────────────────
 
 export const reportsApi = baseApi.injectEndpoints({
@@ -75,6 +81,11 @@ export const reportsApi = baseApi.injectEndpoints({
       // Không cần auto-refetch khi focus, user muốn thì tự chạy lại
       keepUnusedDataFor: 3600, // cache trên FE 1 tiếng
     }),
+
+    getBalance: builder.query<BalanceResponse, void>({
+      query: () => "/reports/balance",
+      providesTags: [{ type: "Report", id: "BALANCE" }],
+    }),
   }),
 })
 
@@ -84,4 +95,5 @@ export const {
   useGetCategoryBreakdownQuery,
   useGetCashFlowQuery,
   useLazyGetAiInsightsQuery,
+  useGetBalanceQuery,
 } = reportsApi

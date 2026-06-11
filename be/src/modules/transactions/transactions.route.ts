@@ -9,7 +9,7 @@ import {
 import {
   getAllTransactionsController, getTransactionByIdController,
   createTransactionController, updateTransactionController, deleteTransactionController,
-  autoCategorizeController
+  autoCategorizeController, stopRecurringController, processRecurringController,
 } from "./transactions.controller"
 import { authenticate } from "../../hooks/authenticate"
 import { z } from "zod"
@@ -21,7 +21,7 @@ export const transactionRoutes: FastifyPluginAsync = async (server: FastifyInsta
   const s = server.withTypeProvider<ZodTypeProvider>()
   s.addHook("preHandler", authenticate)
 
-  // GET /api/transactions?page=1&limit=20&type=expense&...
+  // GET /api/transactions?page=1&limit=20&type=expense&isRecurring=true&...
   s.get("/", {
     schema: {
       querystring: transactionQuerySchema,
@@ -52,6 +52,21 @@ export const transactionRoutes: FastifyPluginAsync = async (server: FastifyInsta
       response: { 200: autoCategorizeResponseSchema },
     },
   }, autoCategorizeController)
+
+  // POST /api/transactions/process-recurring (manual trigger for admin/testing)
+  s.post("/process-recurring", {
+    schema: {
+      response: { 200: msgSchema },
+    },
+  }, processRecurringController)
+
+  // POST /api/transactions/:id/stop-recurring
+  s.post("/:id/stop-recurring", {
+    schema: {
+      params: transactionParamsSchema,
+      response: { 200: transactionSchema, 400: errorSchema, 404: errorSchema },
+    },
+  }, stopRecurringController)
 
   // PATCH /api/transactions/:id
   s.patch("/:id", {

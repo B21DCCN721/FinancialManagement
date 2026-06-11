@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from "fastify"
 import {
   getAllTransactionsService, getTransactionByIdService,
   createTransactionService, updateTransactionService, deleteTransactionService,
-  autoCategorizeService,
+  autoCategorizeService, stopRecurringService, processRecurringTransactionsService,
 } from "./transactions.service"
 import { CreateTransactionInput, UpdateTransactionInput, TransactionQuery } from "./transactions.schema"
 import { handleError } from "../../utils/errors"
@@ -60,5 +60,33 @@ export const autoCategorizeController = async (
   try {
     const result = await autoCategorizeService(request.server, request.user.id, request.body.description)
     return reply.code(200).send(result)
+  } catch (err) { return handleError(err, reply) }
+}
+
+/**
+ * POST /api/transactions/:id/stop-recurring
+ * Stop a recurring transaction (sets isRecurring=false, clears frequency & schedule).
+ */
+export async function stopRecurringController(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply
+) {
+  try {
+    const tx = await stopRecurringService(request.server, request.user.id, request.params.id)
+    return reply.send(tx)
+  } catch (err) { return handleError(err, reply) }
+}
+
+/**
+ * POST /api/transactions/process-recurring
+ * Manually trigger recurring transaction processing (useful for testing / admin).
+ */
+export async function processRecurringController(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    await processRecurringTransactionsService(request.server)
+    return reply.send({ message: "Recurring transactions processed successfully" })
   } catch (err) { return handleError(err, reply) }
 }

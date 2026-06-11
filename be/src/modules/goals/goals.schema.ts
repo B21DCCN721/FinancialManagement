@@ -12,8 +12,12 @@ export const createGoalSchema = z.object({
   color: hexColor.optional(),
   icon: z.string().min(1).max(50).optional(),
 }).refine(
-  (data) => new Date(data.deadline) > new Date(),
-  { message: "Deadline must be in the future", path: ["deadline"] }
+  (data) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Compare against start of today, not exact moment
+    return new Date(data.deadline) >= today
+  },
+  { message: "Deadline must be today or in the future", path: ["deadline"] }
 )
 
 export const updateGoalSchema = z.object({

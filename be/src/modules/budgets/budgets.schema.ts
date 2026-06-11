@@ -28,6 +28,12 @@ export const budgetSchema = z.object({
   period: z.string(),
   userId: z.string(),
   categoryId: z.string(),
+  category: z.object({
+    id: z.string(),
+    name: z.string(),
+    color: z.string().nullable(),
+    icon: z.string().nullable(),
+  }).optional(),
   createdAt: z.union([z.date(), z.string()]),
   updatedAt: z.union([z.date(), z.string()]),
 })

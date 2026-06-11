@@ -1,7 +1,25 @@
 import { FastifyInstance } from "fastify"
 import { errors } from "../../utils/errors"
-import { getCache, setCache, deleteCache, invalidateCachePattern, TTL, buildCacheKey } from "../../utils/cache"
+import { getCache, setCache, invalidateCachePattern, TTL, buildCacheKey } from "../../utils/cache"
 import { CreateTransactionInput, UpdateTransactionInput, TransactionQuery } from "./transactions.schema"
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Calculate the next run date based on the current date and frequency.
+ */
+export function calcNextRunAt(from: Date, frequency: "daily" | "weekly" | "monthly" | "yearly"): Date {
+  const next = new Date(from)
+  switch (frequency) {
+    case "daily":   next.setDate(next.getDate() + 1); break
+    case "weekly":  next.setDate(next.getDate() + 7); break
+    case "monthly": next.setMonth(next.getMonth() + 1); break
+    case "yearly":  next.setFullYear(next.getFullYear() + 1); break
+  }
+  return next
+}
+
+// ─── Auto-Categorize ─────────────────────────────────────────────────────────
 
 export async function autoCategorizeService(
   server: FastifyInstance,
@@ -29,13 +47,21 @@ export async function autoCategorizeService(
   return { categoryId: category.id, categoryName: category.name, type: category.type }
 }
 
+// ─── Cache Helpers ────────────────────────────────────────────────────────────
+
 function listCacheKey(userId: string, query: TransactionQuery) {
   return buildCacheKey("user", userId, "transactions", query)
 }
 
-function invalidateUserTransactionCache(server: FastifyInstance, userId: string) {
-  return invalidateCachePattern(server.redis, `user:${userId}:transactions*`)
+async function invalidateUserCaches(server: FastifyInstance, userId: string) {
+  await Promise.all([
+    invalidateCachePattern(server.redis, `user:${userId}:transactions*`),
+    invalidateCachePattern(server.redis, `user:${userId}:reports*`),
+    invalidateCachePattern(server.redis, `user:${userId}:budgets*`),
+  ])
 }
+
+// ─── CRUD ─────────────────────────────────────────────────────────────────────
 
 export async function getAllTransactionsService(
   server: FastifyInstance,
@@ -46,13 +72,14 @@ export async function getAllTransactionsService(
   const cached = await getCache(server.redis, key)
   if (cached) return cached
 
-  const { page, limit, type, categoryId, dateFrom, dateTo, search } = query
+  const { page, limit, type, categoryId, dateFrom, dateTo, search, isRecurring } = query
   const skip = (page - 1) * limit
 
   const where = {
     userId,
     ...(type && { type }),
     ...(categoryId && { categoryId }),
+    ...(isRecurring !== undefined && { isRecurring }),
     ...(search && {
       description: { contains: search, mode: "insensitive" as const },
     }),
@@ -85,7 +112,7 @@ export async function getAllTransactionsService(
     },
   }
 
-  await setCache(server.redis, key, result, TTL.SHORT) // 2 min cache
+  await setCache(server.redis, key, result, TTL.SHORT)
   return result
 }
 
@@ -107,34 +134,42 @@ export async function createTransactionService(
   userId: string,
   data: CreateTransactionInput
 ) {
-  return await server.prisma.$transaction(async (prismaTx) => {
-    // Verify category belongs to user
-    const category = await prismaTx.category.findFirst({
-      where: { id: data.categoryId, userId },
-    })
-    if (!category) throw errors.notFound("Category not found")
-
-    // Validate type matches category type
-    if (category.type !== data.type) {
-      throw errors.badRequest(`Category type "${category.type}" doesn't match transaction type "${data.type}"`)
-    }
-
-    const tx = await prismaTx.transaction.create({
-      data: {
-        ...data,
-        date: new Date(data.date),
-        userId,
-      },
-      include: { category: true },
-    })
-
-    await invalidateUserTransactionCache(server, userId)
-    // Also invalidate reports and budget summary caches
-    await invalidateCachePattern(server.redis, `user:${userId}:reports*`)
-    await invalidateCachePattern(server.redis, `user:${userId}:budgets*`)
-
-    return tx
+  // Verify category belongs to user
+  const category = await server.prisma.category.findFirst({
+    where: { id: data.categoryId, userId },
   })
+  if (!category) throw errors.notFound("Category not found")
+
+  // Validate type matches category type
+  if (category.type !== data.type) {
+    throw errors.badRequest(`Category type "${category.type}" doesn't match transaction type "${data.type}"`)
+  }
+
+  // Calculate nextRunAt for recurring transactions
+  const txDate = new Date(data.date)
+  const nextRunAt = data.isRecurring && data.frequency
+    ? calcNextRunAt(txDate, data.frequency as "daily" | "weekly" | "monthly" | "yearly")
+    : null
+
+  const tx = await server.prisma.transaction.create({
+    data: {
+      amount: data.amount,
+      type: data.type,
+      description: data.description,
+      date: txDate,
+      isRecurring: data.isRecurring ?? false,
+      frequency: data.frequency ?? null,
+      nextRunAt,
+      userId,
+      categoryId: data.categoryId,
+    },
+    include: { category: true },
+  })
+
+  // Invalidate caches AFTER successful DB write
+  await invalidateUserCaches(server, userId)
+
+  return tx
 }
 
 export async function updateTransactionService(
@@ -143,25 +178,46 @@ export async function updateTransactionService(
   id: string,
   data: UpdateTransactionInput
 ) {
-  return await server.prisma.$transaction(async (prismaTx) => {
-    const existing = await prismaTx.transaction.findFirst({ where: { id, userId } })
-    if (!existing) throw errors.notFound("Transaction not found")
+  const existing = await server.prisma.transaction.findFirst({ where: { id, userId } })
+  if (!existing) throw errors.notFound("Transaction not found")
 
-    const updated = await prismaTx.transaction.update({
-      where: { id },
-      data: {
-        ...data,
-        ...(data.date && { date: new Date(data.date) }),
-      },
-      include: { category: true },
-    })
+  // Build update payload with explicit fields to keep Prisma types safe
+  const isRecurring = data.isRecurring !== undefined ? data.isRecurring : existing.isRecurring
+  const isTurningOffRecurring = data.isRecurring === false
 
-    await invalidateUserTransactionCache(server, userId)
-    await invalidateCachePattern(server.redis, `user:${userId}:reports*`)
-    await invalidateCachePattern(server.redis, `user:${userId}:budgets*`)
+  // Determine new nextRunAt if still recurring and date/frequency changed
+  let nextRunAt: Date | null | undefined = undefined // undefined = don't touch the field
+  if (isTurningOffRecurring) {
+    nextRunAt = null
+  } else if (isRecurring && (data.date || data.frequency)) {
+    const baseDate = data.date ? new Date(data.date) : existing.date
+    const freq = (data.frequency ?? existing.frequency) as "daily" | "weekly" | "monthly" | "yearly" | null
+    if (freq) {
+      nextRunAt = calcNextRunAt(baseDate, freq)
+    }
+  }
 
-    return updated
+  const updated = await server.prisma.transaction.update({
+    where: { id },
+    data: {
+      ...(data.amount !== undefined && { amount: data.amount }),
+      ...(data.type !== undefined && { type: data.type }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.date !== undefined && { date: new Date(data.date) }),
+      ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
+      isRecurring,
+      // Clear frequency and schedule when turning off recurring
+      frequency: isTurningOffRecurring ? null : (data.frequency !== undefined ? data.frequency : existing.frequency),
+      ...(nextRunAt !== undefined && { nextRunAt }),
+      ...(isTurningOffRecurring && { lastProcessedAt: null }),
+    },
+    include: { category: true },
   })
+
+  // Invalidate caches AFTER successful DB write
+  await invalidateUserCaches(server, userId)
+
+  return updated
 }
 
 export async function deleteTransactionService(
@@ -169,14 +225,105 @@ export async function deleteTransactionService(
   userId: string,
   id: string
 ) {
-  await server.prisma.$transaction(async (prismaTx) => {
-    const existing = await prismaTx.transaction.findFirst({ where: { id, userId } })
-    if (!existing) throw errors.notFound("Transaction not found")
+  const existing = await server.prisma.transaction.findFirst({ where: { id, userId } })
+  if (!existing) throw errors.notFound("Transaction not found")
 
-    await prismaTx.transaction.delete({ where: { id } })
+  await server.prisma.transaction.delete({ where: { id } })
 
-    await invalidateUserTransactionCache(server, userId)
-    await invalidateCachePattern(server.redis, `user:${userId}:reports*`)
-    await invalidateCachePattern(server.redis, `user:${userId}:budgets*`)
+  // Invalidate caches AFTER successful DB write
+  await invalidateUserCaches(server, userId)
+}
+
+// ─── Stop Recurring ───────────────────────────────────────────────────────────
+
+/**
+ * Stop a recurring transaction: sets isRecurring=false, clears frequency/nextRunAt/lastProcessedAt.
+ */
+export async function stopRecurringService(
+  server: FastifyInstance,
+  userId: string,
+  id: string
+) {
+  const existing = await server.prisma.transaction.findFirst({ where: { id, userId } })
+  if (!existing) throw errors.notFound("Transaction not found")
+  if (!existing.isRecurring) throw errors.badRequest("Transaction is not recurring")
+
+  const updated = await server.prisma.transaction.update({
+    where: { id },
+    data: {
+      isRecurring: false,
+      frequency: null,
+      nextRunAt: null,
+      lastProcessedAt: null,
+    },
+    include: { category: true },
   })
+
+  await invalidateUserCaches(server, userId)
+
+  return updated
+}
+
+// ─── Recurring Processor ──────────────────────────────────────────────────────
+
+/**
+ * Process all due recurring transactions:
+ * - Find all recurring transactions where nextRunAt <= now
+ * - Create a new transaction entry (duplicate with new date = nextRunAt)
+ * - Update nextRunAt to the next cycle
+ * - Update lastProcessedAt to now
+ */
+export async function processRecurringTransactionsService(server: FastifyInstance) {
+  const now = new Date()
+
+  const dueTxs = await server.prisma.transaction.findMany({
+    where: {
+      isRecurring: true,
+      nextRunAt: { lte: now },
+      frequency: { not: null },
+    },
+  })
+
+  server.log.info(`[Scheduler] Processing ${dueTxs.length} due recurring transactions`)
+
+  for (const tx of dueTxs) {
+    try {
+      const freq = tx.frequency as "daily" | "weekly" | "monthly" | "yearly"
+      const newDate = tx.nextRunAt ?? now
+      const nextRunAt = calcNextRunAt(newDate, freq)
+
+      await server.prisma.$transaction(async (prismaTx) => {
+        // Create new transaction entry for this cycle
+        await prismaTx.transaction.create({
+          data: {
+            amount: tx.amount,
+            type: tx.type,
+            description: tx.description,
+            date: newDate,
+            isRecurring: false, // generated entries are NOT recurring themselves
+            frequency: null,
+            nextRunAt: null,
+            userId: tx.userId,
+            categoryId: tx.categoryId,
+          },
+        })
+
+        // Advance the recurring template to next cycle
+        await prismaTx.transaction.update({
+          where: { id: tx.id },
+          data: {
+            lastProcessedAt: now,
+            nextRunAt,
+          },
+        })
+      })
+
+      // Invalidate caches AFTER successful DB transaction
+      await invalidateUserCaches(server, tx.userId)
+
+      server.log.info(`[Scheduler] Processed recurring tx ${tx.id} for user ${tx.userId}, next run: ${nextRunAt.toISOString()}`)
+    } catch (err) {
+      server.log.error(`[Scheduler] Failed to process recurring tx ${tx.id}: ${err}`)
+    }
+  }
 }

@@ -19,6 +19,7 @@ import { budgetRoutes } from "./modules/budgets/budgets.route"
 import { goalRoutes } from "./modules/goals/goals.route"
 import { reportRoutes } from "./modules/reports/reports.route"
 import { AppError } from "./utils/errors"
+import { registerScheduler } from "./utils/scheduler"
 
 const server = Fastify({
   logger: {
@@ -102,6 +103,9 @@ server.get("/api/health", {
 const start = async () => {
   try {
     await server.listen({ port: env.PORT, host: "0.0.0.0" })
+
+    // Start cron scheduler after server (and plugins) are fully ready
+    registerScheduler(server)
 
     // Graceful shutdown
     const shutdown = async (signal: string) => {

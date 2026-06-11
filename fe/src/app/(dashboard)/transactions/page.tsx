@@ -2,7 +2,7 @@
 
 import { useState, Suspense, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
-import { Plus, Search, Filter, MoreHorizontal, RefreshCw, X, Trash2, Loader2, Inbox } from "lucide-react"
+import { Plus, Search, Filter, FilterX, RefreshCw, Trash2, Loader2, Inbox, StopCircle, ArrowUpRight, ArrowDownRight, Clock, CalendarClock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -18,11 +18,26 @@ import {
   useGetTransactionsQuery,
   useCreateTransactionMutation,
   useDeleteTransactionMutation,
+  useStopRecurringMutation,
 } from "@/services/transactionsApi"
 import { useGetCategoriesQuery } from "@/services/categoriesApi"
 import { logger } from "@/lib/logger"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
+
+const FREQUENCY_LABELS: Record<string, string> = {
+  daily: "Hàng ngày",
+  weekly: "Hàng tuần",
+  monthly: "Hàng tháng",
+  yearly: "Hàng năm",
+}
+
+function formatNextRun(dateStr: string | null | undefined): string | null {
+  if (!dateStr) return null
+  try {
+    return new Date(dateStr).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })
+  } catch { return null }
+}
 
 function TransactionsContent() {
   const { t } = useTranslation()
@@ -33,13 +48,15 @@ function TransactionsContent() {
   const [isRecurring, setIsRecurring] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState(urlSearch)
-  const [filterType, setFilterType] = useState<string>("all")
+  const [filterType, setFilterType] = useState<string>("")
   const [filterCategory, setFilterCategory] = useState<string>("all")
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [stopRecurringId, setStopRecurringId] = useState<string | null>(null)
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined)
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined)
   const [page, setPage] = useState(1)
   const [txType, setTxType] = useState<"income" | "expense">("expense")
+  const [txDate, setTxDate] = useState<string>(() => new Date().toISOString().split("T")[0])
 
   const { data: categories = [] } = useGetCategoriesQuery({ type: txType })
 
@@ -62,6 +79,7 @@ function TransactionsContent() {
 
   const [createTransaction, { isLoading: isCreating }] = useCreateTransactionMutation()
   const [deleteTransaction, { isLoading: isDeleting }] = useDeleteTransactionMutation()
+  const [stopRecurring, { isLoading: isStopping }] = useStopRecurringMutation()
 
   const transactions = data?.data ?? []
   const pagination = data?.pagination
@@ -109,6 +127,7 @@ function TransactionsContent() {
       setIsAddModalOpen(false)
       e.currentTarget.reset()
       setIsRecurring(false)
+      setTxDate(new Date().toISOString().split("T")[0])
       logger.info("Transaction created")
       toast.success(t("transactions.addSuccess"))
     } catch (err: any) {
@@ -127,6 +146,19 @@ function TransactionsContent() {
     } catch (err: any) {
       logger.error("Failed to delete transaction", err)
       toast.error(err?.data?.message || t("transactions.deleteError") || "Lỗi khi xóa giao dịch")
+    }
+  }
+
+  const handleStopRecurringConfirm = async () => {
+    if (!stopRecurringId) return
+    try {
+      await stopRecurring(stopRecurringId).unwrap()
+      logger.info("Recurring stopped", { id: stopRecurringId })
+      toast.success("Đã dừng giao dịch định kỳ thành công")
+      setStopRecurringId(null)
+    } catch (err: any) {
+      logger.error("Failed to stop recurring", err)
+      toast.error(err?.data?.message || "Lỗi khi dừng giao dịch định kỳ")
     }
   }
 
@@ -152,7 +184,14 @@ function TransactionsContent() {
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="all">{t("transactions.allTransactions")}</TabsTrigger>
-          <TabsTrigger value="recurring">{t("transactions.recurring")}</TabsTrigger>
+          <TabsTrigger value="recurring">
+            {t("transactions.recurring")}
+            {recurringTransactions.length > 0 && (
+              <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+                {recurringTransactions.length}
+              </span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* Search & Filter */}
@@ -181,28 +220,32 @@ function TransactionsContent() {
 
           {isFilterOpen && (
             <Card className="bg-muted/30 border-dashed">
-              <CardContent className="p-4 flex flex-wrap gap-4 items-end">
-                <div className="space-y-1.5 flex-1 min-w-[150px]">
-                  <Label className="text-xs text-muted-foreground">{t("transactions.type")}</Label>
-                  <Select value={filterType} onChange={(e) => { setFilterType(e.target.value); setPage(1) }}>
-                    <option value="">{t("transactions.all")}</option>
-                    <option value="income">{t("transactions.income")}</option>
-                    <option value="expense">{t("transactions.expense")}</option>
-                  </Select>
-                </div>
-                <div className="space-y-1.5 flex-1 min-w-[150px]">
-                  <Label className="text-xs text-muted-foreground">{t("transactions.dateFrom")}</Label>
-                  <DatePicker value={dateFrom ? dateFrom.toISOString().split("T")[0] : undefined} onChange={(d) => { setDateFrom(new Date(d)); setPage(1) }} />
-                </div>
-                <div className="space-y-1.5 flex-1 min-w-[150px]">
-                  <Label className="text-xs text-muted-foreground">{t("transactions.dateTo")}</Label>
-                  <DatePicker value={dateTo ? dateTo.toISOString().split("T")[0] : undefined} onChange={(d) => { setDateTo(new Date(d)); setPage(1) }} />
+              <CardContent className="p-4 flex flex-col gap-4">
+                <div className="flex flex-wrap gap-4 items-end">
+                  <div className="space-y-1.5 flex-1 min-w-[150px]">
+                    <Label className="text-xs text-muted-foreground">{t("transactions.type")}</Label>
+                    <Select value={filterType} onChange={(e) => { setFilterType(e.target.value); setPage(1) }}>
+                      <option value="">{t("transactions.all")}</option>
+                      <option value="income">{t("transactions.income")}</option>
+                      <option value="expense">{t("transactions.expense")}</option>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5 flex-1 min-w-[150px]">
+                    <Label className="text-xs text-muted-foreground">{t("transactions.dateFrom")}</Label>
+                    <DatePicker value={dateFrom ? dateFrom.toISOString().split("T")[0] : undefined} onChange={(d) => { setDateFrom(new Date(d)); setPage(1) }} />
+                  </div>
+                  <div className="space-y-1.5 flex-1 min-w-[150px]">
+                    <Label className="text-xs text-muted-foreground">{t("transactions.dateTo")}</Label>
+                    <DatePicker value={dateTo ? dateTo.toISOString().split("T")[0] : undefined} onChange={(d) => { setDateTo(new Date(d)); setPage(1) }} />
+                  </div>
                 </div>
                 {activeFilterCount > 0 && (
-                  <Button variant="ghost" className="shrink-0 text-muted-foreground" onClick={clearFilters}>
-                    <X className="mr-2 h-4 w-4" />
-                    {t("transactions.clearFilter")}
-                  </Button>
+                  <div className="flex justify-end pt-2 border-t border-border/50">
+                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-danger hover:bg-danger/10" onClick={clearFilters}>
+                      <FilterX className="mr-2 h-4 w-4" />
+                      {t("transactions.clearFilter")}
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -222,36 +265,68 @@ function TransactionsContent() {
                   {transactions.map((tx) => (
                     <div
                       key={tx.id}
-                      className="group flex items-center gap-4 p-3.5 rounded-xl transition-all hover:scale-[1.005] bg-card border border-border hover:border-primary/20 hover:shadow-[0_4px_20px_rgba(124,92,252,0.08)]"
+                      className={`group flex items-center gap-4 p-3.5 rounded-xl transition-all hover:scale-[1.005] border ${
+                        tx.isRecurring
+                          ? "bg-primary/[0.03] border-primary/20 hover:border-primary/40 hover:shadow-[0_4px_20px_rgba(124,92,252,0.12)]"
+                          : "bg-card border-border hover:border-primary/20 hover:shadow-[0_4px_20px_rgba(124,92,252,0.08)]"
+                      }`}
                     >
                       {/* Icon */}
                       <div
-                        className="h-10 w-10 rounded-xl flex items-center justify-center text-base shrink-0 font-medium"
+                        className="relative h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
                         style={{
-                          background: tx.type === "income"
-                            ? "rgba(16,217,160,0.12)"
-                            : "rgba(255,77,109,0.12)",
-                          color: tx.type === "income" ? "#10d9a0" : "#ff4d6d"
+                          background: tx.isRecurring
+                            ? "rgba(124,92,252,0.12)"
+                            : tx.type === "income"
+                              ? "rgba(16,217,160,0.12)"
+                              : "rgba(255,77,109,0.12)",
+                          color: tx.isRecurring
+                            ? "#7c5cfc"
+                            : tx.type === "income" ? "#10d9a0" : "#ff4d6d"
                         }}
                       >
-                        {tx.category?.icon ? <DynamicIcon name={tx.category.icon} className="h-5 w-5" /> : (tx.type === "income" ? "💰" : "💸")}
+                        {tx.category?.icon
+                          ? <DynamicIcon name={tx.category.icon} className="h-5 w-5" />
+                          : tx.isRecurring
+                            ? <CalendarClock className="h-5 w-5" />
+                            : tx.type === "income"
+                              ? <ArrowUpRight className="h-5 w-5" />
+                              : <ArrowDownRight className="h-5 w-5" />}
+                        {/* Recurring badge overlay */}
+                        {tx.isRecurring && (
+                          <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center">
+                            <RefreshCw className="h-2 w-2 text-white" />
+                          </span>
+                        )}
                       </div>
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">
-                          {tx.description ?? "—"}
-                        </p>
-                        <div className="flex items-center gap-2 mt-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-semibold text-foreground truncate">
+                            {tx.description ?? "—"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           {tx.category?.name && (
                             <span
                               className="text-[11px] px-2 py-0.5 rounded-full font-medium"
                               style={{
-                                background: tx.type === "income" ? "rgba(16,217,160,0.1)" : "rgba(124,92,252,0.1)",
-                                color: tx.type === "income" ? "#10d9a0" : "#a78bfa",
+                                background: tx.isRecurring
+                                  ? "rgba(124,92,252,0.1)"
+                                  : tx.type === "income" ? "rgba(16,217,160,0.1)" : "rgba(124,92,252,0.1)",
+                                color: tx.isRecurring
+                                  ? "#a78bfa"
+                                  : tx.type === "income" ? "#10d9a0" : "#a78bfa",
                               }}
                             >
                               {tx.category.name}
+                            </span>
+                          )}
+                          {tx.isRecurring && (
+                            <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-primary/10 text-primary flex items-center gap-1">
+                              <RefreshCw className="h-2.5 w-2.5" />
+                              {tx.frequency ? FREQUENCY_LABELS[tx.frequency] : "Định kỳ"}
                             </span>
                           )}
                           <span className="text-[11px] text-muted-foreground">{formatDate(tx.date)}</span>
@@ -267,7 +342,9 @@ function TransactionsContent() {
                           {tx.type === "income" ? "+" : "-"}{tx.amount.toLocaleString("vi-VN")} ₫
                         </p>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {tx.type === "income" ? t("transactions.income") : t("transactions.expense")}
+                          {tx.isRecurring
+                            ? "Định kỳ · " + (tx.type === "income" ? t("transactions.income") : t("transactions.expense"))
+                            : tx.type === "income" ? t("transactions.income") : t("transactions.expense")}
                         </p>
                       </div>
 
@@ -275,7 +352,7 @@ function TransactionsContent() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger hover:bg-danger/10"
+                        className="h-8 w-8 shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger hover:bg-danger/10"
                         onClick={() => setDeleteId(tx.id)}
                         disabled={isDeleting}
                       >
@@ -311,6 +388,7 @@ function TransactionsContent() {
           </Card>
         </TabsContent>
 
+        {/* Recurring Transactions Tab */}
         <TabsContent value="recurring" className="mt-0">
           <div
             className="rounded-2xl overflow-hidden"
@@ -321,15 +399,24 @@ function TransactionsContent() {
             }}
           >
             <div className="p-5 border-b border-border/50">
-              <h3 className="font-semibold text-foreground flex items-center gap-2">
-                <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <RefreshCw className="h-4 w-4 text-primary" />
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <RefreshCw className="h-4 w-4 text-primary" />
+                    </div>
+                    {t("transactions.recurringTitle")}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t("transactions.recurringSubtitle")}
+                  </p>
                 </div>
-                {t("transactions.recurringTitle")}
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t("transactions.recurringSubtitle")}
-              </p>
+                {filteredRecurring.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    {filteredRecurring.length} giao dịch đang hoạt động
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="p-4">
@@ -338,73 +425,104 @@ function TransactionsContent() {
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : filteredRecurring.length > 0 ? (
-                <div className="space-y-2">
-                  {filteredRecurring.map((tx) => (
-                    <div
-                      key={tx.id}
-                      className="group flex items-center gap-4 p-3.5 rounded-xl transition-all hover:scale-[1.005] bg-card border border-border hover:border-primary/20 hover:shadow-[0_4px_20px_rgba(124,92,252,0.08)]"
-                    >
-                      {/* Icon */}
+                <div className="space-y-3">
+                  {filteredRecurring.map((tx) => {
+                    const nextRun = formatNextRun(tx.nextRunAt)
+                    return (
                       <div
-                        className="h-10 w-10 rounded-xl flex items-center justify-center text-base shrink-0 font-medium text-primary"
-                        style={{
-                          background: "rgba(124,92,252,0.12)",
-                        }}
+                        key={tx.id}
+                        className="group flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.005] bg-card border border-border hover:border-primary/20 hover:shadow-[0_4px_20px_rgba(124,92,252,0.08)]"
                       >
-                        {tx.category?.icon ? <DynamicIcon name={tx.category.icon} className="h-5 w-5" /> : "🔄"}
-                      </div>
+                        {/* Icon */}
+                        <div
+                          className="relative h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
+                          style={{
+                            background: tx.type === "income" ? "rgba(16,217,160,0.12)" : "rgba(124,92,252,0.12)",
+                            color: tx.type === "income" ? "#10d9a0" : "#7c5cfc",
+                          }}
+                        >
+                          {tx.category?.icon
+                            ? <DynamicIcon name={tx.category.icon} className="h-5 w-5" />
+                            : <CalendarClock className="h-5 w-5" />}
+                          <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center">
+                            <RefreshCw className="h-2 w-2 text-white" />
+                          </span>
+                        </div>
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">
-                          {tx.description ?? "—"}
-                        </p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {tx.category?.name && (
-                            <span
-                              className="text-[11px] px-2 py-0.5 rounded-full font-medium"
-                              style={{
-                                background: "rgba(124,92,252,0.1)",
-                                color: "#a78bfa",
-                              }}
-                            >
-                              {tx.category.name}
-                            </span>
-                          )}
-                          {tx.frequency && (
-                            <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground">
-                              {tx.frequency === "daily" ? t("transactions.daily") : tx.frequency === "weekly" ? t("transactions.weekly") : tx.frequency === "monthly" ? t("transactions.monthly") : t("transactions.yearly")}
-                            </span>
-                          )}
-                          <span className="text-[11px] text-muted-foreground">{formatDate(tx.date)}</span>
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">
+                            {tx.description ?? "—"}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {tx.category?.name && (
+                              <span
+                                className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                                style={{ background: "rgba(124,92,252,0.1)", color: "#a78bfa" }}
+                              >
+                                {tx.category.name}
+                              </span>
+                            )}
+                            {tx.frequency && (
+                              <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-primary/10 text-primary flex items-center gap-1">
+                                <RefreshCw className="h-2.5 w-2.5" />
+                                {FREQUENCY_LABELS[tx.frequency] ?? tx.frequency}
+                              </span>
+                            )}
+                            {nextRun && (
+                              <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-500 flex items-center gap-1">
+                                <Clock className="h-2.5 w-2.5" />
+                                Tiếp: {nextRun}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            Ngày bắt đầu: {formatDate(tx.date)}
+                          </p>
+                        </div>
+
+                        {/* Amount */}
+                        <div className="text-right shrink-0">
+                          <p
+                            className="text-sm font-bold tabular-nums"
+                            style={{ color: tx.type === "income" ? "#10d9a0" : "#ff4d6d" }}
+                          >
+                            {tx.type === "income" ? "+" : "-"}{tx.amount.toLocaleString("vi-VN")} ₫
+                          </p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {tx.type === "income" ? "Thu nhập" : "Chi phí"}
+                          </p>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1 shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                          {/* Stop Recurring */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10"
+                            onClick={() => setStopRecurringId(tx.id)}
+                            disabled={isStopping}
+                            title="Dừng định kỳ"
+                          >
+                            <StopCircle className="h-4 w-4" />
+                          </Button>
+
+                          {/* Delete */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-danger hover:bg-danger/10"
+                            onClick={() => setDeleteId(tx.id)}
+                            disabled={isDeleting}
+                            title="Xóa giao dịch"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-
-                      {/* Amount */}
-                      <div className="text-right shrink-0">
-                        <p
-                          className="text-sm font-bold tabular-nums"
-                          style={{ color: tx.type === "income" ? "#10d9a0" : "#ff4d6d" }}
-                        >
-                          {tx.type === "income" ? "+" : "-"}{tx.amount.toLocaleString("vi-VN")} ₫
-                        </p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {tx.type === "income" ? "Thu nhập" : "Chi phí"}
-                        </p>
-                      </div>
-
-                      {/* Delete */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger hover:bg-danger/10"
-                        onClick={() => setDeleteId(tx.id)}
-                        disabled={isDeleting}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 gap-3 text-center px-6">
@@ -439,7 +557,7 @@ function TransactionsContent() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="date">{t("transactions.date")}</Label>
-              <DatePicker name="date" value={new Date().toISOString().split("T")[0]} />
+              <DatePicker name="date" value={txDate} onChange={setTxDate} />
             </div>
           </div>
           <div className="space-y-2">
@@ -486,10 +604,14 @@ function TransactionsContent() {
             <div className="space-y-2 p-3 bg-muted/50 rounded-md border">
               <Label htmlFor="frequency">{t("transactions.frequency")}</Label>
               <Select id="frequency" name="frequency">
+                <option value="daily">{t("transactions.daily")}</option>
                 <option value="weekly">{t("transactions.weekly")}</option>
                 <option value="monthly">{t("transactions.monthly")}</option>
                 <option value="yearly">{t("transactions.yearly")}</option>
               </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Hệ thống sẽ tự động tạo giao dịch mới theo chu kỳ này mỗi ngày lúc 00:05.
+              </p>
             </div>
           )}
 
@@ -513,6 +635,18 @@ function TransactionsContent() {
         confirmText={t("transactions.delete") || "Xóa"}
         cancelText={t("transactions.cancel") || "Hủy"}
         isLoading={isDeleting}
+      />
+
+      {/* Stop Recurring Confirm Modal */}
+      <ConfirmModal
+        isOpen={!!stopRecurringId}
+        onClose={() => setStopRecurringId(null)}
+        onConfirm={handleStopRecurringConfirm}
+        title="Dừng giao dịch định kỳ"
+        description="Giao dịch này sẽ không còn tự động tạo thêm các kỳ mới. Các giao dịch đã tạo từ trước vẫn được giữ nguyên. Bạn có chắc muốn dừng không?"
+        confirmText="Dừng định kỳ"
+        cancelText="Hủy"
+        isLoading={isStopping}
       />
     </div>
   )

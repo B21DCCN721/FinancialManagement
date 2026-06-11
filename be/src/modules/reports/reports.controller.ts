@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify"
 import {
   getSummaryService, getMonthlyTrendService,
-  getCategoryBreakdownService, getCashFlowService,
+  getCategoryBreakdownService, getCashFlowService, getBalanceService,
 } from "./reports.service"
 
 function currentPeriod() {
@@ -48,4 +48,16 @@ export async function getAiInsightsController(
   // dynamically import or require the ai service to avoid circular deps or keep it simple
   const { getAiInsightsService } = await import("./ai.service")
   return reply.send(await getAiInsightsService(request.server, request.user.id, period))
+}
+
+export async function getBalanceController(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    return reply.send(await getBalanceService(request.server, request.user.id))
+  } catch (err) {
+    const { handleError } = await import("../../utils/errors")
+    return handleError(err, reply)
+  }
 }

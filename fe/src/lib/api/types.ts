@@ -46,6 +46,8 @@ export interface Transaction {
   date: string
   isRecurring: boolean
   frequency?: "daily" | "weekly" | "monthly" | "yearly" | null
+  nextRunAt?: string | null
+  lastProcessedAt?: string | null
   userId: string
   categoryId: string
   category?: Pick<Category, "id" | "name" | "color" | "icon">

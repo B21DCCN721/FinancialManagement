@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Target, Plus, TrendingUp, CalendarDays, Loader2, Trash2, Inbox } from "lucide-react"
+import { Target, Plus, TrendingUp, CalendarDays, Loader2, Trash2, Inbox, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
@@ -14,9 +14,12 @@ import {
   useContributeToGoalMutation,
   useDeleteGoalMutation,
 } from "@/services/goalsApi"
+import { useGetBalanceQuery } from "@/services/reportsApi"
 import { logger } from "@/lib/logger"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
+
+const fmt = (n: number) => n.toLocaleString("vi-VN")
 
 export default function GoalsPage() {
   const { t } = useTranslation()
@@ -24,11 +27,17 @@ export default function GoalsPage() {
   const [isAddFundsOpen, setIsAddFundsOpen] = useState(false)
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [depositValue, setDepositValue] = useState("")
 
   const { data: goals = [], isLoading } = useGetGoalsQuery()
+  const { data: balance } = useGetBalanceQuery()
   const [createGoal, { isLoading: isCreating }] = useCreateGoalMutation()
   const [contributeToGoal, { isLoading: isContributing }] = useContributeToGoalMutation()
   const [deleteGoal, { isLoading: isDeleting }] = useDeleteGoalMutation()
+
+  const netBalance = balance?.netBalance ?? 0
+  const depositAmount = parseFloat(depositValue) || 0
+  const isDepositExceedBalance = depositAmount > netBalance
 
   const handleAddGoal = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -36,11 +45,24 @@ export default function GoalsPage() {
     const targetAmount = parseFloat(formData.get("target") as string)
     if (isNaN(targetAmount)) return
 
+    const deadlineStr = formData.get("deadline") as string
+    if (!deadlineStr) {
+      toast.error(t("goals.deadlineRequired") || "Vui lòng chọn ngày hết hạn")
+      return
+    }
+
+    // Parse as local midnight to avoid UTC timezone shift (YYYY-MM-DD → treat as local)
+    const deadlineDate = new Date(`${deadlineStr}T00:00:00`)
+    if (isNaN(deadlineDate.getTime())) {
+      toast.error(t("goals.deadlineInvalid") || "Ngày hết hạn không hợp lệ")
+      return
+    }
+
     try {
       await createGoal({
         title: formData.get("title") as string,
         targetAmount,
-        deadline: new Date(formData.get("deadline") as string).toISOString(),
+        deadline: deadlineDate.toISOString(),
       }).unwrap()
       setIsAddModalOpen(false)
       e.currentTarget.reset()
@@ -54,15 +76,20 @@ export default function GoalsPage() {
 
   const handleAddFunds = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const amount = parseFloat(formData.get("deposit") as string)
+    const amount = parseFloat(depositValue)
     if (isNaN(amount) || !selectedGoalId) return
+
+    // Client-side guard
+    if (amount > netBalance) {
+      toast.error(`Số tiền nạp vượt quá số dư ròng hiện có (${fmt(netBalance)} ₫)`)
+      return
+    }
 
     try {
       await contributeToGoal({ id: selectedGoalId, body: { amount } }).unwrap()
       setIsAddFundsOpen(false)
       setSelectedGoalId(null)
-      e.currentTarget.reset()
+      setDepositValue("")
       logger.info("Contributed to goal", { goalId: selectedGoalId, amount })
       toast.success(t("goals.fundsSuccess"))
     } catch (err: any) {
@@ -153,8 +180,8 @@ export default function GoalsPage() {
                 <div className="space-y-4">
                   <div className="flex items-end justify-between">
                     <div className="space-y-1">
-                      <p className="text-3xl font-bold text-foreground">{goal.currentAmount.toLocaleString("vi-VN")} ₫</p>
-                      <p className="text-xs text-muted-foreground">{t("goals.onTotal")} {goal.targetAmount.toLocaleString("vi-VN")} ₫</p>
+                      <p className="text-3xl font-bold text-foreground">{fmt(goal.currentAmount)} ₫</p>
+                      <p className="text-xs text-muted-foreground">{t("goals.onTotal")} {fmt(goal.targetAmount)} ₫</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-primary">{goal.progressPercentage.toFixed(1)}%</p>
@@ -164,7 +191,7 @@ export default function GoalsPage() {
                   <div className="h-2.5 w-full overflow-hidden rounded-full bg-secondary">
                     <div
                       className={`h-full transition-all duration-500 rounded-full ${goal.isCompleted ? "bg-success shadow-[0_0_10px_rgba(16,217,160,0.5)]" : colorClass}`}
-                      style={{ width: `${goal.progressPercentage}%` }}
+                      style={{ width: `${Math.min(goal.progressPercentage, 100)}%` }}
                     />
                   </div>
 
@@ -176,6 +203,7 @@ export default function GoalsPage() {
                     }`}
                     onClick={() => {
                       setSelectedGoalId(goal.id)
+                      setDepositValue("")
                       setIsAddFundsOpen(true)
                     }}
                     disabled={goal.isCompleted}
@@ -228,18 +256,59 @@ export default function GoalsPage() {
       {/* Add Funds Modal */}
       <Modal
         isOpen={isAddFundsOpen}
-        onClose={() => { setIsAddFundsOpen(false); setSelectedGoalId(null) }}
+        onClose={() => { setIsAddFundsOpen(false); setSelectedGoalId(null); setDepositValue("") }}
         title={t("goals.fundsModalTitle")}
         description={t("goals.fundsModalDesc")}
       >
         <form className="space-y-4 pt-4" onSubmit={handleAddFunds}>
+          {/* Balance info */}
+          <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-colors ${
+            netBalance > 0
+              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+              : "bg-destructive/10 border border-destructive/20 text-destructive"
+          }`}>
+            <Wallet className="h-4 w-4 flex-shrink-0" />
+            <span className="font-medium">
+              Số dư khả dụng: <span className="font-bold">{fmt(netBalance)} ₫</span>
+            </span>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="deposit">{t("goals.deposit")}</Label>
-            <Input id="deposit" name="deposit" type="number" inputMode="decimal" autoComplete="off" step="0.01" placeholder="100000" autoFocus required />
+            <Input
+              id="deposit"
+              name="deposit"
+              type="number"
+              inputMode="decimal"
+              autoComplete="off"
+              step="1"
+              min="1"
+              max={netBalance > 0 ? netBalance : undefined}
+              placeholder="100.000"
+              autoFocus
+              required
+              value={depositValue}
+              onChange={(e) => setDepositValue(e.target.value)}
+              className={isDepositExceedBalance ? "border-destructive focus:ring-destructive/20" : ""}
+            />
+            {/* Formatted preview + warning */}
+            {depositAmount > 0 && (
+              <div className="flex items-center justify-between text-xs px-1">
+                <span className="text-muted-foreground">
+                  = <span className="font-semibold text-foreground">{fmt(depositAmount)} ₫</span>
+                </span>
+                {isDepositExceedBalance && (
+                  <span className="text-destructive font-medium">
+                    Vượt quá số dư ({fmt(netBalance)} ₫)
+                  </span>
+                )}
+              </div>
+            )}
           </div>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsAddFundsOpen(false)}>{t("goals.cancel")}</Button>
-            <Button type="submit" disabled={isContributing}>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => { setIsAddFundsOpen(false); setDepositValue("") }}>{t("goals.cancel")}</Button>
+            <Button type="submit" disabled={isContributing || isDepositExceedBalance || netBalance <= 0}>
               {isContributing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("goals.confirm")}
             </Button>

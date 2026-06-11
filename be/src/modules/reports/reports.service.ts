@@ -176,3 +176,32 @@ export async function getCashFlowService(server: FastifyInstance, userId: string
   await setCache(server.redis, key, result, TTL.LONG)
   return result
 }
+
+// ─── All-Time Balance ──────────────────────────────────────────────────────────
+export async function getBalanceService(server: FastifyInstance, userId: string) {
+  const key = buildCacheKey("user", userId, "reports", "balance")
+  const cached = await getCache(server.redis, key)
+  if (cached) return cached
+
+  const [incomeAgg, expenseAgg] = await Promise.all([
+    server.prisma.transaction.aggregate({
+      where: { userId, type: "income" },
+      _sum: { amount: true },
+    }),
+    server.prisma.transaction.aggregate({
+      where: { userId, type: "expense" },
+      _sum: { amount: true },
+    }),
+  ])
+
+  const totalIncome = incomeAgg._sum.amount ?? 0
+  const totalExpense = expenseAgg._sum.amount ?? 0
+  const result = {
+    totalIncome,
+    totalExpense,
+    netBalance: totalIncome - totalExpense,
+  }
+
+  await setCache(server.redis, key, result, TTL.SHORT) // 1 min
+  return result
+}

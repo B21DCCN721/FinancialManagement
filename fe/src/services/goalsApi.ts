@@ -61,7 +61,10 @@ export const goalsApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: (_result, _err, { id }) => [{ type: "Goal", id }],
+      invalidatesTags: (_result, _err, { id }) => [
+        { type: "Goal", id },
+        { type: "Goal", id: "LIST" },
+      ],
     }),
 
     deleteGoal: builder.mutation<{ message: string }, string>({
@@ -69,7 +72,10 @@ export const goalsApi = baseApi.injectEndpoints({
         url: `/goals/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: [{ type: "Goal", id: "LIST" }],
+      invalidatesTags: (_result, _err, id) => [
+        { type: "Goal", id },
+        { type: "Goal", id: "LIST" },
+      ],
     }),
   }),
 })

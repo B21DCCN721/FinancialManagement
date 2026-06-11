@@ -82,6 +82,17 @@ export const transactionsApi = baseApi.injectEndpoints({
       invalidatesTags: [{ type: "Transaction", id: "LIST" }, { type: "Report", id: "SUMMARY" }, { type: "Report", id: "TREND" }, { type: "Report", id: "BREAKDOWN" }, { type: "Report", id: "CASHFLOW" }, { type: "Budget", id: "LIST" }],
     }),
 
+    stopRecurring: builder.mutation<Transaction, string>({
+      query: (id) => ({
+        url: `/transactions/${id}/stop-recurring`,
+        method: "POST",
+      }),
+      invalidatesTags: (_result, _err, id) => [
+        { type: "Transaction", id },
+        { type: "Transaction", id: "LIST" },
+      ],
+    }),
+
     autoCategorize: builder.mutation<AutoCategorizeResult, { description: string }>({
       query: (body) => ({
         url: "/transactions/auto-categorize",
@@ -98,5 +109,6 @@ export const {
   useCreateTransactionMutation,
   useUpdateTransactionMutation,
   useDeleteTransactionMutation,
+  useStopRecurringMutation,
   useAutoCategorizeMutation,
 } = transactionsApi

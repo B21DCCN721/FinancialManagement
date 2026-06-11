@@ -1,7 +1,6 @@
 import { z } from "zod"
 
 const isoDate = z.string().datetime({ message: "Date must be a valid ISO 8601 datetime" })
-const periodRegex = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Period must be YYYY-MM format")
 
 // ─── Request Schemas ────────────────────────────────────────────────
 export const createTransactionSchema = z.object({
@@ -43,6 +42,7 @@ export const transactionQuerySchema = z.object({
   dateFrom: isoDate.optional(),
   dateTo: isoDate.optional(),
   search: z.string().max(100).optional(),
+  isRecurring: z.coerce.boolean().optional(),
 })
 
 // ─── Response Schemas ────────────────────────────────────────────────
@@ -54,10 +54,18 @@ export const transactionSchema = z.object({
   date: z.union([z.date(), z.string()]),
   isRecurring: z.boolean(),
   frequency: z.string().nullable(),
+  nextRunAt: z.union([z.date(), z.string()]).nullable().optional(),
+  lastProcessedAt: z.union([z.date(), z.string()]).nullable().optional(),
   userId: z.string(),
   categoryId: z.string(),
   createdAt: z.union([z.date(), z.string()]),
   updatedAt: z.union([z.date(), z.string()]),
+  category: z.object({
+    id: z.string(),
+    name: z.string(),
+    color: z.string().nullable().optional(),
+    icon: z.string().nullable().optional(),
+  }).optional(),
 })
 
 export const paginatedTransactionsSchema = z.object({

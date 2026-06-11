@@ -154,7 +154,10 @@
     "addSuccess": "Thêm giao dịch thành công",
     "addError": "Thêm giao dịch thất bại. Vui lòng thử lại.",
     "deleteSuccess": "Xóa giao dịch thành công",
-    "deleteError": "Xóa giao dịch thất bại. Vui lòng thử lại."
+    "deleteError": "Xóa giao dịch thất bại. Vui lòng thử lại.",
+    "deleteConfirmTitle": "Xóa giao dịch",
+    "deleteConfirmDesc": "Bạn có chắc chắn muốn xóa giao dịch này? Hành động này không thể hoàn tác.",
+    "delete": "Xóa"
   },
   "reports": {
     "title": "Báo cáo & Phân tích",

@@ -48,3 +48,9 @@ export const aiInsightsSchema = z.object({
   generatedAt: z.string(),
   insights: z.string(),
 })
+
+export const balanceSchema = z.object({
+  totalIncome: z.number(),
+  totalExpense: z.number(),
+  netBalance: z.number(),
+})
