@@ -2,8 +2,7 @@ import { baseApi } from "@/lib/api/baseApi"
 import type { User } from "@/lib/api/types"
 
 interface UpdateProfileRequest {
-  firstName?: string
-  lastName?: string
+  name?: string
   avatarUrl?: string
 }
 

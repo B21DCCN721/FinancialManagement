@@ -25,9 +25,7 @@ export function Header() {
     }
   }
 
-  const displayName = user
-    ? [user.firstName, user.lastName].filter(Boolean).join(" ") || user.name || "User"
-    : "User"
+  const displayName = user?.name || "User"
 
   const initials = displayName
     .split(" ")

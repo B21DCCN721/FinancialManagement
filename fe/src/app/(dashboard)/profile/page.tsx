@@ -61,11 +61,9 @@ export default function ProfilePage() {
     e.preventDefault()
     setProfileSuccess(false)
     const formData = new FormData(e.currentTarget)
-    const firstName = formData.get("firstName") as string
-    const lastName = formData.get("lastName") as string
-
+    const name = formData.get("name") as string
     try {
-      const updatedUser = await updateProfile({ firstName, lastName }).unwrap()
+      const updatedUser = await updateProfile({ name }).unwrap()
       dispatch(updateUser(updatedUser))
       setProfileSuccess(true)
       toast.success(t("profile.profileSaved"))
@@ -127,6 +125,12 @@ export default function ProfilePage() {
     )
   }
 
+  const displayName = user?.name || t("profile.unnamed")
+
+  const initials = displayName !== t("profile.unnamed")
+    ? displayName.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()
+    : user?.email?.[0]?.toUpperCase()
+
   return (
     <div className="space-y-8 max-w-3xl mx-auto pb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div>
@@ -146,16 +150,19 @@ export default function ProfilePage() {
       >
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
         <div
-          className="h-24 w-24 rounded-[2rem] flex flex-shrink-0 items-center justify-center text-4xl font-bold text-white shadow-lg relative z-10 transition-transform duration-500 group-hover:scale-105"
+          className="h-24 w-24 rounded-[2rem] flex flex-shrink-0 items-center justify-center text-4xl font-bold text-white shadow-lg relative z-10 transition-transform duration-500 group-hover:scale-105 overflow-hidden"
           style={{ background: "linear-gradient(135deg, #7c5cfc 0%, #c084fc 100%)" }}
         >
-          {user?.firstName?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? <User2 className="h-12 w-12" />}
+          {user?.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+          ) : (
+            <span>{initials ?? <User2 className="h-12 w-12" />}</span>
+          )}
         </div>
         <div className="relative z-10">
           <p className="text-3xl font-bold text-foreground tracking-tight">
-            {user?.firstName || user?.lastName
-              ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
-              : t("profile.unnamed")}
+            {displayName}
           </p>
           <p className="text-base text-muted-foreground mt-1.5">{user?.email}</p>
           <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-primary/15 text-primary mt-4 border border-primary/20 backdrop-blur-sm">
@@ -176,24 +183,14 @@ export default function ProfilePage() {
           </CardHeader>
           <form onSubmit={handleProfileSave}>
             <CardContent className="space-y-6 pt-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 gap-5">
                 <div className="space-y-2.5">
-                  <Label htmlFor="firstName" className="font-medium">{t("profile.firstName")}</Label>
+                  <Label htmlFor="name" className="font-medium">{t("profile.name")}</Label>
                   <Input
-                    id="firstName"
-                    name="firstName"
-                    defaultValue={user?.firstName ?? ""}
-                    placeholder="Nguyễn"
-                    className="transition-all focus-visible:ring-primary/50"
-                  />
-                </div>
-                <div className="space-y-2.5">
-                  <Label htmlFor="lastName" className="font-medium">{t("profile.lastName")}</Label>
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    defaultValue={user?.lastName ?? ""}
-                    placeholder="Văn A"
+                    id="name"
+                    name="name"
+                    defaultValue={user?.name ?? ""}
+                    placeholder="Nguyễn Văn A"
                     className="transition-all focus-visible:ring-primary/50"
                   />
                 </div>

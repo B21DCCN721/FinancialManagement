@@ -2,8 +2,6 @@ import { z } from "zod"
 
 // ─── Request Schemas ────────────────────────────────────────────────
 export const updateProfileSchema = z.object({
-  firstName: z.string().min(1).max(50).optional(),
-  lastName: z.string().min(1).max(50).optional(),
   name: z.string().min(1).max(100).optional(),
   avatarUrl: z.string().url("Invalid URL").optional().nullable(),
 })
@@ -22,8 +20,6 @@ export const userProfileSchema = z.object({
   id: z.string(),
   email: z.string(),
   name: z.string().nullable(),
-  firstName: z.string().nullable(),
-  lastName: z.string().nullable(),
   avatarUrl: z.string().nullable(),
   createdAt: z.union([z.date(), z.string()]),
   updatedAt: z.union([z.date(), z.string()]),

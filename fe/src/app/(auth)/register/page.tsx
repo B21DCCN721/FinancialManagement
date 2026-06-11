@@ -17,8 +17,7 @@ import { TermsModal } from "@/components/auth/terms-modal"
 export default function RegisterPage() {
   const { t } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
+  const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [errorMsg, setErrorMsg] = useState("")
@@ -35,15 +34,15 @@ export default function RegisterPage() {
     try {
       const result = await signInWithPopup(auth, googleProvider)
       const token = await result.user.getIdToken()
-      
+
       const apiResult = await googleLogin({ token }).unwrap()
-      
+
       dispatch(setCredentials({
         accessToken: apiResult.accessToken,
         refreshToken: apiResult.refreshToken,
         user: apiResult.user,
       }))
-      
+
       logger.info("Google Register successful", { userId: apiResult.user.id })
       router.push("/")
     } catch (err: any) {
@@ -64,7 +63,7 @@ export default function RegisterPage() {
     }
 
     try {
-      const result = await register({ email, password, firstName, lastName }).unwrap()
+      const result = await register({ email, password, name }).unwrap()
       dispatch(setCredentials({
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
@@ -168,27 +167,16 @@ export default function RegisterPage() {
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label htmlFor="first-name" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>{t("register.firstName")}</label>
-                <input
-                  id="first-name"
-                  placeholder="John"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="input-modern flex h-11 w-full px-4 text-sm"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label htmlFor="last-name" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>{t("register.lastName")}</label>
-                <input
-                  id="last-name"
-                  placeholder="Doe"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="input-modern flex h-11 w-full px-4 text-sm"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <label htmlFor="name" className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>{t("register.name")}</label>
+              <input
+                id="name"
+                placeholder="Nguyễn Văn A"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="input-modern flex h-11 w-full px-4 text-sm"
+              />
             </div>
 
             <div className="space-y-1.5">
@@ -238,19 +226,19 @@ export default function RegisterPage() {
 
             <p className="text-center text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
               {t("register.terms1")}
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setModalType("terms")}
-                className="underline underline-offset-2 hover:text-white transition-colors" 
+                className="underline underline-offset-2 hover:text-white transition-colors"
                 style={{ color: "rgba(167,139,250,0.7)" }}
               >
                 {t("register.terms2")}
               </button>
               {t("register.terms3")}
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setModalType("privacy")}
-                className="underline underline-offset-2 hover:text-white transition-colors" 
+                className="underline underline-offset-2 hover:text-white transition-colors"
                 style={{ color: "rgba(167,139,250,0.7)" }}
               >
                 {t("register.terms4")}
@@ -269,10 +257,10 @@ export default function RegisterPage() {
           </Link>
         </p>
       </div>
-      <TermsModal 
-        isOpen={modalType !== null} 
-        onClose={() => setModalType(null)} 
-        type={modalType || "terms"} 
+      <TermsModal
+        isOpen={modalType !== null}
+        onClose={() => setModalType(null)}
+        type={modalType || "terms"}
       />
     </div>
   )

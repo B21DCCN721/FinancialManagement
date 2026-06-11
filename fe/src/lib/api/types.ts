@@ -23,8 +23,6 @@ export interface PaginatedResponse<T> {
 export interface User {
   id: string
   email: string
-  firstName?: string
-  lastName?: string
   name?: string
   avatarUrl?: string
   authProvider?: string

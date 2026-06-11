@@ -85,5 +85,42 @@ npm run dev
 ```
 The server will run at `http://localhost:5000`.
 
-## 📜 Database Initialization (Optional)
 A complete `database.sql` file is provided in the root directory. It contains the full PostgreSQL schema, including triggers for `updatedAt` and sample seed data. You can execute this file directly against your PostgreSQL instance if you prefer not to use Prisma's migration tools.
+
+## 🚀 Syncing Database to Production (Neon DB)
+
+There are two primary ways to sync your Prisma schema to your remote database on Neon. You can run these commands directly in your terminal (PowerShell) from the `be` directory.
+
+### Method 1: Using `db push` (For Development / Prototyping)
+Best for rapid changes when you don't need migration history. Run the following step-by-step commands:
+
+```powershell
+# 1. Set the production Neon DB connection string
+$env:DATABASE_URL="postgresql://neondb_owner:npg_Bpfv8zAre5sY@ep-floral-river-ap77dazb.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require"
+
+# 2. Push the schema directly to the remote database
+npx prisma db push
+
+# 3. Generate the updated Prisma Client for your code
+npx prisma generate
+
+# 4. Revert the terminal environment variable back to local DB
+$env:DATABASE_URL="postgresql://admin:password123@localhost:5432/finmanage?schema=public"
+```
+
+### Method 2: Using `migrate dev` (Best Practice for Production)
+Best for when your app is live and you want to track schema changes via SQL files. Run the following step-by-step commands:
+
+```powershell
+# 1. Set the production Neon DB connection string
+$env:DATABASE_URL="postgresql://neondb_owner:npg_Bpfv8zAre5sY@ep-floral-river-ap77dazb.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require"
+
+# 2. Create and apply a new migration (replace 'remove_columns' with your description)
+npx prisma migrate dev --name remove_columns
+
+# 3. Generate the updated Prisma Client for your code
+npx prisma generate
+
+# 4. Revert the terminal environment variable back to local DB
+$env:DATABASE_URL="postgresql://admin:password123@localhost:5432/finmanage?schema=public"
+```

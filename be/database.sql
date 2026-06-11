@@ -25,8 +25,6 @@ CREATE TABLE "User" (
     "id"           TEXT         NOT NULL DEFAULT gen_random_uuid()::TEXT,
     "email"        TEXT         NOT NULL,
     "password"     TEXT         NOT NULL,      -- bcrypt hash (cost 12)
-    "firstName"    TEXT,
-    "lastName"     TEXT,
     "name"         TEXT,                        -- computed / display name
     "avatarUrl"    TEXT,
     "authProvider" TEXT         NOT NULL DEFAULT 'local', -- 'local' or 'google'
@@ -204,13 +202,11 @@ CREATE TRIGGER "Goal_updatedAt"
 -- Demo user (password: "Demo@12345" hashed with bcrypt cost 12)
 -- Run: node -e "const b=require('bcryptjs');b.hash('Demo@12345',12).then(h=>console.log(h))"
 -- to regenerate the hash below
-INSERT INTO "User" ("id", "email", "password", "firstName", "lastName", "name", "authProvider", "providerId")
+INSERT INTO "User" ("id", "email", "password", "name", "authProvider", "providerId")
 VALUES (
     'usr_demo_001',
     'demo@finmanage.app',
     '$2a$12$demoHashPlaceholderReplaceWithRealBcryptHash00000000000000',
-    'Demo',
-    'User',
     'Demo User',
     'local',
     NULL

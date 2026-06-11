@@ -34,16 +34,12 @@ export async function registerService(
   }
 
   const hashed = await hashPassword(data.password)
-  const displayName = data.name ?? ([data.firstName, data.lastName].filter(Boolean).join(" ") || null)
-
   return await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
         email: data.email,
         password: hashed,
-        firstName: data.firstName ?? null,
-        lastName: data.lastName ?? null,
-        name: displayName,
+        name: data.name,
       },
     })
 
@@ -62,8 +58,6 @@ export async function registerService(
         id: user.id,
         email: user.email,
         name: user.name,
-        firstName: user.firstName,
-        lastName: user.lastName,
         authProvider: user.authProvider,
         createdAt: user.createdAt,
       },
@@ -105,8 +99,6 @@ export async function loginService(
       id: user.id,
       email: user.email,
       name: user.name,
-      firstName: user.firstName,
-      lastName: user.lastName,
       authProvider: user.authProvider,
       createdAt: user.createdAt,
     },
@@ -136,9 +128,6 @@ export async function googleLoginService(
   if (!email) throw errors.badRequest("Google account does not have an email")
 
   const name = decodedToken.name || email.split("@")[0]
-  // Firebase Auth providers display name might not be split into first/last easily, so we just use name.
-  const firstName = null
-  const lastName = null
   const avatarUrl = decodedToken.picture || null
 
   return await prisma.$transaction(async (tx) => {
@@ -177,8 +166,6 @@ export async function googleLoginService(
         data: {
           email,
           password: hashed,
-          firstName,
-          lastName,
           name,
           avatarUrl,
           authProvider: "google",
@@ -202,8 +189,6 @@ export async function googleLoginService(
         id: user.id,
         email: user.email,
         name: user.name,
-        firstName: user.firstName,
-        lastName: user.lastName,
         authProvider: user.authProvider,
         createdAt: user.createdAt,
       },

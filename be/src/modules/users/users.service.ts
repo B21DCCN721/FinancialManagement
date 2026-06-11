@@ -17,7 +17,6 @@ export async function getMeService(server: FastifyInstance, userId: string) {
     where: { id: userId },
     select: {
       id: true, email: true, name: true,
-      firstName: true, lastName: true,
       avatarUrl: true, authProvider: true,
       createdAt: true, updatedAt: true,
     },
@@ -37,12 +36,10 @@ export async function updateProfileService(
     const user = await tx.user.update({
       where: { id: userId },
       data: {
-        ...data,
-        name: data.name ?? ([data.firstName, data.lastName].filter(Boolean).join(" ") || undefined),
+        name: data.name,
       },
       select: {
         id: true, email: true, name: true,
-        firstName: true, lastName: true,
         avatarUrl: true, authProvider: true,
         createdAt: true, updatedAt: true,
       },

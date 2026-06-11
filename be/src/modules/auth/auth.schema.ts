@@ -8,9 +8,7 @@ export const registerSchema = z.object({
     .min(8, "Password must be at least 8 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
-  firstName: z.string().min(1, "First name is required").max(50).optional(),
-  lastName: z.string().min(1).max(50).optional(),
-  name: z.string().min(1).max(100).optional(),
+  name: z.string().min(1, "Name is required").max(100),
 })
 
 export const loginSchema = z.object({
@@ -45,8 +43,6 @@ const userPublicSchema = z.object({
   id: z.string(),
   email: z.string(),
   name: z.string().nullable(),
-  firstName: z.string().nullable(),
-  lastName: z.string().nullable(),
   authProvider: z.string(),
   createdAt: z.union([z.date(), z.string()]),
 })
