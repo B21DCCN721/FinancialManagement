@@ -15,4 +15,9 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
+// Force account selection screen every time
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
 export { app, auth, googleProvider };

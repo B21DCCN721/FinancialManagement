@@ -59,7 +59,7 @@ function LoginContent() {
     } catch (err: any) {
       setIsGoogleLoading(false)
       logger.error("Firebase Google Login failed", err)
-      const errMessage = err?.message || JSON.stringify(err)
+      const errMessage = err?.data?.message || err?.error || err?.message || "Đã xảy ra lỗi không xác định"
       setErrorMsg(`Lỗi kết nối Google: ${errMessage}`)
     }
   }

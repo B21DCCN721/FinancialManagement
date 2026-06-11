@@ -13,6 +13,7 @@ const TIMEOUT_MS = 10_000 // 10 giây
 // ─── Base fetch với timeout ───────────────────────────────────────────────────
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: `${API_URL}/api`,
+  timeout: TIMEOUT_MS,
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth?.accessToken
     if (token) {
@@ -29,22 +30,10 @@ export const baseQueryWithAuth: BaseQueryFn<
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
-  // ── Timeout bằng AbortController ──────────────────────────────────────────
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => {
-    controller.abort()
-  }, TIMEOUT_MS)
-
-  const argsWithSignal: string | FetchArgs =
-    typeof args === "string"
-      ? args
-      : { ...args, signal: controller.signal }
-
-  let result = await rawBaseQuery(argsWithSignal, api, extraOptions)
-  clearTimeout(timeoutId)
+  let result = await rawBaseQuery(args, api, extraOptions)
 
   // ── Xử lý lỗi timeout ─────────────────────────────────────────────────────
-  if (result.error && "name" in (result.error as { name?: string }) && (result.error as { name?: string }).name === "AbortError") {
+  if (result.error && result.error.status === "TIMEOUT_ERROR") {
     logger.error("Request timeout", new Error("Request timed out"), {
       url: typeof args === "string" ? args : args.url,
     })
@@ -101,7 +90,7 @@ export const baseQueryWithAuth: BaseQueryFn<
           api.dispatch(setCredentials({ accessToken: refreshData.accessToken, refreshToken: refreshData.refreshToken }))
           logger.info("Token refreshed successfully, retrying original request...")
           // Retry lại request gốc
-          result = await rawBaseQuery(argsWithSignal, api, extraOptions)
+          result = await rawBaseQuery(args, api, extraOptions)
         } else {
           logger.error("Refresh token failed, logging out", refreshResult.error)
           api.dispatch(clearAuth())
@@ -116,7 +105,7 @@ export const baseQueryWithAuth: BaseQueryFn<
       logger.info("Waiting for ongoing refresh token process...")
       await mutex.waitForUnlock()
       // Retry lại request gốc sau khi Mutex được mở khoá (token đã được cấp mới)
-      result = await rawBaseQuery(argsWithSignal, api, extraOptions)
+      result = await rawBaseQuery(args, api, extraOptions)
     }
   }
 
