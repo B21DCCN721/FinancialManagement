@@ -123,8 +123,8 @@ export default function CategoriesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t("categories.title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("categories.subtitle")}</p>
+          <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground">{t("categories.title")}</h1>
+          <p className="text-sm md:text-lg text-muted-foreground">{t("categories.subtitle")}</p>
         </div>
         <button
           onClick={() => { setEditingId(null); setIsAddModalOpen(true) }}

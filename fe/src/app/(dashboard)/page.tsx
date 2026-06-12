@@ -160,9 +160,9 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("dashboard.title")}</h1>
+            <h1 className="text-2xl md:text-4xl font-bold text-foreground tracking-tight">{t("dashboard.title")}</h1>
           </div>
-          <p className="text-sm text-muted-foreground">{t("dashboard.subtitle")} {selectedMonthLabel.toLowerCase()}, {periodYStr}</p>
+          <p className="text-sm md:text-lg text-muted-foreground">{t("dashboard.subtitle")} {selectedMonthLabel.toLowerCase()}, {periodYStr}</p>
         </div>
         <div className="flex items-center gap-2">
           <MonthPicker value={period} onChange={setPeriod} />
@@ -207,8 +207,8 @@ export default function Dashboard() {
         <div className="md:col-span-2 lg:col-span-4 rounded-2xl p-5 glass-card min-w-0">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">{t("dashboard.incomeAndExpense")}</h3>
-              <p className="text-xs mt-0.5 text-muted-foreground">{t("dashboard.monthlyCashflow")}</p>
+              <h3 className="text-lg md:text-2xl font-semibold text-foreground">{t("dashboard.incomeAndExpense")}</h3>
+              <p className="text-sm md:text-base mt-0.5 text-muted-foreground">{t("dashboard.monthlyCashflow")}</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
@@ -248,8 +248,8 @@ export default function Dashboard() {
         <div className="md:col-span-2 lg:col-span-3 rounded-2xl p-5 glass-card min-w-0">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">{t("dashboard.expenseByCategory")}</h3>
-              <p className="text-xs mt-0.5 text-muted-foreground">{t("dashboard.whereMoneyWent")}</p>
+              <h3 className="text-lg md:text-2xl font-semibold text-foreground">{t("dashboard.expenseByCategory")}</h3>
+              <p className="text-sm md:text-base mt-0.5 text-muted-foreground">{t("dashboard.whereMoneyWent")}</p>
             </div>
             <button className="text-muted-foreground hover:text-foreground transition-colors">
               <MoreHorizontal className="h-4 w-4" />
@@ -302,8 +302,8 @@ export default function Dashboard() {
         {/* Area chart */}
         <div className="lg:col-span-2 rounded-2xl p-5 glass-card min-w-0">
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-foreground">{t("dashboard.savingsTrend")}</h3>
-            <p className="text-xs mt-0.5 text-muted-foreground">{t("dashboard.netSavings")}</p>
+            <h3 className="text-lg md:text-2xl font-semibold text-foreground">{t("dashboard.savingsTrend")}</h3>
+            <p className="text-sm md:text-base mt-0.5 text-muted-foreground">{t("dashboard.netSavings")}</p>
           </div>
           <div className="h-[160px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -328,8 +328,8 @@ export default function Dashboard() {
         <div className="lg:col-span-3 rounded-2xl p-5 glass-card min-w-0">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">{t("dashboard.recentTransactions")}</h3>
-              <p className="text-xs mt-0.5 text-muted-foreground">{t("dashboard.latestTransactions")}</p>
+              <h3 className="text-lg md:text-2xl font-semibold text-foreground">{t("dashboard.recentTransactions")}</h3>
+              <p className="text-sm md:text-base mt-0.5 text-muted-foreground">{t("dashboard.latestTransactions")}</p>
             </div>
             <Link href="/transactions" className="text-xs font-medium px-3 py-1 rounded-lg transition-all hover:scale-105 bg-accent text-primary border border-primary/20">
               {t("dashboard.viewAll")}

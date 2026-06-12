@@ -81,8 +81,8 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("reports.title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("reports.subtitle")}</p>
+          <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground">{t("reports.title")}</h1>
+          <p className="text-sm md:text-lg text-muted-foreground">{t("reports.subtitle")}</p>
         </div>
         {/* Period selector */}
         <div className="flex items-center gap-2">
@@ -136,8 +136,8 @@ export default function ReportsPage() {
         {/* Monthly Trend Bar Chart */}
         <div className="lg:col-span-2 glass-card rounded-2xl p-5">
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-foreground">{t("reports.monthlyTrend")}</h3>
-            <p className="text-xs mt-0.5 text-muted-foreground">{t("reports.last6Months")}</p>
+            <h3 className="text-lg md:text-2xl font-semibold text-foreground">{t("reports.monthlyTrend")}</h3>
+            <p className="text-sm md:text-base mt-0.5 text-muted-foreground">{t("reports.last6Months")}</p>
           </div>
           {isTrendLoading ? (
             <div className="h-[260px] flex items-center justify-center">
@@ -165,8 +165,8 @@ export default function ReportsPage() {
         {/* Category Breakdown Pie */}
         <div className="glass-card rounded-2xl p-5">
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-foreground">{t("reports.categoryBreakdown")}</h3>
-            <p className="text-xs mt-0.5 text-muted-foreground">{t("reports.period")} {period}</p>
+            <h3 className="text-lg md:text-2xl font-semibold text-foreground">{t("reports.categoryBreakdown")}</h3>
+            <p className="text-sm md:text-base mt-0.5 text-muted-foreground">{t("reports.period")} {period}</p>
           </div>
           {isBreakdownLoading ? (
             <div className="h-[260px] flex items-center justify-center">
@@ -212,8 +212,8 @@ export default function ReportsPage() {
         {/* Cash Flow Area Chart */}
         <div className="lg:col-span-2 glass-card rounded-2xl p-5">
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-foreground">{t("reports.cashFlow")}</h3>
-            <p className="text-xs mt-0.5 text-muted-foreground">{t("reports.period")} {period}</p>
+            <h3 className="text-lg md:text-2xl font-semibold text-foreground">{t("reports.cashFlow")}</h3>
+            <p className="text-sm md:text-base mt-0.5 text-muted-foreground">{t("reports.period")} {period}</p>
           </div>
           {isCashFlowLoading ? (
             <div className="h-[200px] flex items-center justify-center">
@@ -284,8 +284,8 @@ export default function ReportsPage() {
       {/* Net Balance Line Chart */}
       <div className="glass-card rounded-2xl p-5">
         <div className="mb-4">
-          <h3 className="text-sm font-semibold text-foreground">{t("reports.netBalanceTrend")}</h3>
-          <p className="text-xs mt-0.5 text-muted-foreground">{t("reports.financialTrend")}</p>
+          <h3 className="text-lg md:text-2xl font-semibold text-foreground">{t("reports.netBalanceTrend")}</h3>
+          <p className="text-sm md:text-base mt-0.5 text-muted-foreground">{t("reports.financialTrend")}</p>
         </div>
         {isTrendLoading ? (
           <div className="h-[200px] flex items-center justify-center">
