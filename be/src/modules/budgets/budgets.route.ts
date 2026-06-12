@@ -32,7 +32,7 @@ export const budgetRoutes: FastifyPluginAsync = async (server: FastifyInstance) 
   // GET /api/budgets/summary?period=2026-06
   s.get("/summary", {
     schema: {
-      querystring: periodQuerySchema,
+      querystring: budgetQuerySchema,
       response: { 200: z.array(budgetWithSpendingSchema) },
     },
   }, getBudgetSummaryController)

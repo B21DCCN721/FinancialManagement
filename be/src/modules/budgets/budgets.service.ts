@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify"
 import { errors } from "../../utils/errors"
 import { getCache, setCache, deleteCache, invalidateCachePattern, TTL, buildCacheKey } from "../../utils/cache"
 import { CreateBudgetInput, UpdateBudgetInput, BudgetQuery } from "./budgets.schema"
+import { getBalanceService } from "../reports/reports.service"
 
 function listCacheKey(userId: string, period?: string) {
   return buildCacheKey("user", userId, "budgets", "v2", period ?? "all")
@@ -113,6 +114,18 @@ export async function upsertBudgetService(
   if (!category) throw errors.notFound("Category not found")
   if (category.type !== "expense") throw errors.badRequest("Budgets can only be set for expense categories")
 
+  const { netBalance } = await getBalanceService(server, userId)
+
+  const agg = await server.prisma.budget.aggregate({
+    where: { userId, period: data.period },
+    _sum: { amount: true },
+  })
+  const currentTotal = agg._sum.amount ?? 0
+
+  if (currentTotal + data.amount > netBalance) {
+    throw errors.badRequest(`Tổng ngân sách (${(currentTotal + data.amount).toLocaleString("vi-VN")} ₫) vượt quá số dư hiện tại (${netBalance.toLocaleString("vi-VN")} ₫)`)
+  }
+
   return await server.prisma.$transaction(async (tx) => {
     const existing = await tx.budget.findFirst({
       where: { userId, categoryId: data.categoryId, period: data.period }
@@ -140,6 +153,20 @@ export async function updateBudgetService(
   return await server.prisma.$transaction(async (tx) => {
     const existing = await tx.budget.findFirst({ where: { id, userId } })
     if (!existing) throw errors.notFound("Budget not found")
+
+    if (data.amount !== undefined) {
+      const { netBalance } = await getBalanceService(server, userId)
+
+      const agg = await tx.budget.aggregate({
+        where: { userId, period: existing.period, id: { not: id } },
+        _sum: { amount: true },
+      })
+      const currentTotal = agg._sum.amount ?? 0
+
+      if (currentTotal + data.amount > netBalance) {
+        throw errors.badRequest(`Tổng ngân sách (${(currentTotal + data.amount).toLocaleString("vi-VN")} ₫) vượt quá số dư hiện tại (${netBalance.toLocaleString("vi-VN")} ₫)`)
+      }
+    }
 
     const updated = await tx.budget.update({
       where: { id },
