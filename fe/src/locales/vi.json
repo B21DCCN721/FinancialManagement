@@ -12,7 +12,7 @@
   },
   "sidebar": {
     "dashboard": "Tổng quan",
-    "transactions": "Khoản chi",
+    "transactions": "Thu chi",
     "budgets": "Ngân sách",
     "goals": "Mục tiêu",
     "categories": "Danh mục",
@@ -118,7 +118,7 @@
     "close": "Đóng"
   },
   "transactions": {
-    "title": "Khoản chi",
+    "title": "Thu chi",
     "subtitle": "Quản lý các khoản thu chi một lần và định kỳ của bạn.",
     "addTransaction": "Thêm khoản chi",
     "allTransactions": "Tất cả khoản chi",
