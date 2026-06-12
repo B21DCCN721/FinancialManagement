@@ -8,18 +8,25 @@ import { Mutex } from "async-mutex"
 const mutex = new Mutex()
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost"
-const TIMEOUT_MS = 10_000 // 10 giây
+const TIMEOUT_MS = 15_000 // 15 giây
 
 // ─── Base fetch với timeout ───────────────────────────────────────────────────
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: `${API_URL}/api`,
   timeout: TIMEOUT_MS,
+  fetchFn: (input, init) => {
+    return fetch(input, { ...init, cache: "no-store" })
+  },
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth?.accessToken
     if (token) {
       headers.set("Authorization", `Bearer ${token}`)
     }
-    headers.set("Content-Type", "application/json")
+    headers.set("Cache-Control", "no-cache, no-store, must-revalidate")
+    headers.set("Pragma", "no-cache")
+    headers.set("Expires", "0")
+    // Bỏ hardcode Content-Type để tránh lỗi mất boundary khi dùng FormData (Upload file)
+    // RTK Query sẽ tự động set "application/json" cho các request thông thường.
     return headers
   },
 })
@@ -40,7 +47,7 @@ export const baseQueryWithAuth: BaseQueryFn<
     return {
       error: {
         status: "TIMEOUT_ERROR" as const,
-        error: "Request timed out after 10 seconds",
+        error: "Request timed out after 15 seconds",
       } as FetchBaseQueryError,
     }
   }
