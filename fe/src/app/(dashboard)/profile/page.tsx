@@ -39,7 +39,6 @@ export default function ProfilePage() {
   const [pwdSuccess, setPwdSuccess] = useState(false)
   const [pwdError, setPwdError] = useState("")
 
-  const [selectedCurrency, setSelectedCurrency] = useState("VND")
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.resolvedLanguage || "vi")
 
   useEffect(() => {
@@ -304,24 +303,12 @@ export default function ProfilePage() {
             <CardDescription>{t("profile.preferencesDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="space-y-2.5">
-                <Label htmlFor="currency" className="font-medium">{t("profile.currency")}</Label>
-                <Select 
-                  id="currency" 
-                  value={selectedCurrency}
-                  onChange={(e) => setSelectedCurrency(e.target.value)}
-                >
-                  <option value="VND">VND – Đồng Việt Nam</option>
-                  <option value="USD">USD – US Dollar</option>
-                  <option value="EUR">EUR – Euro</option>
-                </Select>
-              </div>
-              <div className="space-y-2.5">
+            <div className="grid grid-cols-1 gap-6">
+              <div className="space-y-2.5 max-w-sm">
                 <Label htmlFor="language" className="font-medium">{t("profile.language")}</Label>
-                <Select 
-                  id="language" 
-                  value={selectedLanguage} 
+                <Select
+                  id="language"
+                  value={selectedLanguage}
                   onChange={(e) => setSelectedLanguage(e.target.value)}
                 >
                   <option value="vi">🇻🇳 Tiếng Việt</option>
@@ -358,7 +345,7 @@ export default function ProfilePage() {
                 {t("profile.logoutBtn")}
               </Button>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 transition-colors">
               <div>
                 <p className="font-medium text-destructive">{t("profile.deleteAccount")}</p>

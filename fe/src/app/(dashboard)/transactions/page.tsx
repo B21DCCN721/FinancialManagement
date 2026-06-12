@@ -643,7 +643,7 @@ function TransactionsContent() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="amount">{t("transactions.amount")}</Label>
-            <Input id="amount" name="amount" type="number" inputMode="decimal" autoComplete="off" step="10" placeholder="0.00" defaultValue={editingTx?.amount} required />
+            <Input id="amount" name="amount" type="number" inputMode="decimal" autoComplete="off" step="10" placeholder="0" defaultValue={editingTx?.amount} required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="categoryId">{t("transactions.categoryId") || "Danh mục"}</Label>
