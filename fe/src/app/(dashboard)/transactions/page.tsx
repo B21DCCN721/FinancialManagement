@@ -292,11 +292,19 @@ function TransactionsContent() {
                   </div>
                   <div className="space-y-1.5 flex-1 min-w-[150px]">
                     <Label className="text-xs text-muted-foreground">{t("transactions.dateFrom")}</Label>
-                    <DatePicker value={dateFrom ? dateFrom.toISOString().split("T")[0] : undefined} onChange={(d) => { setDateFrom(new Date(d)); setPage(1) }} />
+                    <DatePicker 
+                      value={dateFrom ? dateFrom.toISOString().split("T")[0] : undefined} 
+                      onChange={(d) => { setDateFrom(new Date(d)); setPage(1) }} 
+                      maxDate={dateTo ? dateTo.toISOString().split("T")[0] : undefined}
+                    />
                   </div>
                   <div className="space-y-1.5 flex-1 min-w-[150px]">
                     <Label className="text-xs text-muted-foreground">{t("transactions.dateTo")}</Label>
-                    <DatePicker value={dateTo ? dateTo.toISOString().split("T")[0] : undefined} onChange={(d) => { setDateTo(new Date(d)); setPage(1) }} />
+                    <DatePicker 
+                      value={dateTo ? dateTo.toISOString().split("T")[0] : undefined} 
+                      onChange={(d) => { setDateTo(new Date(d)); setPage(1) }} 
+                      minDate={dateFrom ? dateFrom.toISOString().split("T")[0] : undefined}
+                    />
                   </div>
                 </div>
                 {activeFilterCount > 0 && (

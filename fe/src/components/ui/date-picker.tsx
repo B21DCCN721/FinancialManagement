@@ -9,9 +9,11 @@ interface DatePickerProps {
   name?: string
   required?: boolean
   id?: string
+  minDate?: string
+  maxDate?: string
 }
 
-export function DatePicker({ value, onChange, name, required, id }: DatePickerProps) {
+export function DatePicker({ value, onChange, name, required, id, minDate, maxDate }: DatePickerProps) {
   const [open, setOpen] = useState(false)
   const [internalValue, setInternalValue] = useState(value || "")
   const currentValue = value !== undefined ? value : internalValue
@@ -149,19 +151,38 @@ export function DatePicker({ value, onChange, name, required, id }: DatePickerPr
                     const day = i + 1
                     const isSelected = !!currentValue && displayDate.getDate() === day && displayDate.getMonth() === panelMonth && displayDate.getFullYear() === panelYear
                     const isToday = new Date().getDate() === day && new Date().getMonth() === panelMonth && new Date().getFullYear() === panelYear
+                    
+                    let isDisabled = false
+                    const currentDateObj = new Date(panelYear, panelMonth, day)
+                    if (minDate) {
+                      const minD = new Date(minDate)
+                      minD.setHours(0,0,0,0)
+                      if (currentDateObj < minD) isDisabled = true
+                    }
+                    if (maxDate) {
+                      const maxD = new Date(maxDate)
+                      maxD.setHours(0,0,0,0)
+                      if (currentDateObj > maxD) isDisabled = true
+                    }
 
                     return (
                       <button
                         key={day}
                         type="button"
+                        disabled={isDisabled}
                         onClick={() => selectDate(day)}
                         className={[
-                          "relative h-9 w-full rounded-xl text-sm font-medium transition-all hover:scale-105 flex items-center justify-center",
+                          "relative h-9 w-full rounded-xl text-sm font-medium transition-all flex items-center justify-center",
+                          isDisabled 
+                            ? "opacity-30 cursor-not-allowed" 
+                            : "hover:scale-105",
                           isSelected
                             ? "bg-primary text-white shadow-[0_4px_12px_rgba(124,92,252,0.4)]"
-                            : isToday
+                            : isToday && !isDisabled
                             ? "border border-primary/40 text-primary bg-primary/5"
-                            : "hover:bg-accent text-foreground",
+                            : !isDisabled 
+                            ? "hover:bg-accent text-foreground"
+                            : "",
                         ].join(" ")}
                       >
                         {day}

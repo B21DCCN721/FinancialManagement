@@ -455,3 +455,19 @@ input[type="number"]::-webkit-inner-spin-button:hover,
 input[type="number"]::-webkit-outer-spin-button:hover {
   opacity: 1;
 }
+
+/* === Recharts Focus Reset === */
+.recharts-wrapper,
+.recharts-surface,
+.recharts-layer,
+.recharts-bar-rectangle,
+.recharts-pie-sector,
+.recharts-active-dot,
+.recharts-dot,
+.recharts-sector,
+g:focus,
+path:focus,
+rect:focus,
+svg:focus {
+  outline: none !important;
+}

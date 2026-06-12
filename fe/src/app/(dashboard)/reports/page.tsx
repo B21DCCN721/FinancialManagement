@@ -254,11 +254,11 @@ export default function ReportsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="export-from">{t("reports.dateFrom")}</Label>
-              <DatePicker id="export-from" value={exportDateFrom} onChange={setExportDateFrom} />
+              <DatePicker id="export-from" value={exportDateFrom} onChange={setExportDateFrom} maxDate={exportDateTo || undefined} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="export-to">{t("reports.dateTo")}</Label>
-              <DatePicker id="export-to" value={exportDateTo} onChange={setExportDateTo} />
+              <DatePicker id="export-to" value={exportDateTo} onChange={setExportDateTo} minDate={exportDateFrom || undefined} />
             </div>
             <div className="grid grid-cols-1 gap-2 pt-2">
               <Button variant="outline" className="justify-start w-full" onClick={handleExportCSV}>
