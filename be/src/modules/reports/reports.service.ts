@@ -180,7 +180,7 @@ export async function getCashFlowService(server: FastifyInstance, userId: string
 // ─── All-Time Balance ──────────────────────────────────────────────────────────
 export async function getBalanceService(server: FastifyInstance, userId: string) {
   const key = buildCacheKey("user", userId, "reports", "balance")
-  const cached = await getCache(server.redis, key)
+  const cached = await getCache<{ totalIncome: number; totalExpense: number; netBalance: number }>(server.redis, key)
   if (cached) return cached
 
   const [incomeAgg, expenseAgg] = await Promise.all([
