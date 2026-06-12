@@ -41,7 +41,8 @@ export default function GoalsPage() {
 
   const handleAddGoal = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const formData = new FormData(e.currentTarget)
+    const form = e.currentTarget
+    const formData = new FormData(form)
     const targetAmount = parseFloat(formData.get("target") as string)
     if (isNaN(targetAmount)) return
 
@@ -65,7 +66,7 @@ export default function GoalsPage() {
         deadline: deadlineDate.toISOString(),
       }).unwrap()
       setIsAddModalOpen(false)
-      e.currentTarget.reset()
+      form.reset()
       logger.info("Goal created")
       toast.success(t("goals.addSuccess"))
     } catch (err: any) {
@@ -240,7 +241,7 @@ export default function GoalsPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="target">{t("goals.targetAmount")}</Label>
-            <Input id="target" name="target" type="number" inputMode="decimal" autoComplete="off" placeholder="5000000" required />
+            <Input id="target" name="target" type="number" inputMode="decimal" autoComplete="off" placeholder="5000000" required className="focus-visible:ring-0 focus-visible:ring-offset-0" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="deadline">{t("goals.deadlineLabel")}</Label>
@@ -292,7 +293,7 @@ export default function GoalsPage() {
               required
               value={depositValue}
               onChange={(e) => setDepositValue(e.target.value)}
-              className={isDepositExceedBalance ? "border-destructive focus:ring-destructive/20" : ""}
+              className={isDepositExceedBalance ? "border-destructive focus-visible:ring-0 focus-visible:ring-offset-0" : "focus-visible:ring-0 focus-visible:ring-offset-0"}
             />
             {/* Formatted preview + warning */}
             {depositAmount > 0 && (

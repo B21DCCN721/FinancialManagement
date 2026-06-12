@@ -10,8 +10,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
 import { MonthPicker } from "@/components/ui/month-picker"
+import { DatePicker } from "@/components/ui/date-picker"
 import {
   useGetReportSummaryQuery,
   useGetMonthlyTrendQuery,
@@ -254,11 +254,11 @@ export default function ReportsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="export-from">{t("reports.dateFrom")}</Label>
-              <Input id="export-from" type="date" value={exportDateFrom} onChange={(e) => setExportDateFrom(e.target.value)} />
+              <DatePicker id="export-from" value={exportDateFrom} onChange={setExportDateFrom} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="export-to">{t("reports.dateTo")}</Label>
-              <Input id="export-to" type="date" value={exportDateTo} onChange={(e) => setExportDateTo(e.target.value)} />
+              <DatePicker id="export-to" value={exportDateTo} onChange={setExportDateTo} />
             </div>
             <div className="grid grid-cols-1 gap-2 pt-2">
               <Button variant="outline" className="justify-start w-full" onClick={handleExportCSV}>

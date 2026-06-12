@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 import { env } from "../../config/env"
 import { getCache, setCache, buildCacheKey } from "../../utils/cache"
 import { getSummaryService, getCategoryBreakdownService } from "./reports.service"
+import { errors } from "../../utils/errors"
 
 const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY)
 
@@ -39,7 +40,7 @@ Yêu cầu:
 Hãy viết bằng tiếng Việt, văn phong thân thiện, động viên và format bằng Markdown thật đẹp mắt (dùng danh sách, in đậm). Đi thẳng vào báo cáo, không cần lời chào hỏi dư thừa.
 `
 
-  // Sử dụng model gemini-1.5-flash hoặc 2.5-flash tùy môi trường, thường 1.5-flash là mặc định ổn định
+  // Gọi Gemini API (Có thể dùng gemini-2.0-flash hoặc gemini-1.5-flash tùy quota)
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
   
   try {
@@ -58,6 +59,6 @@ Hãy viết bằng tiếng Việt, văn phong thân thiện, động viên và f
     return report
   } catch (error) {
     server.log.error(error)
-    throw new Error("Không thể gọi AI phân tích lúc này. Vui lòng thử lại sau.")
+    throw errors.internal("Hệ thống AI hiện đang quá tải hoặc tạm thời không khả dụng. Vui lòng thử lại sau.")
   }
 }

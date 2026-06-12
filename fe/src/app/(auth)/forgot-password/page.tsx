@@ -7,6 +7,7 @@ import Link from "next/link"
 import { Loader2, ArrowLeft, Mail, KeyRound, Lock, CheckCircle2 } from "lucide-react"
 import { useForgotPasswordMutation, useResetPasswordMutation } from "@/services/authApi"
 import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslation()
@@ -29,10 +30,14 @@ export default function ForgotPasswordPage() {
 
     try {
       const res = await forgotPassword({ email }).unwrap()
-      setSuccessMsg(res.message || t("forgot.otpSent"))
+      const msg = res.message || t("forgot.otpSent")
+      setSuccessMsg(msg)
+      toast.success(msg)
       setStep(2)
     } catch (err: any) {
-      setError(err?.data?.message || t("forgot.otpError"))
+      const msg = err?.data?.message || t("forgot.otpError")
+      setError(msg)
+      toast.error(msg)
     }
   }
 
@@ -43,22 +48,27 @@ export default function ForgotPasswordPage() {
 
     if (newPassword !== confirmPassword) {
       setError(t("forgot.passwordMismatch"))
+      toast.error(t("forgot.passwordMismatch"))
       return
     }
 
     if (newPassword.length < 8) {
       setError(t("forgot.passwordLength"))
+      toast.error(t("forgot.passwordLength"))
       return
     }
 
     try {
       await resetPassword({ email, otp, newPassword }).unwrap()
       setSuccessMsg(t("forgot.success"))
+      toast.success(t("forgot.success"))
       setTimeout(() => {
         router.push("/login")
       }, 2000)
     } catch (err: any) {
-      setError(err?.data?.message || t("forgot.resetError"))
+      const msg = err?.data?.message || t("forgot.resetError")
+      setError(msg)
+      toast.error(msg)
     }
   }
 
