@@ -4,11 +4,11 @@ import { getCache, setCache, deleteCache, invalidateCachePattern, TTL, buildCach
 import { CreateBudgetInput, UpdateBudgetInput, BudgetQuery } from "./budgets.schema"
 
 function listCacheKey(userId: string, period?: string) {
-  return buildCacheKey("user", userId, "budgets", period ?? "all")
+  return buildCacheKey("user", userId, "budgets", "v2", period ?? "all")
 }
 
 function summaryKey(userId: string, period: string) {
-  return buildCacheKey("user", userId, "budgets", "summary", period)
+  return buildCacheKey("user", userId, "budgets", "v2", "summary", period)
 }
 
 async function invalidateBudgetCache(server: FastifyInstance, userId: string) {
