@@ -235,7 +235,7 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" vertical={false} />
                   <XAxis dataKey="name" stroke="currentColor" className="text-muted-foreground" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke="currentColor" className="text-muted-foreground" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k ₫`} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "currentColor", className: "text-muted opacity-10", radius: 4 }} />
+                  <Tooltip content={<CustomTooltip />} cursor={false} />
                   <Bar dataKey="income" name="Thu nhập" fill="#10d9a0" radius={[6, 6, 0, 0]} maxBarSize={28} />
                   <Bar dataKey="expense" name="Chi phí" fill="#ff4d6d" radius={[6, 6, 0, 0]} maxBarSize={28} />
                 </BarChart>

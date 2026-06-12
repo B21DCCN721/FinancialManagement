@@ -151,6 +151,7 @@ export default function ReportsPage() {
                   <XAxis dataKey="period" tickFormatter={formatPeriodLabel} fontSize={11} tickLine={false} axisLine={false} stroke="currentColor" className="text-muted-foreground" />
                   <YAxis fontSize={11} tickLine={false} axisLine={false} stroke="currentColor" className="text-muted-foreground" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k ₫`} />
                   <Tooltip
+                    cursor={false}
                     contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", backgroundColor: "var(--popover)", color: "var(--popover-foreground)", fontSize: "12px" }}
                     formatter={(value: any) => [`${Number(value).toLocaleString("vi-VN")} ₫`]}
                   />
