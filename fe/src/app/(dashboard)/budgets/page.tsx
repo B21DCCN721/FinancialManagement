@@ -74,16 +74,23 @@ export default function BudgetsPage() {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     const amountStr = formData.get("limit") as string
-    const amount = amountStr ? parseFloat(amountStr.replace(/\./g, '')) : NaN
+    const amount = amountStr ? parseInt(amountStr.replace(/\D/g, ''), 10) : NaN
     const categoryId = formData.get("categoryId") as string
-    if (isNaN(amount)) return
+    
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Vui lòng nhập số tiền hợp lệ")
+      return
+    }
 
     try {
       if (editingId) {
         await updateBudget({ id: editingId, body: { amount } }).unwrap()
         toast.success(t("budgets.updateSuccess") || "Cập nhật ngân sách thành công")
       } else {
-        if (!categoryId) return
+        if (!categoryId) {
+          toast.error("Vui lòng chọn danh mục")
+          return
+        }
         await createBudget({ amount, categoryId, period: modalPeriod, type: modalBudgetType }).unwrap()
         logger.info("Budget created")
         toast.success(t("budgets.addSuccess"))
@@ -93,7 +100,7 @@ export default function BudgetsPage() {
       e.currentTarget.reset()
     } catch (err: any) {
       logger.error("Failed to save budget", err)
-      toast.error(err?.data?.message || t("budgets.addError"))
+      toast.error(err?.data?.message || err?.error || t("budgets.addError"))
     }
   }
 

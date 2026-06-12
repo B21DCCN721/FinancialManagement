@@ -27,7 +27,6 @@ export default function ProfilePage() {
   const [changePassword, { isLoading: isChangingPwd }] = useChangePasswordMutation()
   const [deleteAccount, { isLoading: isDeleting }] = useDeleteAccountMutation()
 
-  const [profileSuccess, setProfileSuccess] = useState(false)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
@@ -36,7 +35,6 @@ export default function ProfilePage() {
   const [currentPwd, setCurrentPwd] = useState("")
   const [newPwd, setNewPwd] = useState("")
   const [confirmNewPwd, setConfirmNewPwd] = useState("")
-  const [pwdSuccess, setPwdSuccess] = useState(false)
   const [pwdError, setPwdError] = useState("")
 
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.resolvedLanguage || "vi")
@@ -60,17 +58,14 @@ export default function ProfilePage() {
 
   const handleProfileSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setProfileSuccess(false)
     const formData = new FormData(e.currentTarget)
     const name = formData.get("name") as string
     try {
       const updatedUser = await updateProfile({ name }).unwrap()
       dispatch(updateUser(updatedUser))
-      setProfileSuccess(true)
       setIsEditingProfile(false)
       toast.success(t("profile.profileSaved"))
       logger.info("Profile updated")
-      setTimeout(() => setProfileSuccess(false), 3000)
     } catch (err: any) {
       toast.error(err?.data?.message || t("common.error") || "Có lỗi xảy ra")
       logger.error("Failed to update profile", err)
@@ -80,18 +75,15 @@ export default function ProfilePage() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setPwdError("")
-    setPwdSuccess(false)
     if (newPwd.length < 8) { setPwdError(t("auth.passwordMinLength")); return }
     if (newPwd !== confirmNewPwd) { setPwdError(t("profile.passwordMismatch") || "Mật khẩu xác nhận không khớp"); return }
     try {
       await changePassword({ currentPassword: currentPwd, newPassword: newPwd }).unwrap()
-      setPwdSuccess(true)
       setCurrentPwd("")
       setNewPwd("")
       setConfirmNewPwd("")
       toast.success(t("profile.passwordSaved"))
       logger.info("Password changed")
-      setTimeout(() => setPwdSuccess(false), 3000)
     } catch (err) {
       const apiErr = err as { data?: { message?: string } }
       const msg = apiErr?.data?.message ?? t("profile.changePwdError")
@@ -205,16 +197,10 @@ export default function ProfilePage() {
                 <Input id="email" type="email" value={user?.email ?? ""} disabled className="opacity-70 bg-muted/50" />
                 <p className="text-xs text-muted-foreground">{t("profile.emailHelp")}</p>
               </div>
-              {profileSuccess && (
-                <div className="flex items-center gap-2 text-sm text-emerald-500 font-medium animate-in fade-in slide-in-from-left-2 duration-300">
-                  <CheckCircle2 className="h-5 w-5" />
-                  {t("profile.profileSaved")}
-                </div>
-              )}
             </CardContent>
             <CardFooter className="bg-muted/10 pt-4 pb-6">
               {!isEditingProfile ? (
-                <Button type="button" onClick={() => setIsEditingProfile(true)} className="w-full sm:w-auto ml-auto px-8 transition-transform active:scale-95">
+                <Button type="button" onClick={(e) => { e.preventDefault(); setIsEditingProfile(true); }} className="w-full sm:w-auto ml-auto px-8 transition-transform active:scale-95">
                   <Edit2 className="mr-2 h-4 w-4" />
                   {t("profile.editBtn") || "Chỉnh sửa"}
                 </Button>
@@ -276,12 +262,6 @@ export default function ProfilePage() {
                   />
                 </div>
                 {pwdError && <p className="text-sm text-destructive font-medium animate-in fade-in">{pwdError}</p>}
-                {pwdSuccess && (
-                  <div className="flex items-center gap-2 text-sm text-emerald-500 font-medium animate-in fade-in slide-in-from-left-2 duration-300">
-                    <CheckCircle2 className="h-5 w-5" />
-                    {t("profile.passwordSaved")}
-                  </div>
-                )}
               </CardContent>
               <CardFooter className="bg-muted/10 pt-4 pb-6">
                 <Button type="submit" disabled={isChangingPwd} className="w-full sm:w-auto ml-auto px-8 transition-transform active:scale-95">

@@ -11,12 +11,19 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined)
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
-  const [isOpen, setIsOpen] = useState(true)
+  const [isOpen, setIsOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth >= 768
+    }
+    return false
+  })
 
   React.useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {
         setIsOpen(false)
+      } else {
+        setIsOpen(true)
       }
     }
 
