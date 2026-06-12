@@ -40,8 +40,8 @@ Yêu cầu:
 Hãy viết bằng tiếng Việt, văn phong thân thiện, động viên và format bằng Markdown thật đẹp mắt (dùng danh sách, in đậm). Đi thẳng vào báo cáo, không cần lời chào hỏi dư thừa.
 `
 
-  // Gọi Gemini API (Có thể dùng gemini-2.0-flash hoặc gemini-1.5-flash tùy quota)
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
+  // Gọi Gemini API
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" })
   
   try {
     const result = await model.generateContent(prompt)
