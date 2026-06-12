@@ -86,6 +86,7 @@ export async function getBudgetSummaryService(
         id: budget.id,
         amount: budget.amount,
         period: budget.period,
+        type: budget.type,
         categoryId: budget.categoryId,
         category: budget.category,
         spentAmount,
