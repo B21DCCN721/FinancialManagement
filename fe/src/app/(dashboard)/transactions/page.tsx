@@ -1,11 +1,10 @@
 "use client"
 
-import { useState, Suspense, useEffect } from "react"
+import { useState, Suspense, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import { Plus, Search, Filter, FilterX, RefreshCw, Trash2, Pencil, Loader2, Inbox, StopCircle, ArrowUpRight, ArrowDownRight, Clock, CalendarClock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Modal } from "@/components/ui/modal"
@@ -49,7 +48,8 @@ function TransactionsContent() {
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTx, setEditingTx] = useState<Transaction | null>(null)
-  
+  const isSubmittingRef = useRef(false)
+
   const [isRecurring, setIsRecurring] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState(urlSearch)
@@ -130,6 +130,9 @@ function TransactionsContent() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (isSubmittingRef.current) return
+    isSubmittingRef.current = true
+
     const formData = new FormData(e.currentTarget)
     const description = formData.get("description") as string
     const amount = parseFloat(formData.get("amount") as string)
@@ -138,7 +141,10 @@ function TransactionsContent() {
     const dateVal = formData.get("date") as string
     const frequency = formData.get("frequency") as "daily" | "weekly" | "monthly" | "yearly" | undefined
 
-    if (!description || isNaN(amount) || !categoryId) return
+    if (!description || isNaN(amount) || !categoryId) {
+      isSubmittingRef.current = false
+      return
+    }
 
     try {
       const payload = {
@@ -154,7 +160,7 @@ function TransactionsContent() {
       if (!editingTx && type === "expense") {
         const monthBudget = budgetsMonth.find(b => b.categoryId === categoryId)
         const yearBudget = budgetsYear.find(b => b.categoryId === categoryId)
-        
+
         let warning = ""
         if (monthBudget && monthBudget.remaining - amount < 0) {
           warning = "Cảnh báo: Khoản chi này làm vượt ngân sách tháng!"
@@ -185,6 +191,8 @@ function TransactionsContent() {
     } catch (err: any) {
       logger.error("Failed to save transaction", err)
       toast.error(err?.data?.message || t("transactions.saveError") || "Có lỗi xảy ra khi lưu")
+    } finally {
+      isSubmittingRef.current = false
     }
   }
 
@@ -317,11 +325,10 @@ function TransactionsContent() {
                   {transactions.map((tx) => (
                     <div
                       key={tx.id}
-                      className={`group flex items-center gap-4 p-3.5 rounded-xl transition-all hover:scale-[1.005] border ${
-                        tx.isRecurring
+                      className={`group flex items-center gap-4 p-3.5 rounded-xl transition-all hover:scale-[1.005] border ${tx.isRecurring
                           ? "bg-primary/[0.03] border-primary/20 hover:border-primary/40 hover:shadow-[0_4px_20px_rgba(124,92,252,0.12)]"
                           : "bg-card border-border hover:border-primary/20 hover:shadow-[0_4px_20px_rgba(124,92,252,0.08)]"
-                      }`}
+                        }`}
                     >
                       {/* Icon */}
                       <div
@@ -640,9 +647,9 @@ function TransactionsContent() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="categoryId">{t("transactions.categoryId") || "Danh mục"}</Label>
-            <Select 
-              id="categoryId" 
-              name="categoryId" 
+            <Select
+              id="categoryId"
+              name="categoryId"
               defaultValue={editingTx?.categoryId}
               required
               options={[

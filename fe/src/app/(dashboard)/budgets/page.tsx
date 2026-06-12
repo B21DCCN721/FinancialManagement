@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
 import { DynamicIcon } from "@/components/ui/dynamic-icon"
+import { MonthPicker } from "@/components/ui/month-picker"
+import { YearPicker } from "@/components/ui/year-picker"
 import {
   useGetBudgetSummaryQuery,
   useCreateBudgetMutation,
@@ -46,6 +48,9 @@ export default function BudgetsPage() {
   const [budgetType, setBudgetType] = useState<"monthly" | "yearly">("monthly")
   const [period, setPeriod] = useState(currentPeriodMonth())
 
+  const [modalBudgetType, setModalBudgetType] = useState<"monthly" | "yearly">("monthly")
+  const [modalPeriod, setModalPeriod] = useState(currentPeriodMonth())
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -79,7 +84,7 @@ export default function BudgetsPage() {
         toast.success(t("budgets.updateSuccess") || "Cập nhật ngân sách thành công")
       } else {
         if (!categoryId) return
-        await createBudget({ amount, categoryId, period, type: budgetType }).unwrap()
+        await createBudget({ amount, categoryId, period: modalPeriod, type: modalBudgetType }).unwrap()
         logger.info("Budget created")
         toast.success(t("budgets.addSuccess"))
       }
@@ -105,11 +110,15 @@ export default function BudgetsPage() {
 
   const openEdit = (budget: any) => {
     setEditingId(budget.id)
+    setModalBudgetType(budget.period.length === 4 ? "yearly" : "monthly")
+    setModalPeriod(budget.period)
     setIsAddModalOpen(true)
   }
 
   const openCreate = () => {
     setEditingId(null)
+    setModalBudgetType(budgetType)
+    setModalPeriod(period)
     setIsAddModalOpen(true)
   }
 
@@ -148,16 +157,16 @@ export default function BudgetsPage() {
           </button>
         </div>
 
-        <div className="flex items-center gap-2 ml-auto w-full sm:w-auto">
-          <CalendarDays className="h-4 w-4 text-muted-foreground ml-2 sm:ml-0" />
-          <Input
-            type={budgetType === "monthly" ? "month" : "number"}
-            min={budgetType === "yearly" ? "2000" : undefined}
-            max={budgetType === "yearly" ? "2100" : undefined}
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            className="w-full sm:w-[160px] h-9 border-transparent bg-muted/30 focus-visible:bg-background"
-          />
+        <div className="flex items-center ml-auto w-full sm:w-auto">
+          {budgetType === "monthly" ? (
+            <div className="w-full sm:w-[160px] [&>div>button]:w-full [&>div>button]:justify-center">
+              <MonthPicker value={period} onChange={setPeriod} />
+            </div>
+          ) : (
+            <div className="w-full sm:w-[160px] [&>div>button]:w-full [&>div>button]:justify-center">
+              <YearPicker value={period} onChange={setPeriod} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -261,6 +270,41 @@ export default function BudgetsPage() {
         description={editingId ? "Cập nhật giới hạn chi tiêu của bạn." : t("budgets.addModalDesc")}
       >
         <form className="space-y-4 pt-4" onSubmit={handleAddSubmit}>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Loại ngân sách</Label>
+              {editingId ? (
+                <Input value={modalBudgetType === "monthly" ? "Ngân sách tháng" : "Ngân sách năm"} disabled className="bg-muted/50" />
+              ) : (
+                <Select
+                  value={modalBudgetType}
+                  onChange={(e) => {
+                    const type = e.target.value as "monthly" | "yearly"
+                    setModalBudgetType(type)
+                    setModalPeriod(type === "monthly" ? currentPeriodMonth() : currentPeriodYear())
+                  }}
+                  options={[
+                    { value: "monthly", label: "Ngân sách tháng" },
+                    { value: "yearly", label: "Ngân sách năm" },
+                  ]}
+                />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>{modalBudgetType === "monthly" ? "Chọn tháng" : "Chọn năm"}</Label>
+              {editingId ? (
+                <Input value={modalPeriod} disabled className="bg-muted/50" />
+              ) : (
+                <div className="w-full [&>div>button]:w-full [&>div>button]:justify-center">
+                  {modalBudgetType === "monthly" ? (
+                    <MonthPicker value={modalPeriod} onChange={setModalPeriod} />
+                  ) : (
+                    <YearPicker value={modalPeriod} onChange={setModalPeriod} />
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="categoryId">{t("budgets.categoryId") || "Danh mục"}</Label>
             {editingId ? (
