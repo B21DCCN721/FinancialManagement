@@ -196,8 +196,8 @@ export default function BudgetsPage() {
                 <div className="flex flex-row items-center justify-between pb-4">
                   <div className="text-sm font-bold text-foreground flex items-center gap-3">
                     <div
-                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm text-white ${!budget.category.color ? config.color : ""}`}
-                      style={budget.category.color ? { backgroundColor: budget.category.color } : {}}
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm ${!budget.category.color ? config.color + " text-white" : ""}`}
+                      style={budget.category.color ? { backgroundColor: budget.category.color + "22", color: budget.category.color } : {}}
                     >
                       {budget.category.icon ? <DynamicIcon name={budget.category.icon} className="h-6 w-6" /> : config.icon}
                     </div>
