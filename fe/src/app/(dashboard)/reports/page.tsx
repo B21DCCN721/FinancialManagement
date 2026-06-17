@@ -145,7 +145,7 @@ export default function ReportsPage() {
             </div>
           ) : (
             <div className="h-[260px]">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <BarChart data={trend} margin={{ top: 5, right: 5, left: -10, bottom: 5 }} barGap={4}>
                   <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" vertical={false} />
                   <XAxis dataKey="period" tickFormatter={formatPeriodLabel} fontSize={11} tickLine={false} axisLine={false} stroke="currentColor" className="text-muted-foreground" />
@@ -178,7 +178,7 @@ export default function ReportsPage() {
           ) : (
             <div className="flex flex-col items-center">
               <div className="h-[180px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                   <PieChart>
                     <Pie data={breakdown} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="totalAmount" strokeWidth={0}>
                       {breakdown.map((entry, i) => (
@@ -222,7 +222,7 @@ export default function ReportsPage() {
             </div>
           ) : (
             <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <AreaChart data={cashFlow} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                   <defs>
                     <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
@@ -300,7 +300,7 @@ export default function ReportsPage() {
           </div>
         ) : (
           <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <LineChart data={trend} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" vertical={false} />
                 <XAxis dataKey="period" tickFormatter={formatPeriodLabel} stroke="currentColor" className="text-muted-foreground" fontSize={12} tickLine={false} axisLine={false} />

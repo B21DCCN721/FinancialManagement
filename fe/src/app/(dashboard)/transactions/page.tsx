@@ -54,13 +54,15 @@ function TransactionsContent() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState(urlSearch)
   const [filterType, setFilterType] = useState<string>("")
-  const [filterCategory, setFilterCategory] = useState<string>("all")
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [stopRecurringId, setStopRecurringId] = useState<string | null>(null)
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined)
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined)
+  const [dateFromStr, setDateFromStr] = useState<string>("")
+  const [dateToStr, setDateToStr] = useState<string>("")
   const [page, setPage] = useState(1)
   const [txType, setTxType] = useState<"income" | "expense">("expense")
+  const [txCategoryId, setTxCategoryId] = useState<string>("")
   const [txDate, setTxDate] = useState<string>(() => new Date().toISOString().split("T")[0])
   const [activeTab, setActiveTab] = useState("all")
 
@@ -100,6 +102,8 @@ function TransactionsContent() {
     setFilterType("")
     setDateFrom(undefined)
     setDateTo(undefined)
+    setDateFromStr("")
+    setDateToStr("")
     setSearchTerm("")
     setPage(1)
   }
@@ -118,6 +122,7 @@ function TransactionsContent() {
   const handleAddClick = () => {
     setEditingTx(null)
     setTxType("expense")
+    setTxCategoryId("")
     setTxDate(new Date().toISOString().split("T")[0])
     setIsRecurring(false)
     setIsModalOpen(true)
@@ -126,6 +131,7 @@ function TransactionsContent() {
   const handleEditClick = (tx: Transaction) => {
     setEditingTx(tx)
     setTxType(tx.type)
+    setTxCategoryId(tx.categoryId)
     setTxDate(new Date(tx.date).toISOString().split("T")[0])
     setIsRecurring(tx.isRecurring)
     setIsModalOpen(true)
@@ -298,27 +304,29 @@ function TransactionsContent() {
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">{t("transactions.dateFrom")}</Label>
                     <DatePicker
-                      value={dateFrom ? dateFrom.toISOString().split("T")[0] : undefined}
+                      value={dateFromStr}
                       onChange={(d) => {
+                        setDateFromStr(d)
                         const newDate = new Date(d);
                         setDateFrom(newDate);
-                        if (dateTo && newDate > dateTo) setDateTo(undefined);
+                        if (dateTo && newDate > dateTo) { setDateTo(undefined); setDateToStr(""); }
                         setPage(1);
                       }}
-                      maxDate={dateTo ? dateTo.toISOString().split("T")[0] : undefined}
+                      maxDate={dateToStr || undefined}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">{t("transactions.dateTo")}</Label>
                     <DatePicker
-                      value={dateTo ? dateTo.toISOString().split("T")[0] : undefined}
+                      value={dateToStr}
                       onChange={(d) => {
+                        setDateToStr(d)
                         const newDate = new Date(d);
                         setDateTo(newDate);
-                        if (dateFrom && newDate < dateFrom) setDateFrom(undefined);
+                        if (dateFrom && newDate < dateFrom) { setDateFrom(undefined); setDateFromStr(""); }
                         setPage(1);
                       }}
-                      minDate={dateFrom ? dateFrom.toISOString().split("T")[0] : undefined}
+                      minDate={dateFromStr || undefined}
                     />
                   </div>
                 </div>
@@ -746,7 +754,8 @@ function TransactionsContent() {
             <Select
               id="categoryId"
               name="categoryId"
-              defaultValue={editingTx?.categoryId}
+              value={txCategoryId}
+              onChange={(e) => setTxCategoryId(e.target.value)}
               required
               options={[
                 { value: "", label: t("transactions.selectCategory") || "-- Chọn danh mục --" },

@@ -230,7 +230,7 @@ export default function Dashboard() {
             ) : monthlyData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-xs text-muted-foreground">{t("dashboard.noData")}</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }} barGap={4}>
                   <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" vertical={false} />
                   <XAxis dataKey="name" stroke="currentColor" className="text-muted-foreground" fontSize={11} tickLine={false} axisLine={false} />
@@ -263,7 +263,7 @@ export default function Dashboard() {
             ) : (
               <>
                 <div className="h-[180px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                     <PieChart>
                       <Pie data={categoryData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value" strokeWidth={0}>
                         {categoryData.map((entry, index) => (
@@ -306,7 +306,7 @@ export default function Dashboard() {
             <p className="text-sm md:text-base mt-0.5 text-muted-foreground">{t("dashboard.netSavings")}</p>
           </div>
           <div className="h-[160px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <AreaChart data={monthlyData.map((d) => ({ ...d, savings: d.income - d.expense }))} margin={{ top: 5, right: 5, left: -30, bottom: 5 }}>
                 <defs>
                   <linearGradient id="savingsGrad" x1="0" y1="0" x2="0" y2="1">
