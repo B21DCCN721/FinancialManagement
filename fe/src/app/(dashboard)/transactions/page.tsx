@@ -735,7 +735,7 @@ function TransactionsContent() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="type">{t("transactions.type")}</Label>
-              <Select id="type" name="type" value={txType} onChange={(e) => setTxType(e.target.value as "income" | "expense")}>
+              <Select id="type" name="type" value={txType} onChange={(e) => { setTxType(e.target.value as "income" | "expense"); setTxCategoryId(""); }}>
                 <option value="expense">{t("transactions.expense")}</option>
                 <option value="income">{t("transactions.income")}</option>
               </Select>
