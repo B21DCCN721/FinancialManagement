@@ -72,7 +72,8 @@ export default function BudgetsPage() {
 
   const handleAddSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const formData = new FormData(e.currentTarget)
+    const form = e.currentTarget
+    const formData = new FormData(form)
     const amountStr = formData.get("limit") as string
     const amount = amountStr ? parseInt(amountStr.replace(/\D/g, ''), 10) : NaN
     const categoryId = formData.get("categoryId") as string
@@ -97,7 +98,7 @@ export default function BudgetsPage() {
       }
       setIsAddModalOpen(false)
       setEditingId(null)
-      e.currentTarget.reset()
+      form.reset()
     } catch (err: any) {
       logger.error("Failed to save budget", err)
       toast.error(err?.data?.message || err?.error || t("budgets.addError"))

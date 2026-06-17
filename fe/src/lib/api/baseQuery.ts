@@ -8,7 +8,8 @@ import { Mutex } from "async-mutex"
 const mutex = new Mutex()
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost"
-const TIMEOUT_MS = 15_000 // 15 giây
+const TIMEOUT_MS = 30_000 // 30 giây (đủ để Render free tier wake up)
+const MAX_FETCH_RETRIES = 3 // Retry 3 lần khi FETCH_ERROR (server đang spin-up)
 
 // ─── Base fetch với timeout ───────────────────────────────────────────────────
 const rawBaseQuery = fetchBaseQuery({
@@ -39,6 +40,17 @@ export const baseQueryWithAuth: BaseQueryFn<
 > = async (args, api, extraOptions) => {
   let result = await rawBaseQuery(args, api, extraOptions)
 
+  // ── Auto-retry khi FETCH_ERROR (server đang spin-up từ Render free tier sleep) ──
+  if (result.error && result.error.status === "FETCH_ERROR") {
+    const url = typeof args === "string" ? args : args.url
+    logger.warn(`FETCH_ERROR on [${url}], retrying in 3s...`)
+    for (let attempt = 0; attempt < MAX_FETCH_RETRIES; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+      result = await rawBaseQuery(args, api, extraOptions)
+      if (!result.error || result.error.status !== "FETCH_ERROR") break
+    }
+  }
+
   // ── Xử lý lỗi timeout ─────────────────────────────────────────────────────
   if (result.error && result.error.status === "TIMEOUT_ERROR") {
     logger.error("Request timeout", new Error("Request timed out"), {
@@ -47,7 +59,7 @@ export const baseQueryWithAuth: BaseQueryFn<
     return {
       error: {
         status: "TIMEOUT_ERROR" as const,
-        error: "Request timed out after 15 seconds",
+        error: "Request timed out after 30 seconds",
       } as FetchBaseQueryError,
     }
   }

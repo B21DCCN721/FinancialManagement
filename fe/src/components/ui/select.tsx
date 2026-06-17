@@ -12,20 +12,10 @@ export type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, children, value, defaultValue, onChange, name, options: customOptions, ...props }, ref) => {
     const [isOpen, setIsOpen] = React.useState(false)
-    const [internalValue, setInternalValue] = React.useState(value || defaultValue || "")
+    const [internalValue, setInternalValue] = React.useState(defaultValue || "")
     const dropdownRef = React.useRef<HTMLDivElement>(null)
 
-    React.useEffect(() => {
-      if (value !== undefined) {
-        setInternalValue(value as string)
-      }
-    }, [value])
-
-    React.useEffect(() => {
-      if (defaultValue !== undefined && !internalValue) {
-        setInternalValue(defaultValue as string)
-      }
-    }, [defaultValue, internalValue])
+    const currentValue = value !== undefined ? value : internalValue;
 
     React.useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -42,14 +32,14 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       label: child.props?.children
     })).filter(opt => opt.value !== undefined)
 
-    // Fallback if internalValue is not set but options exist
+    // Fallback if currentValue is not set but options exist
     React.useEffect(() => {
-      if (!internalValue && parsedOptions.length > 0) {
+      if (!currentValue && parsedOptions.length > 0 && value === undefined) {
         setInternalValue(parsedOptions[0].value)
       }
-    }, [parsedOptions, internalValue])
+    }, [parsedOptions, currentValue, value])
 
-    const selectedOption = parsedOptions.find(opt => opt.value === internalValue)
+    const selectedOption = parsedOptions.find(opt => opt.value === currentValue)
 
     const handleSelect = (val: string) => {
       if (value === undefined) {
@@ -71,7 +61,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         <select
           ref={ref}
           name={name}
-          value={internalValue}
+          value={currentValue}
           className="hidden"
           onChange={() => { }}
           {...props}
@@ -105,10 +95,10 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                   onClick={() => handleSelect(opt.value)}
                   className={cn(
                     "relative flex w-full cursor-default select-none items-center rounded-lg py-2 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary",
-                    internalValue === opt.value && "bg-primary/10 text-primary font-medium"
+                    currentValue === opt.value && "bg-primary/10 text-primary font-medium"
                   )}
                 >
-                  {internalValue === opt.value && (
+                  {currentValue === opt.value && (
                     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
                       <Check className="h-4 w-4" />
                     </span>

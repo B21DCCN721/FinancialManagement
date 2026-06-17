@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
 
 interface DatePickerProps {
@@ -25,10 +26,19 @@ export function DatePicker({ value, onChange, name, required, id, minDate, maxDa
   const [view, setView] = useState<"calendar" | "months" | "years">("calendar")
 
   const ref = useRef<HTMLDivElement>(null)
+  const popupRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleResize = () => setOpen(false)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const isOutsideBtn = ref.current && !ref.current.contains(e.target as Node);
+      const isOutsidePopup = popupRef.current && !popupRef.current.contains(e.target as Node);
+      if (isOutsideBtn && isOutsidePopup) {
         setOpen(false)
       }
     }
@@ -104,19 +114,21 @@ export function DatePicker({ value, onChange, name, required, id, minDate, maxDa
         <CalendarIcon className="h-4 w-4 text-muted-foreground" />
       </button>
 
-      {open && (
-        <>
-          <div 
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm sm:hidden" 
-            onClick={(e) => { e.stopPropagation(); setOpen(false); }} 
-          />
-          <div
-            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl sm:rounded-2xl sm:absolute sm:bottom-auto sm:left-0 sm:top-[calc(100%+8px)] sm:w-[300px] sm:z-50 shadow-[0_8px_40px_rgba(0,0,0,0.25)] border border-border overflow-hidden animate-in slide-in-from-bottom-2 sm:slide-in-from-top-2"
-            style={{
-              background: "var(--popover)",
-              color: "var(--popover-foreground)",
-            }}
-          >
+      {open && (() => {
+        const popupContent = (
+          <>
+            <div 
+              className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm sm:hidden" 
+              onClick={(e) => { e.stopPropagation(); setOpen(false); }} 
+            />
+            <div
+              ref={popupRef}
+              className="fixed bottom-0 left-0 right-0 z-[110] rounded-t-2xl sm:rounded-2xl sm:absolute sm:bottom-auto sm:left-0 sm:top-[calc(100%+8px)] sm:w-[300px] sm:z-50 shadow-[0_8px_40px_rgba(0,0,0,0.25)] border border-border overflow-hidden animate-in slide-in-from-bottom-2 sm:slide-in-from-top-2"
+              style={{
+                background: "var(--popover)",
+                color: "var(--popover-foreground)",
+              }}
+            >
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <button type="button" onClick={handlePrev} className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft className="h-4 w-4" /></button>
               <div className="flex gap-1 text-sm font-semibold">
@@ -244,7 +256,7 @@ export function DatePicker({ value, onChange, name, required, id, minDate, maxDa
             )}
 
             {view === "calendar" && (
-              <div className="border-t border-border px-3 py-2 flex justify-center">
+              <div className="border-t border-border px-3 py-2 flex justify-center pb-6 sm:pb-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -261,7 +273,10 @@ export function DatePicker({ value, onChange, name, required, id, minDate, maxDa
             )}
           </div>
         </>
-      )}
+      )
+
+      return window.innerWidth < 640 ? createPortal(popupContent, document.body) : popupContent;
+    })()}
     </div>
   )
 }

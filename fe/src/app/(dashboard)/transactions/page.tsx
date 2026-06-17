@@ -62,6 +62,7 @@ function TransactionsContent() {
   const [page, setPage] = useState(1)
   const [txType, setTxType] = useState<"income" | "expense">("expense")
   const [txDate, setTxDate] = useState<string>(() => new Date().toISOString().split("T")[0])
+  const [activeTab, setActiveTab] = useState("all")
 
   const { data: categories = [] } = useGetCategoriesQuery({ type: txType })
   const { data: budgetsMonth = [] } = useGetBudgetSummaryQuery({ period: txDate.substring(0, 7) }, { skip: txType !== "expense" || !isModalOpen })
@@ -82,7 +83,8 @@ function TransactionsContent() {
     ...(dateFrom && { dateFrom: dateFrom.toISOString() }),
     ...(dateTo && { dateTo: dateTo.toISOString() }),
     ...(searchTerm && { search: searchTerm }),
-  })
+    ...(activeTab === "non_recurring" && { isRecurring: false }),
+  }, { skip: activeTab === "recurring" })
 
   const [createTransaction, { isLoading: isCreating }] = useCreateTransactionMutation()
   const [updateTransaction, { isLoading: isUpdating }] = useUpdateTransactionMutation()
@@ -98,6 +100,7 @@ function TransactionsContent() {
     setFilterType("")
     setDateFrom(undefined)
     setDateTo(undefined)
+    setSearchTerm("")
     setPage(1)
   }
 
@@ -133,7 +136,8 @@ function TransactionsContent() {
     if (isSubmittingRef.current) return
     isSubmittingRef.current = true
 
-    const formData = new FormData(e.currentTarget)
+    const form = e.currentTarget
+    const formData = new FormData(form)
     const description = formData.get("description") as string
     const amount = parseFloat(formData.get("amount") as string)
     const type = formData.get("type") as "income" | "expense"
@@ -184,7 +188,7 @@ function TransactionsContent() {
       }
 
       setIsModalOpen(false)
-      e.currentTarget.reset()
+      form.reset()
       setEditingTx(null)
       setIsRecurring(false)
       setTxDate(new Date().toISOString().split("T")[0])
@@ -241,9 +245,10 @@ function TransactionsContent() {
         </Button>
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
+      <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setPage(1); }} className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="all">{t("transactions.allTransactions")}</TabsTrigger>
+          <TabsTrigger value="non_recurring">{t("transactions.nonRecurring")}</TabsTrigger>
           <TabsTrigger value="recurring">
             {t("transactions.recurring")}
             {recurringTransactions.length > 0 && (
@@ -281,8 +286,8 @@ function TransactionsContent() {
           {isFilterOpen && (
             <Card className="bg-muted/30 border-dashed">
               <CardContent className="p-4 flex flex-col gap-4">
-                <div className="flex flex-wrap gap-4 items-end">
-                  <div className="space-y-1.5 flex-1 min-w-[150px]">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                  <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">{t("transactions.type")}</Label>
                     <Select value={filterType} onChange={(e) => { setFilterType(e.target.value); setPage(1) }}>
                       <option value="">{t("transactions.all")}</option>
@@ -290,19 +295,29 @@ function TransactionsContent() {
                       <option value="expense">{t("transactions.expense")}</option>
                     </Select>
                   </div>
-                  <div className="space-y-1.5 flex-1 min-w-[150px]">
+                  <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">{t("transactions.dateFrom")}</Label>
-                    <DatePicker 
-                      value={dateFrom ? dateFrom.toISOString().split("T")[0] : undefined} 
-                      onChange={(d) => { setDateFrom(new Date(d)); setPage(1) }} 
+                    <DatePicker
+                      value={dateFrom ? dateFrom.toISOString().split("T")[0] : undefined}
+                      onChange={(d) => {
+                        const newDate = new Date(d);
+                        setDateFrom(newDate);
+                        if (dateTo && newDate > dateTo) setDateTo(undefined);
+                        setPage(1);
+                      }}
                       maxDate={dateTo ? dateTo.toISOString().split("T")[0] : undefined}
                     />
                   </div>
-                  <div className="space-y-1.5 flex-1 min-w-[150px]">
+                  <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">{t("transactions.dateTo")}</Label>
-                    <DatePicker 
-                      value={dateTo ? dateTo.toISOString().split("T")[0] : undefined} 
-                      onChange={(d) => { setDateTo(new Date(d)); setPage(1) }} 
+                    <DatePicker
+                      value={dateTo ? dateTo.toISOString().split("T")[0] : undefined}
+                      onChange={(d) => {
+                        const newDate = new Date(d);
+                        setDateTo(newDate);
+                        if (dateFrom && newDate < dateFrom) setDateFrom(undefined);
+                        setPage(1);
+                      }}
                       minDate={dateFrom ? dateFrom.toISOString().split("T")[0] : undefined}
                     />
                   </div>
@@ -320,156 +335,229 @@ function TransactionsContent() {
           )}
         </div>
 
-        {/* All Transactions Tab */}
-        <TabsContent value="all" className="mt-0">
-          <div className="space-y-3">
-            {isLoading ? (
-              <div className="flex justify-center items-center py-16">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : transactions.length > 0 ? (
-              <>
-                <div className="space-y-2">
-                  {transactions.map((tx) => (
-                    <div
-                      key={tx.id}
-                      className={`group flex items-center gap-4 p-3.5 rounded-xl transition-all hover:scale-[1.005] border ${tx.isRecurring
+        {/* All / Non-Recurring Transactions Tab */}
+        <TabsContent value={activeTab} className="mt-0">
+          {activeTab !== "recurring" && (
+            <div className="space-y-3">
+              {isLoading ? (
+                <div className="flex justify-center items-center py-16">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : transactions.length > 0 ? (
+                <>
+                  <div className="space-y-2">
+                    {transactions.map((tx) => (
+                      <div
+                        key={tx.id}
+                        className={`group p-3.5 rounded-xl transition-all hover:scale-[1.005] border ${tx.isRecurring
                           ? "bg-primary/[0.03] border-primary/20 hover:border-primary/40 hover:shadow-[0_4px_20px_rgba(124,92,252,0.12)]"
                           : "bg-card border-border hover:border-primary/20 hover:shadow-[0_4px_20px_rgba(124,92,252,0.08)]"
-                        }`}
-                    >
-                      {/* Icon */}
-                      <div
-                        className="relative h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
-                        style={{
-                          background: tx.category?.color ? `${tx.category.color}20` : (
-                            tx.isRecurring
-                              ? "rgba(124,92,252,0.12)"
-                              : tx.type === "income"
-                                ? "rgba(16,217,160,0.12)"
-                                : "rgba(255,77,109,0.12)"
-                          ),
-                          color: tx.category?.color ? tx.category.color : (
-                            tx.isRecurring
-                              ? "#7c5cfc"
-                              : tx.type === "income" ? "#10d9a0" : "#ff4d6d"
-                          )
-                        }}
+                          }`}
                       >
-                        {tx.category?.icon
-                          ? <DynamicIcon name={tx.category.icon} className="h-5 w-5" />
-                          : tx.isRecurring
-                            ? <CalendarClock className="h-5 w-5" />
-                            : tx.type === "income"
-                              ? <ArrowUpRight className="h-5 w-5" />
-                              : <ArrowDownRight className="h-5 w-5" />}
-                        {/* Recurring badge overlay */}
-                        {tx.isRecurring && (
-                          <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center">
-                            <RefreshCw className="h-2 w-2 text-white" />
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-sm font-semibold text-foreground truncate">
-                            {tx.description ?? "—"}
-                          </p>
+                        {/* Mobile: stacked layout / Desktop: single row */}
+                        {/* Desktop row */}
+                        <div className="hidden sm:flex items-center gap-4">
+                          {/* Icon */}
+                          <div
+                            className="relative h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
+                            style={{
+                              background: tx.category?.color ? `${tx.category.color}20` : (
+                                tx.isRecurring
+                                  ? "rgba(124,92,252,0.12)"
+                                  : tx.type === "income"
+                                    ? "rgba(16,217,160,0.12)"
+                                    : "rgba(255,77,109,0.12)"
+                              ),
+                              color: tx.category?.color ? tx.category.color : (
+                                tx.isRecurring
+                                  ? "#7c5cfc"
+                                  : tx.type === "income" ? "#10d9a0" : "#ff4d6d"
+                              )
+                            }}
+                          >
+                            {tx.category?.icon
+                              ? <DynamicIcon name={tx.category.icon} className="h-5 w-5" />
+                              : tx.isRecurring
+                                ? <CalendarClock className="h-5 w-5" />
+                                : tx.type === "income"
+                                  ? <ArrowUpRight className="h-5 w-5" />
+                                  : <ArrowDownRight className="h-5 w-5" />}
+                            {tx.isRecurring && (
+                              <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center">
+                                <RefreshCw className="h-2 w-2 text-white" />
+                              </span>
+                            )}
+                          </div>
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-foreground truncate">{tx.description ?? "—"}</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              {tx.category?.name && (
+                                <span
+                                  className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                                  style={{
+                                    background: tx.category?.color ? `${tx.category.color}1A` : (
+                                      tx.isRecurring ? "rgba(124,92,252,0.1)" : tx.type === "income" ? "rgba(16,217,160,0.1)" : "rgba(124,92,252,0.1)"
+                                    ),
+                                    color: tx.category?.color ? tx.category.color : (
+                                      tx.isRecurring ? "#a78bfa" : tx.type === "income" ? "#10d9a0" : "#a78bfa"
+                                    ),
+                                  }}
+                                >
+                                  {tx.category.name}
+                                </span>
+                              )}
+                              {tx.isRecurring && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-primary/10 text-primary flex items-center gap-1">
+                                  <RefreshCw className="h-2.5 w-2.5" />
+                                  {tx.frequency ? FREQUENCY_LABELS[tx.frequency] : "Định kỳ"}
+                                </span>
+                              )}
+                              <span className="text-[11px] text-muted-foreground">{formatDate(tx.date)}</span>
+                            </div>
+                          </div>
+                          {/* Amount */}
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-bold tabular-nums" style={{ color: tx.type === "income" ? "#10d9a0" : "#ff4d6d" }}>
+                              {tx.type === "income" ? "+" : "-"}{tx.amount.toLocaleString("vi-VN")} ₫
+                            </p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              {tx.isRecurring
+                                ? "Định kỳ · " + (tx.type === "income" ? t("transactions.income") : t("transactions.expense"))
+                                : tx.type === "income" ? t("transactions.income") : t("transactions.expense")}
+                            </p>
+                          </div>
+                          {/* Actions */}
+                          <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => handleEditClick(tx)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-danger hover:bg-danger/10" onClick={() => setDeleteId(tx.id)} disabled={isDeleting}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                          {tx.category?.name && (
-                            <span
-                              className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+
+                        {/* Mobile: stacked layout */}
+                        <div className="flex flex-col gap-1.5 sm:hidden">
+                          {/* Row 1: Icon + Name */}
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="relative h-9 w-9 rounded-xl flex items-center justify-center shrink-0"
                               style={{
-                                background: tx.category?.color ? `${tx.category.color}1A` : (
+                                background: tx.category?.color ? `${tx.category.color}20` : (
                                   tx.isRecurring
-                                    ? "rgba(124,92,252,0.1)"
-                                    : tx.type === "income" ? "rgba(16,217,160,0.1)" : "rgba(124,92,252,0.1)"
+                                    ? "rgba(124,92,252,0.12)"
+                                    : tx.type === "income"
+                                      ? "rgba(16,217,160,0.12)"
+                                      : "rgba(255,77,109,0.12)"
                                 ),
                                 color: tx.category?.color ? tx.category.color : (
                                   tx.isRecurring
-                                    ? "#a78bfa"
-                                    : tx.type === "income" ? "#10d9a0" : "#a78bfa"
-                                ),
+                                    ? "#7c5cfc"
+                                    : tx.type === "income" ? "#10d9a0" : "#ff4d6d"
+                                )
                               }}
                             >
-                              {tx.category.name}
-                            </span>
+                              {tx.category?.icon
+                                ? <DynamicIcon name={tx.category.icon} className="h-4 w-4" />
+                                : tx.isRecurring
+                                  ? <CalendarClock className="h-4 w-4" />
+                                  : tx.type === "income"
+                                    ? <ArrowUpRight className="h-4 w-4" />
+                                    : <ArrowDownRight className="h-4 w-4" />}
+                              {tx.isRecurring && (
+                                <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary flex items-center justify-center">
+                                  <RefreshCw className="h-1.5 w-1.5 text-white" />
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm font-semibold text-foreground truncate flex-1">{tx.description ?? "—"}</p>
+                          </div>
+
+                          {/* Row 2: Tags (category + recurring) — top-left */}
+                          {(tx.category?.name || tx.isRecurring) && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {tx.category?.name && (
+                                <span
+                                  className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                                  style={{
+                                    background: tx.category?.color ? `${tx.category.color}1A` : (
+                                      tx.isRecurring ? "rgba(124,92,252,0.1)" : tx.type === "income" ? "rgba(16,217,160,0.1)" : "rgba(124,92,252,0.1)"
+                                    ),
+                                    color: tx.category?.color ? tx.category.color : (
+                                      tx.isRecurring ? "#a78bfa" : tx.type === "income" ? "#10d9a0" : "#a78bfa"
+                                    ),
+                                  }}
+                                >
+                                  {tx.category.name}
+                                </span>
+                              )}
+                              {tx.isRecurring && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-primary/10 text-primary flex items-center gap-1">
+                                  <RefreshCw className="h-2.5 w-2.5" />
+                                  {tx.frequency ? FREQUENCY_LABELS[tx.frequency] : "Định kỳ"}
+                                </span>
+                              )}
+                            </div>
                           )}
-                          {tx.isRecurring && (
-                            <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-primary/10 text-primary flex items-center gap-1">
-                              <RefreshCw className="h-2.5 w-2.5" />
-                              {tx.frequency ? FREQUENCY_LABELS[tx.frequency] : "Định kỳ"}
-                            </span>
-                          )}
-                          <span className="text-[11px] text-muted-foreground">{formatDate(tx.date)}</span>
+
+                          {/* Row 3: Amount + type + Actions */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-bold tabular-nums" style={{ color: tx.type === "income" ? "#10d9a0" : "#ff4d6d" }}>
+                                {tx.type === "income" ? "+" : "-"}{tx.amount.toLocaleString("vi-VN")} ₫
+                              </p>
+                              <span className="text-[11px] text-muted-foreground">
+                                {tx.isRecurring
+                                  ? "Định kỳ · " + (tx.type === "income" ? t("transactions.income") : t("transactions.expense"))
+                                  : tx.type === "income" ? t("transactions.income") : t("transactions.expense")}
+                              </span>
+                            </div>
+                            {/* Actions */}
+                            <div className="flex items-center gap-0.5">
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => handleEditClick(tx)}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-danger hover:bg-danger/10" onClick={() => setDeleteId(tx.id)} disabled={isDeleting}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Row 4: Date — bottom-right */}
+                          <div className="flex justify-end">
+                            <span className="text-[11px] text-muted-foreground">{formatDate(tx.date)}</span>
+                          </div>
                         </div>
                       </div>
-
-                      {/* Amount */}
-                      <div className="text-right shrink-0">
-                        <p
-                          className="text-sm font-bold tabular-nums"
-                          style={{ color: tx.type === "income" ? "#10d9a0" : "#ff4d6d" }}
-                        >
-                          {tx.type === "income" ? "+" : "-"}{tx.amount.toLocaleString("vi-VN")} ₫
-                        </p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {tx.isRecurring
-                            ? "Định kỳ · " + (tx.type === "income" ? t("transactions.income") : t("transactions.expense"))
-                            : tx.type === "income" ? t("transactions.income") : t("transactions.expense")}
-                        </p>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-1 shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                          onClick={() => handleEditClick(tx)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-danger hover:bg-danger/10"
-                          onClick={() => setDeleteId(tx.id)}
-                          disabled={isDeleting}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {/* Pagination */}
-                {pagination && pagination.totalPages > 1 && (
-                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
-                    <p className="text-xs text-muted-foreground">
-                      {pagination.total} {t("transactions.title").toLowerCase()} · {t("transactions.page")} {pagination.page}/{pagination.totalPages}
-                    </p>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>{t("transactions.prev")}</Button>
-                      <Button variant="outline" size="sm" disabled={page >= pagination.totalPages} onClick={() => setPage(p => p + 1)}>{t("transactions.next")}</Button>
-                    </div>
+                    ))}
                   </div>
-                )}
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-6">
-                <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
-                  <Inbox className="h-6 w-6" />
+                  {/* Pagination */}
+                  {pagination && pagination.totalPages > 1 && (
+                    <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
+                      <p className="text-xs text-muted-foreground">
+                        {pagination.total} {t("transactions.title").toLowerCase()} · {t("transactions.page")} {pagination.page}/{pagination.totalPages}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>{t("transactions.prev")}</Button>
+                        <Button variant="outline" size="sm" disabled={page >= pagination.totalPages} onClick={() => setPage(p => p + 1)}>{t("transactions.next")}</Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-6">
+                  <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
+                    <Inbox className="h-6 w-6" />
+                  </div>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    {isFetching ? t("transactions.loading") : t("transactions.noTransactions")}
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  {isFetching ? t("transactions.loading") : t("transactions.noTransactions")}
-                </p>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </TabsContent>
 
         {/* Recurring Transactions Tab */}

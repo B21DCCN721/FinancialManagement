@@ -120,9 +120,10 @@
   "transactions": {
     "title": "Thu chi",
     "subtitle": "Quản lý các khoản thu chi một lần và định kỳ của bạn.",
-    "addTransaction": "Thêm khoản chi",
-    "allTransactions": "Tất cả khoản chi",
+    "addTransaction": "Thêm thu chi",
+    "allTransactions": "Tất cả",
     "recurring": "Định kỳ",
+    "nonRecurring": "Ngoài định kỳ",
     "searchPlaceholder": "Tìm kiếm khoản chi...",
     "filter": "Bộ lọc",
     "type": "Loại",
