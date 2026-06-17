@@ -14,7 +14,10 @@ export const categoryRoutes: FastifyPluginAsync = async (server: FastifyInstance
 
   // GET /api/categories
   s.get("/", {
-    schema: { response: { 200: z.array(categorySchema) } },
+    schema: {
+      querystring: z.object({ type: z.enum(["income", "expense"]).optional() }),
+      response: { 200: z.array(categorySchema) },
+    },
   }, getAllCategoriesController)
 
   // POST /api/categories

@@ -8,7 +8,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <input
         type={type}
-        autoComplete={type === "password" ? "new-password" : "nope"}
+        autoComplete={type === "password" ? "new-password" : "off"}
         autoCorrect="off"
         autoCapitalize="off"
         spellCheck="false"

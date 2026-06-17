@@ -6,9 +6,10 @@ import { Calendar, ChevronLeft, ChevronRight } from "lucide-react"
 interface YearPickerProps {
   value: string // "YYYY"
   onChange: (value: string) => void
+  disablePast?: boolean
 }
 
-export function YearPicker({ value, onChange }: YearPickerProps) {
+export function YearPicker({ value, onChange, disablePast = false }: YearPickerProps) {
   const [open, setOpen] = useState(false)
   const selectedYear = parseInt(value)
   const [panelYear, setPanelYear] = useState(selectedYear)
@@ -34,9 +35,12 @@ export function YearPicker({ value, onChange }: YearPickerProps) {
 
   return (
     <div ref={ref} className="relative w-full sm:w-auto">
-      {/* Trigger button */}
+      {/* Trigger button — pointerDown prevents focus → no keyboard, no toolbar */}
       <button
-        onClick={() => {
+        type="button"
+        tabIndex={-1}
+        onPointerDown={(e) => {
+          e.preventDefault()
           setPanelYear(selectedYear)
           setOpen((o) => !o)
         }}
@@ -49,9 +53,9 @@ export function YearPicker({ value, onChange }: YearPickerProps) {
       {/* Dropdown panel */}
       {open && (
         <>
-          <div 
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm sm:hidden" 
-            onClick={(e) => { e.stopPropagation(); setOpen(false); }} 
+          <div
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm sm:hidden"
+            onPointerDown={(e) => { e.preventDefault(); setOpen(false); }}
           />
           <div
             className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl sm:rounded-2xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-[calc(100%+8px)] sm:w-[280px] sm:z-50 shadow-[0_8px_40px_rgba(0,0,0,0.25)] border border-border overflow-hidden animate-in slide-in-from-bottom-2 sm:slide-in-from-top-2"
@@ -63,14 +67,19 @@ export function YearPicker({ value, onChange }: YearPickerProps) {
             {/* Year navigation */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <button
-                onClick={() => setPanelYear((y) => y - 12)}
-                className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                type="button"
+                tabIndex={-1}
+                disabled={disablePast && (panelYear - 4 - 12 + 11) < nowYear} // If the max year of the previous panel is still in the past, disable going back
+                onPointerDown={(e) => { e.preventDefault(); setPanelYear((y) => y - 12) }}
+                className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-accent transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <span className="text-sm font-semibold">{panelYear - 4} - {panelYear + 7}</span>
               <button
-                onClick={() => setPanelYear((y) => y + 12)}
+                type="button"
+                tabIndex={-1}
+                onPointerDown={(e) => { e.preventDefault(); setPanelYear((y) => y + 12) }}
                 className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -83,17 +92,21 @@ export function YearPicker({ value, onChange }: YearPickerProps) {
                 const y = panelYear - 4 + i
                 const isSelected = y === selectedYear
                 const isToday = y === nowYear
+                const isDisabled = disablePast && y < nowYear
 
                 return (
                   <button
                     key={y}
-                    onClick={() => selectYear(y)}
+                    type="button"
+                    tabIndex={-1}
+                    disabled={isDisabled}
+                    onPointerDown={(e) => { e.preventDefault(); selectYear(y) }}
                     className={[
-                      "relative h-9 rounded-xl text-sm font-medium transition-all hover:scale-105",
+                      "relative h-9 rounded-xl text-sm font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-transparent",
                       isSelected
-                        ? "bg-primary text-white shadow-[0_4px_12px_rgba(124,92,252,0.4)]"
+                        ? "bg-primary text-white shadow-[0_4px_12px_rgba(124,92,252,0.4)] disabled:hover:bg-primary"
                         : isToday
-                        ? "border border-primary/40 text-primary bg-primary/5"
+                        ? "border border-primary/40 text-primary bg-primary/5 disabled:hover:bg-primary/5"
                         : "hover:bg-accent text-foreground",
                     ].join(" ")}
                   >
@@ -109,7 +122,10 @@ export function YearPicker({ value, onChange }: YearPickerProps) {
             {/* Footer — quick jump to current year */}
             <div className="border-t border-border px-3 py-2 flex justify-center">
               <button
-                onClick={() => {
+                type="button"
+                tabIndex={-1}
+                onPointerDown={(e) => {
+                  e.preventDefault()
                   onChange(`${nowYear}`)
                   setOpen(false)
                 }}

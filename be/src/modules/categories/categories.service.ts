@@ -3,17 +3,23 @@ import { errors } from "../../utils/errors"
 import { getCache, setCache, deleteCache, invalidateCachePattern, TTL, buildCacheKey } from "../../utils/cache"
 import { CreateCategoryInput, UpdateCategoryInput } from "./categories.schema"
 
-function cacheKey(userId: string) {
-  return buildCacheKey("user", userId, "categories")
+function cacheKey(userId: string, type?: string) {
+  return type
+    ? buildCacheKey("user", userId, "categories", type)
+    : buildCacheKey("user", userId, "categories")
 }
 
-export async function getAllCategoriesService(server: FastifyInstance, userId: string) {
-  const key = cacheKey(userId)
+export async function getAllCategoriesService(
+  server: FastifyInstance,
+  userId: string,
+  type?: "income" | "expense"
+) {
+  const key = cacheKey(userId, type)
   const cached = await getCache(server.redis, key)
   if (cached) return cached
 
   const categories = await server.prisma.category.findMany({
-    where: { userId },
+    where: { userId, ...(type ? { type } : {}) },
     orderBy: [{ type: "asc" }, { name: "asc" }],
   })
 

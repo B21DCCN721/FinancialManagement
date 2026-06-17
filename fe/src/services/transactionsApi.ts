@@ -62,7 +62,7 @@ export const transactionsApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: [{ type: "Transaction", id: "LIST" }, { type: "Report", id: "SUMMARY" }, { type: "Report", id: "TREND" }, { type: "Report", id: "BREAKDOWN" }, { type: "Report", id: "CASHFLOW" }, { type: "Budget", id: "LIST" }],
+      invalidatesTags: [{ type: "Transaction", id: "LIST" }, { type: "Report", id: "SUMMARY" }, { type: "Report", id: "TREND" }, { type: "Report", id: "BREAKDOWN" }, { type: "Report", id: "CASHFLOW" }, { type: "Report", id: "BALANCE" }, { type: "Budget", id: "LIST" }],
     }),
 
     updateTransaction: builder.mutation<Transaction, { id: string; body: UpdateTransactionRequest }>({
@@ -71,7 +71,7 @@ export const transactionsApi = baseApi.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: (_result, _err, { id }) => [{ type: "Transaction", id }, { type: "Transaction", id: "LIST" }, { type: "Report", id: "SUMMARY" }, { type: "Report", id: "TREND" }, { type: "Report", id: "BREAKDOWN" }, { type: "Report", id: "CASHFLOW" }, { type: "Budget", id: "LIST" }],
+      invalidatesTags: (_result, _err, { id }) => [{ type: "Transaction", id }, { type: "Transaction", id: "LIST" }, { type: "Report", id: "SUMMARY" }, { type: "Report", id: "TREND" }, { type: "Report", id: "BREAKDOWN" }, { type: "Report", id: "CASHFLOW" }, { type: "Report", id: "BALANCE" }, { type: "Budget", id: "LIST" }],
     }),
 
     deleteTransaction: builder.mutation<{ message: string }, string>({
@@ -79,7 +79,7 @@ export const transactionsApi = baseApi.injectEndpoints({
         url: `/transactions/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: [{ type: "Transaction", id: "LIST" }, { type: "Report", id: "SUMMARY" }, { type: "Report", id: "TREND" }, { type: "Report", id: "BREAKDOWN" }, { type: "Report", id: "CASHFLOW" }, { type: "Budget", id: "LIST" }],
+      invalidatesTags: [{ type: "Transaction", id: "LIST" }, { type: "Report", id: "SUMMARY" }, { type: "Report", id: "TREND" }, { type: "Report", id: "BREAKDOWN" }, { type: "Report", id: "CASHFLOW" }, { type: "Report", id: "BALANCE" }, { type: "Budget", id: "LIST" }],
     }),
 
     stopRecurring: builder.mutation<Transaction, string>({

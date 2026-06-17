@@ -1,13 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Tag, Pencil, Trash2, Loader2, Inbox } from "lucide-react"
+import { Plus, Pencil, Trash2, Loader2, Inbox } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   useGetCategoriesQuery,
   useCreateCategoryMutation,
@@ -21,8 +22,8 @@ import { DynamicIcon } from "@/components/ui/dynamic-icon"
 
 // Bảng icon gợi ý
 const ICON_SUGGESTIONS = [
-  "Utensils", "Car", "ShoppingBag", "Film", "Home", "Zap", 
-  "Pill", "Plane", "Book", "Wallet", "GraduationCap", 
+  "Utensils", "Car", "ShoppingBag", "Film", "Home", "Zap",
+  "Pill", "Plane", "Book", "Wallet", "GraduationCap",
   "CreditCard", "Gift", "FileText"
 ]
 const COLOR_SUGGESTIONS = [
@@ -40,23 +41,21 @@ function CategoryTypeBadge({ type }: { type: string }) {
           : { background: "rgba(124,92,252,0.12)", color: "#a78bfa", border: "1px solid rgba(124,92,252,0.25)" }
       }
     >
-      {type === "income" ? (
-        // Temporary fallback until hook is used here, or we use t directly
-        // Actually, this component is outside. Let's pass t or use hook here.
-        "Thu nhập"
-      ) : "Chi phí"}
+      {type === "income" ? "Thu nhập" : "Chi phí"}
     </span>
   )
 }
 
 export default function CategoriesPage() {
   const { t } = useTranslation()
+  const [activeTab, setActiveTab] = useState<"all" | "expense" | "income">("all")
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [selectedIcon, setSelectedIcon] = useState("FileText")
   const [selectedColor, setSelectedColor] = useState("#7c5cfc")
 
+  // Luôn fetch tất cả để có count chính xác cho mỗi tab
   const { data: categories = [], isLoading } = useGetCategoriesQuery()
   const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation()
   const [updateCategory, { isLoading: isUpdating }] = useUpdateCategoryMutation()
@@ -64,10 +63,20 @@ export default function CategoriesPage() {
 
   const editingCategory = categories.find((c) => c.id === editingId)
 
+  const incomeCategories = categories.filter((c) => c.type === "income")
+  const expenseCategories = categories.filter((c) => c.type === "expense")
+
+  const displayedCategories =
+    activeTab === "all"
+      ? categories
+      : activeTab === "income"
+        ? incomeCategories
+        : expenseCategories
+
   const resetModal = () => {
     setIsAddModalOpen(false)
     setEditingId(null)
-    setSelectedIcon("📝")
+    setSelectedIcon("FileText")
     setSelectedColor("#7c5cfc")
   }
 
@@ -116,9 +125,6 @@ export default function CategoriesPage() {
     setIsAddModalOpen(true)
   }
 
-  const incomeCategories = categories.filter((c) => c.type === "income")
-  const expenseCategories = categories.filter((c) => c.type === "expense")
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -135,37 +141,41 @@ export default function CategoriesPage() {
         </button>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {/* Income */}
-          {incomeCategories.length > 0 && (
-            <section>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 px-1">{t("categories.income")}</h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {incomeCategories.map((cat) => (
-                  <CategoryCard key={cat.id} cat={cat} onEdit={openEdit} onDelete={() => setDeleteId(cat.id)} />
-                ))}
-              </div>
-            </section>
-          )}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "all" | "expense" | "income")} className="w-full">
+        <TabsList className="mb-4">
+          {/* Tab: Tất cả */}
+          <TabsTrigger value="all">
+            {t("categories.all") || "Tất cả"}
+          </TabsTrigger>
 
-          {/* Expense */}
-          {expenseCategories.length > 0 && (
-            <section>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 px-1">{t("categories.expense")}</h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {expenseCategories.map((cat) => (
-                  <CategoryCard key={cat.id} cat={cat} onEdit={openEdit} onDelete={() => setDeleteId(cat.id)} />
-                ))}
-              </div>
-            </section>
-          )}
+          {/* Tab: Chi phí */}
+          <TabsTrigger value="expense">
+            {t("categories.expense") || "Chi phí"}
+          </TabsTrigger>
 
-          {categories.length === 0 && (
+          {/* Tab: Thu nhập */}
+          <TabsTrigger value="income">
+            {t("categories.income") || "Thu nhập"}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={activeTab} className="mt-0">
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : displayedCategories.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {displayedCategories.map((cat) => (
+                <CategoryCard
+                  key={cat.id}
+                  cat={cat}
+                  onEdit={openEdit}
+                  onDelete={() => setDeleteId(cat.id)}
+                />
+              ))}
+            </div>
+          ) : (
             <div className="py-12 flex flex-col items-center justify-center gap-3 text-center glass-card rounded-2xl px-6">
               <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
                 <Inbox className="h-6 w-6" />
@@ -175,8 +185,8 @@ export default function CategoriesPage() {
               </p>
             </div>
           )}
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
 
       {/* Add / Edit Modal */}
       <Modal
@@ -196,11 +206,23 @@ export default function CategoriesPage() {
               <Label>{t("categories.type")}</Label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="type" value="expense" defaultChecked className="text-primary focus:ring-primary h-4 w-4" />
+                  <input
+                    type="radio"
+                    name="type"
+                    value="expense"
+                    defaultChecked={activeTab !== "income"}
+                    className="text-primary focus:ring-primary h-4 w-4"
+                  />
                   <span className="text-sm font-medium">{t("categories.expense")}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="type" value="income" className="text-primary focus:ring-primary h-4 w-4" />
+                  <input
+                    type="radio"
+                    name="type"
+                    value="income"
+                    defaultChecked={activeTab === "income"}
+                    className="text-primary focus:ring-primary h-4 w-4"
+                  />
                   <span className="text-sm font-medium">{t("categories.income")}</span>
                 </label>
               </div>
@@ -277,7 +299,7 @@ function CategoryCard({
   onEdit,
   onDelete,
 }: {
-  cat: { id: string; name: string; type: string; color?: string; icon?: string }
+  cat: { id: string; name: string; type: string; color?: string | null; icon?: string | null }
   onEdit: (id: string) => void
   onDelete: (id: string) => void
 }) {
@@ -290,7 +312,7 @@ function CategoryCard({
               className="flex h-11 w-11 items-center justify-center rounded-xl text-xl"
               style={{ background: (cat.color ?? "#7c5cfc") + "22", color: cat.color ?? "#7c5cfc" }}
             >
-              <DynamicIcon name={cat.icon} className="h-5 w-5" />
+              <DynamicIcon name={cat.icon ?? undefined} className="h-5 w-5" />
             </div>
             <div>
               <h3 className="font-semibold text-foreground">{cat.name}</h3>

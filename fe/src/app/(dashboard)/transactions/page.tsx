@@ -257,11 +257,6 @@ function TransactionsContent() {
           <TabsTrigger value="non_recurring">{t("transactions.nonRecurring")}</TabsTrigger>
           <TabsTrigger value="recurring">
             {t("transactions.recurring")}
-            {recurringTransactions.length > 0 && (
-              <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
-                {recurringTransactions.length}
-              </span>
-            )}
           </TabsTrigger>
         </TabsList>
 

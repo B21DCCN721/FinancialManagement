@@ -6,9 +6,13 @@ import {
 import { CreateCategoryInput, UpdateCategoryInput } from "./categories.schema"
 import { handleError } from "../../utils/errors"
 
-export async function getAllCategoriesController(request: FastifyRequest, reply: FastifyReply) {
+export async function getAllCategoriesController(
+  request: FastifyRequest<{ Querystring: { type?: "income" | "expense" } }>,
+  reply: FastifyReply
+) {
   try {
-    return reply.send(await getAllCategoriesService(request.server, request.user.id))
+    const { type } = request.query
+    return reply.send(await getAllCategoriesService(request.server, request.user.id, type))
   } catch (err) { return handleError(err, reply) }
 }
 

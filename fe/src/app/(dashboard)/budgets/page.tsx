@@ -305,9 +305,9 @@ export default function BudgetsPage() {
               ) : (
                 <div className="w-full [&>div>button]:w-full [&>div>button]:justify-center">
                   {modalBudgetType === "monthly" ? (
-                    <MonthPicker value={modalPeriod} onChange={setModalPeriod} />
+                    <MonthPicker value={modalPeriod} onChange={setModalPeriod} disablePast />
                   ) : (
-                    <YearPicker value={modalPeriod} onChange={setModalPeriod} />
+                    <YearPicker value={modalPeriod} onChange={setModalPeriod} disablePast />
                   )}
                 </div>
               )}

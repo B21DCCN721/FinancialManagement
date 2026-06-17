@@ -28,6 +28,7 @@ export default function GoalsPage() {
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [depositValue, setDepositValue] = useState("")
+  const [deadlineDate, setDeadlineDate] = useState(() => new Date().toISOString().slice(0, 10))
 
   const { data: goals = [], isLoading } = useGetGoalsQuery()
   const { data: balance } = useGetBalanceQuery()
@@ -133,7 +134,10 @@ export default function GoalsPage() {
           <p className="text-sm md:text-lg text-muted-foreground">{t("goals.subtitle")}</p>
         </div>
         <button
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={() => {
+            setDeadlineDate(new Date().toISOString().slice(0, 10))
+            setIsAddModalOpen(true)
+          }}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-[0_4px_15px_rgba(124,92,252,0.4)]"
         >
           <Plus className="h-4 w-4" />
@@ -245,7 +249,7 @@ export default function GoalsPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="deadline">{t("goals.deadlineLabel")}</Label>
-            <DatePicker id="deadline" name="deadline" required />
+            <DatePicker id="deadline" name="deadline" required value={deadlineDate} onChange={setDeadlineDate} />
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>{t("goals.cancel")}</Button>
