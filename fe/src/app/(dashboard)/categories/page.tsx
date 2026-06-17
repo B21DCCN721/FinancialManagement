@@ -27,8 +27,8 @@ const ICON_SUGGESTIONS = [
   "CreditCard", "Gift", "FileText"
 ]
 const COLOR_SUGGESTIONS = [
-  "#7c5cfc", "#10d9a0", "#ff4d6d", "#f59e0b",
-  "#38bdf8", "#a78bfa", "#34d399", "#fb923c",
+  "#7c5cfc", "#10d9a0", "#ef4444", "#f59e0b",
+  "#3b82f6", "#ec4899", "#06b6d4", "#84cc16",
 ]
 
 function CategoryTypeBadge({ type }: { type: string }) {
