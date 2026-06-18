@@ -55,14 +55,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ReduxProvider } from "@/store/provider";
 import I18nProvider from "@/components/providers/I18nProvider";
 import { Toaster } from "sonner";
-import dynamic from "next/dynamic";
-
-// dynamic import với ssr:false đảm bảo component chỉ render trên client
-// → không cần mounted state guard bên trong component
-const PWAInstallPrompt = dynamic(
-  () => import("@/components/pwa/PWAInstallPrompt").then((m) => m.PWAInstallPrompt),
-  { ssr: false }
-);
+import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 
 export default function RootLayout({
   children,
