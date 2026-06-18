@@ -15,7 +15,7 @@ export default function DashboardLayout({
           <Sidebar />
           <div className="flex flex-1 flex-col overflow-hidden w-full">
             <Header />
-            <main className="flex-1 overflow-y-auto pt-16 p-6" style={{ background: "transparent" }}>
+            <main className="flex-1 overflow-y-auto p-6" style={{ background: "transparent", paddingTop: 'calc(4rem + env(safe-area-inset-top) + 1.5rem)' }}>
               <div className="mx-auto max-w-7xl">
                 {children}
               </div>
