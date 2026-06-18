@@ -206,6 +206,14 @@ body {
     padding-left: var(--safe-area-left);
     padding-right: var(--safe-area-right);
   }
+
+  /* Khi chạy PWA standalone, header phải opaque hoàn toàn để khớp
+     với màu status bar (theme-color), tránh đường kẻ ở boundary */
+  header {
+    background-color: var(--background) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
 }
 
 /* Utility classes safe-area để dùng trực tiếp trong components */
