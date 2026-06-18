@@ -39,8 +39,8 @@ export const metadata: Metadata = {
 // viewport phải export riêng (Next.js 14+)
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#7c5cfc" },
-    { media: "(prefers-color-scheme: dark)", color: "#7c5cfc" },
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0f" },
   ],
   width: "device-width",
   initialScale: 1,

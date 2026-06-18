@@ -301,7 +301,7 @@ export default function ReportsPage() {
         ) : (
           <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-              <LineChart data={trend} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+              <LineChart data={trend.map(t => ({ ...t, net: t.income - t.expense }))} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" vertical={false} />
                 <XAxis dataKey="period" tickFormatter={formatPeriodLabel} stroke="currentColor" className="text-muted-foreground" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="currentColor" className="text-muted-foreground" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k ₫`} />
