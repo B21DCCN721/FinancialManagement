@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useGetReportSummaryQuery } from "@/services/reportsApi"
+import { useGetGoalsQuery } from "@/services/goalsApi"
 import { useSidebar } from "@/contexts/SidebarContext"
 
 function currentPeriod() {
@@ -39,7 +40,11 @@ export function Sidebar() {
   const pathname = usePathname()
   const { t } = useTranslation()
   const { data: summary, isLoading } = useGetReportSummaryQuery({ period: currentPeriod() })
+  const { data: goals = [] } = useGetGoalsQuery()
   const { isOpen, setIsOpen } = useSidebar()
+
+  const totalGoalSavings = goals.reduce((acc, g) => acc + (g.currentAmount ?? 0), 0)
+  const availableBalance = (summary?.netBalance ?? 0) - totalGoalSavings
 
   React.useEffect(() => {
     if (window.innerWidth < 768) {
@@ -136,13 +141,13 @@ export function Sidebar() {
             className="rounded-xl p-3 mb-3 bg-accent border border-primary/20"
           >
             <p className="text-[10px] font-semibold uppercase tracking-wider text-primary mb-1">
-              {t("sidebar.netBalance")}
+              {t("sidebar.availableBalance")}
             </p>
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mt-2 mb-1" />
             ) : (
               <p className="text-lg font-bold text-foreground">
-                {(summary?.netBalance ?? 0).toLocaleString("vi-VN")} ₫
+                {availableBalance.toLocaleString("vi-VN")} ₫
               </p>
             )}
             <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">

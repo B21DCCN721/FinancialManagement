@@ -20,6 +20,7 @@
     "settings": "Settings",
     "navigation": "Navigation",
     "netBalance": "Net Balance",
+    "availableBalance": "Available Balance",
     "thisMonth": "This month"
   },
   "header": {
