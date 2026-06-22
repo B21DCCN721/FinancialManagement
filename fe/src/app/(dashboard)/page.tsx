@@ -188,25 +188,25 @@ export default function Dashboard() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className={`rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] ${stat.className}`}>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-              <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: stat.iconBg }}>
+          <div key={stat.label} className={`rounded-2xl p-4 transition-all duration-300 hover:scale-[1.02] overflow-hidden min-w-0 ${stat.className}`}>
+            <div className="flex items-center justify-between mb-3 gap-1">
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground leading-snug line-clamp-2">{stat.label}</p>
+              <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: stat.iconBg }}>
                 <stat.icon className="h-4 w-4" style={{ color: stat.iconColor }} />
               </div>
             </div>
-            <div className="text-2xl font-bold mb-1.5 tracking-tight text-foreground">
+            <div className="text-lg sm:text-2xl font-bold mb-1.5 tracking-tight text-foreground truncate">
               {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : stat.value}
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 min-w-0">
               {stat.positive ? (
-                <ArrowUpRight className="h-3.5 w-3.5 text-success" />
+                <ArrowUpRight className="h-3.5 w-3.5 text-success shrink-0" />
               ) : (
-                <ArrowDownRight className="h-3.5 w-3.5 text-danger" />
+                <ArrowDownRight className="h-3.5 w-3.5 text-danger shrink-0" />
               )}
-              <span className="text-xs text-muted-foreground">{stat.changeLabel}</span>
+              <span className="text-xs text-muted-foreground truncate">{stat.changeLabel}</span>
             </div>
           </div>
         ))}

@@ -115,7 +115,9 @@
     "aiReportTitle": "Báo cáo tài chính AI",
     "analyzing": "AI đang phân tích dữ liệu sổ sách...",
     "downloadPdf": "Tải PDF",
-    "close": "Đóng"
+    "close": "Đóng",
+    "totalGoalSavings": "Tiết kiệm mục tiêu",
+    "allocatedToGoals": "Đã nạp vào mục tiêu"
   },
   "transactions": {
     "title": "Thu chi",

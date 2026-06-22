@@ -117,7 +117,9 @@
     "aiReportTitle": "AI Financial Report",
     "analyzing": "AI is analyzing your financial records...",
     "downloadPdf": "Download PDF",
-    "close": "Close"
+    "close": "Close",
+    "totalGoalSavings": "Goal Savings",
+    "allocatedToGoals": "Allocated to goals"
   },
   "transactions": {
     "title": "Transactions",
