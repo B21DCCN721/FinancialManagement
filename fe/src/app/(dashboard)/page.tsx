@@ -20,7 +20,7 @@ import {
 } from "recharts"
 import Link from "next/link"
 import { useGetTransactionsQuery } from "@/services/transactionsApi"
-import { useGetMonthlyTrendQuery, useGetCategoryBreakdownQuery, useGetReportSummaryQuery, useLazyGetAiInsightsQuery } from "@/services/reportsApi"
+import { useGetMonthlyTrendQuery, useGetCategoryBreakdownQuery, useGetReportSummaryQuery, useGetBalanceQuery, useLazyGetAiInsightsQuery } from "@/services/reportsApi"
 import { useGetGoalsQuery } from "@/services/goalsApi"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { Modal } from "@/components/ui/modal"
@@ -93,6 +93,7 @@ export default function Dashboard() {
 
   const { data, isLoading } = useGetTransactionsQuery({ page: 1, limit: 5 })
   const { data: summary } = useGetReportSummaryQuery({ period })
+  const { data: balance } = useGetBalanceQuery()
   const { data: trend = [], isLoading: isTrendLoading } = useGetMonthlyTrendQuery({ months: 6 })
   const { data: breakdown = [], isLoading: isBreakdownLoading } = useGetCategoryBreakdownQuery({ period })
   const { data: goals = [] } = useGetGoalsQuery()
@@ -101,10 +102,11 @@ export default function Dashboard() {
 
   const totalIncome = summary?.totalIncome ?? transactions.filter(tx => tx.type === "income").reduce((acc, tx) => acc + tx.amount, 0)
   const totalExpense = summary?.totalExpense ?? transactions.filter(tx => tx.type === "expense").reduce((acc, tx) => acc + tx.amount, 0)
-  // Tính tổng tiền đã nạp vào mục tiêu từ danh sách goals thực tế
+  // Tổng tiền đã nạp vào mục tiêu (all-time, lấy từ goals list để hiển thị ở stat card)
   const totalGoalSavings = goals.reduce((acc, g) => acc + (g.currentAmount ?? 0), 0)
-  // Số dư khả dụng = netBalance từ BE - tiền đang tiết kiệm (BE không tạo expense khi nạp goal)
-  const totalBalance = (summary?.netBalance ?? (totalIncome - totalExpense)) - totalGoalSavings
+  // Số dư khả dụng = balance.netBalance từ BE (all-time income - expense - goalSavings)
+  // Đồng nhất với sidebar và modal nạp tiền mục tiêu
+  const totalBalance = balance?.netBalance ?? 0
 
   // Map trend data to chart format
   const monthlyData = trend.map(d => ({
