@@ -281,7 +281,14 @@
     "deadlineInvalid": "Hạn chót không hợp lệ",
     "deleteConfirmTitle": "Xóa mục tiêu",
     "deleteConfirmDesc": "Bạn có chắc chắn muốn xóa mục tiêu này? Hành động này không thể hoàn tác.",
-    "delete": "Xóa"
+    "delete": "Xóa",
+    "withdraw": "Rút tiền",
+    "withdrawModalTitle": "Rút tiền từ Mục tiêu",
+    "withdrawModalDesc": "Rút một phần hoặc toàn bộ số tiền đã tiết kiệm trong mục tiêu này.",
+    "withdrawAmount": "Số tiền rút (₫)",
+    "confirmWithdraw": "Xác nhận rút",
+    "withdrawSuccess": "Rút tiền từ mục tiêu thành công",
+    "withdrawError": "Rút tiền thất bại. Vui lòng thử lại."
   },
   "register": {
     "title": "Tạo tài khoản của bạn",

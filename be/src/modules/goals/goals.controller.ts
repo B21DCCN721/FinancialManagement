@@ -1,9 +1,9 @@
 import { FastifyRequest, FastifyReply } from "fastify"
 import {
   getAllGoalsService, createGoalService,
-  updateGoalService, contributeToGoalService, deleteGoalService,
+  updateGoalService, contributeToGoalService, withdrawFromGoalService, deleteGoalService,
 } from "./goals.service"
-import { CreateGoalInput, UpdateGoalInput, ContributeGoalInput } from "./goals.schema"
+import { CreateGoalInput, UpdateGoalInput, ContributeGoalInput, WithdrawGoalInput } from "./goals.schema"
 import { handleError } from "../../utils/errors"
 
 export async function getAllGoalsController(request: FastifyRequest, reply: FastifyReply) {
@@ -36,6 +36,15 @@ export async function contributeGoalController(
 ) {
   try {
     return reply.send(await contributeToGoalService(request.server, request.user.id, request.params.id, request.body))
+  } catch (err) { return handleError(err, reply) }
+}
+
+export async function withdrawGoalController(
+  request: FastifyRequest<{ Params: { id: string }; Body: WithdrawGoalInput }>,
+  reply: FastifyReply
+) {
+  try {
+    return reply.send(await withdrawFromGoalService(request.server, request.user.id, request.params.id, request.body))
   } catch (err) { return handleError(err, reply) }
 }
 

@@ -284,7 +284,14 @@
     "deadlineInvalid": "Invalid deadline",
     "deleteConfirmTitle": "Delete Goal",
     "deleteConfirmDesc": "Are you sure you want to delete this goal? This action cannot be undone.",
-    "delete": "Delete"
+    "delete": "Delete",
+    "withdraw": "Withdraw",
+    "withdrawModalTitle": "Withdraw from Goal",
+    "withdrawModalDesc": "Withdraw part or all of the savings from this goal.",
+    "withdrawAmount": "Amount to Withdraw",
+    "confirmWithdraw": "Confirm Withdrawal",
+    "withdrawSuccess": "Successfully withdrew from goal",
+    "withdrawError": "Withdrawal failed. Please try again."
   },
   "register": {
     "title": "Create your account",

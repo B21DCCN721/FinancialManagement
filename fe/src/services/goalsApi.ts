@@ -23,6 +23,10 @@ interface ContributeRequest {
   amount: number
 }
 
+interface WithdrawRequest {
+  amount: number
+}
+
 export const goalsApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
@@ -64,6 +68,20 @@ export const goalsApi = baseApi.injectEndpoints({
       invalidatesTags: (_result, _err, { id }) => [
         { type: "Goal", id },
         { type: "Goal", id: "LIST" },
+        { type: "Report", id: "BALANCE" },
+      ],
+    }),
+
+    withdrawFromGoal: builder.mutation<Goal, { id: string; body: WithdrawRequest }>({
+      query: ({ id, body }) => ({
+        url: `/goals/${id}/withdraw`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, _err, { id }) => [
+        { type: "Goal", id },
+        { type: "Goal", id: "LIST" },
+        { type: "Report", id: "BALANCE" },
       ],
     }),
 
@@ -75,6 +93,7 @@ export const goalsApi = baseApi.injectEndpoints({
       invalidatesTags: (_result, _err, id) => [
         { type: "Goal", id },
         { type: "Goal", id: "LIST" },
+        { type: "Report", id: "BALANCE" },
       ],
     }),
   }),
@@ -85,5 +104,6 @@ export const {
   useCreateGoalMutation,
   useUpdateGoalMutation,
   useContributeToGoalMutation,
+  useWithdrawFromGoalMutation,
   useDeleteGoalMutation,
 } = goalsApi

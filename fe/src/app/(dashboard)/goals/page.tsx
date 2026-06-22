@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Target, Plus, TrendingUp, CalendarDays, Loader2, Trash2, Inbox, Wallet } from "lucide-react"
+import { Target, Plus, TrendingUp, TrendingDown, CalendarDays, Loader2, Trash2, Inbox, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
@@ -12,6 +12,7 @@ import {
   useGetGoalsQuery,
   useCreateGoalMutation,
   useContributeToGoalMutation,
+  useWithdrawFromGoalMutation,
   useDeleteGoalMutation,
 } from "@/services/goalsApi"
 import { useGetBalanceQuery } from "@/services/reportsApi"
@@ -25,20 +26,28 @@ export default function GoalsPage() {
   const { t } = useTranslation()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isAddFundsOpen, setIsAddFundsOpen] = useState(false)
+  const [isWithdrawOpen, setIsWithdrawOpen] = useState(false)
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [depositValue, setDepositValue] = useState("")
+  const [withdrawValue, setWithdrawValue] = useState("")
   const [deadlineDate, setDeadlineDate] = useState(() => new Date().toISOString().slice(0, 10))
 
   const { data: goals = [], isLoading } = useGetGoalsQuery()
   const { data: balance } = useGetBalanceQuery()
   const [createGoal, { isLoading: isCreating }] = useCreateGoalMutation()
   const [contributeToGoal, { isLoading: isContributing }] = useContributeToGoalMutation()
+  const [withdrawFromGoal, { isLoading: isWithdrawing }] = useWithdrawFromGoalMutation()
   const [deleteGoal, { isLoading: isDeleting }] = useDeleteGoalMutation()
 
-  const netBalance = balance?.netBalance ?? 0
+  // Available balance = totalIncome - totalExpense - totalGoalSavings (already deducted by BE)
+  const availableBalance = balance?.netBalance ?? 0
   const depositAmount = parseFloat(depositValue) || 0
-  const isDepositExceedBalance = depositAmount > netBalance
+  const withdrawAmount = parseFloat(withdrawValue) || 0
+  const isDepositExceedBalance = depositAmount > availableBalance
+
+  const selectedGoal = selectedGoalId ? goals.find((g) => g.id === selectedGoalId) : null
+  const isWithdrawExceedSavings = withdrawAmount > (selectedGoal?.currentAmount ?? 0)
 
   const handleAddGoal = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -54,8 +63,8 @@ export default function GoalsPage() {
     }
 
     // Parse as local midnight to avoid UTC timezone shift (YYYY-MM-DD → treat as local)
-    const deadlineDate = new Date(`${deadlineStr}T00:00:00`)
-    if (isNaN(deadlineDate.getTime())) {
+    const deadlineDateObj = new Date(`${deadlineStr}T00:00:00`)
+    if (isNaN(deadlineDateObj.getTime())) {
       toast.error(t("goals.deadlineInvalid") || "Ngày hết hạn không hợp lệ")
       return
     }
@@ -64,7 +73,7 @@ export default function GoalsPage() {
       await createGoal({
         title: formData.get("title") as string,
         targetAmount,
-        deadline: deadlineDate.toISOString(),
+        deadline: deadlineDateObj.toISOString(),
       }).unwrap()
       setIsAddModalOpen(false)
       form.reset()
@@ -81,9 +90,9 @@ export default function GoalsPage() {
     const amount = parseFloat(depositValue)
     if (isNaN(amount) || !selectedGoalId) return
 
-    // Client-side guard
-    if (amount > netBalance) {
-      toast.error(`Số tiền nạp vượt quá số dư ròng hiện có (${fmt(netBalance)} ₫)`)
+    // Client-side guard — dùng availableBalance (đã trừ savings)
+    if (amount > availableBalance) {
+      toast.error(`Số tiền nạp vượt quá số dư khả dụng (${fmt(availableBalance)} ₫)`)
       return
     }
 
@@ -97,6 +106,30 @@ export default function GoalsPage() {
     } catch (err: any) {
       logger.error("Failed to contribute to goal", err)
       toast.error(err?.data?.message || t("goals.fundsError"))
+    }
+  }
+
+  const handleWithdraw = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const amount = parseFloat(withdrawValue)
+    if (isNaN(amount) || !selectedGoalId || !selectedGoal) return
+
+    // Client-side guard
+    if (amount > selectedGoal.currentAmount) {
+      toast.error(`Số tiền rút vượt quá số tiền đang có trong mục tiêu (${fmt(selectedGoal.currentAmount)} ₫)`)
+      return
+    }
+
+    try {
+      await withdrawFromGoal({ id: selectedGoalId, body: { amount } }).unwrap()
+      setIsWithdrawOpen(false)
+      setSelectedGoalId(null)
+      setWithdrawValue("")
+      logger.info("Withdrew from goal", { goalId: selectedGoalId, amount })
+      toast.success(t("goals.withdrawSuccess") || "Rút tiền từ mục tiêu thành công")
+    } catch (err: any) {
+      logger.error("Failed to withdraw from goal", err)
+      toast.error(err?.data?.message || t("goals.withdrawError") || "Rút tiền thất bại. Vui lòng thử lại.")
     }
   }
 
@@ -203,22 +236,44 @@ export default function GoalsPage() {
                     />
                   </div>
 
-                  <button
-                    className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium transition-all ${
-                      goal.isCompleted
-                        ? "bg-muted text-muted-foreground cursor-not-allowed"
-                        : "bg-card border border-border text-foreground hover:bg-accent hover:text-primary"
-                    }`}
-                    onClick={() => {
-                      setSelectedGoalId(goal.id)
-                      setDepositValue("")
-                      setIsAddFundsOpen(true)
-                    }}
-                    disabled={goal.isCompleted}
-                  >
-                    <TrendingUp className="h-4 w-4" />
-                    {t("goals.addFunds")}
-                  </button>
+                  {/* Action buttons */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Nạp tiền */}
+                    <button
+                      className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium transition-all ${
+                        goal.isCompleted
+                          ? "bg-muted text-muted-foreground cursor-not-allowed"
+                          : "bg-card border border-border text-foreground hover:bg-accent hover:text-primary"
+                      }`}
+                      onClick={() => {
+                        setSelectedGoalId(goal.id)
+                        setDepositValue("")
+                        setIsAddFundsOpen(true)
+                      }}
+                      disabled={goal.isCompleted}
+                    >
+                      <TrendingUp className="h-4 w-4" />
+                      {t("goals.addFunds")}
+                    </button>
+
+                    {/* Rút tiền */}
+                    <button
+                      className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium transition-all ${
+                        goal.currentAmount <= 0
+                          ? "bg-muted text-muted-foreground cursor-not-allowed"
+                          : "bg-card border border-border text-foreground hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/30"
+                      }`}
+                      onClick={() => {
+                        setSelectedGoalId(goal.id)
+                        setWithdrawValue("")
+                        setIsWithdrawOpen(true)
+                      }}
+                      disabled={goal.currentAmount <= 0}
+                    >
+                      <TrendingDown className="h-4 w-4" />
+                      {t("goals.withdraw") || "Rút tiền"}
+                    </button>
+                  </div>
                 </div>
               </div>
             )
@@ -269,17 +324,26 @@ export default function GoalsPage() {
         description={t("goals.fundsModalDesc")}
       >
         <form className="space-y-4 pt-4" onSubmit={handleAddFunds}>
-          {/* Balance info */}
+          {/* Available balance info (already deducted goal savings) */}
           <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-colors ${
-            netBalance > 0
+            availableBalance > 0
               ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
               : "bg-destructive/10 border border-destructive/20 text-destructive"
           }`}>
             <Wallet className="h-4 w-4 flex-shrink-0" />
             <span className="font-medium">
-              Số dư khả dụng: <span className="font-bold">{fmt(netBalance)} ₫</span>
+              Số dư khả dụng: <span className="font-bold">{fmt(availableBalance)} ₫</span>
             </span>
           </div>
+
+          {selectedGoal && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs bg-muted/50 text-muted-foreground border border-border">
+              <Target className="h-3.5 w-3.5 flex-shrink-0" />
+              <span>
+                Còn thiếu để hoàn thành: <span className="font-semibold text-foreground">{fmt(Math.max(0, selectedGoal.targetAmount - selectedGoal.currentAmount))} ₫</span>
+              </span>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="deposit">{t("goals.deposit")}</Label>
@@ -291,7 +355,7 @@ export default function GoalsPage() {
               autoComplete="off"
               step="1"
               min="1"
-              max={netBalance > 0 ? netBalance : undefined}
+              max={availableBalance > 0 ? Math.min(availableBalance, selectedGoal ? selectedGoal.targetAmount - selectedGoal.currentAmount : availableBalance) : undefined}
               placeholder="100.000"
               autoFocus
               required
@@ -307,7 +371,7 @@ export default function GoalsPage() {
                 </span>
                 {isDepositExceedBalance && (
                   <span className="text-destructive font-medium">
-                    Vượt quá số dư ({fmt(netBalance)} ₫)
+                    Vượt quá số dư ({fmt(availableBalance)} ₫)
                   </span>
                 )}
               </div>
@@ -316,9 +380,83 @@ export default function GoalsPage() {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => { setIsAddFundsOpen(false); setDepositValue("") }}>{t("goals.cancel")}</Button>
-            <Button type="submit" disabled={isContributing || isDepositExceedBalance || netBalance <= 0}>
+            <Button type="submit" disabled={isContributing || isDepositExceedBalance || availableBalance <= 0}>
               {isContributing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("goals.confirm")}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Withdraw Modal */}
+      <Modal
+        isOpen={isWithdrawOpen}
+        onClose={() => { setIsWithdrawOpen(false); setSelectedGoalId(null); setWithdrawValue("") }}
+        title={t("goals.withdrawModalTitle") || "Rút tiền từ Mục tiêu"}
+        description={t("goals.withdrawModalDesc") || "Rút một phần hoặc toàn bộ số tiền đã tiết kiệm trong mục tiêu này."}
+      >
+        <form className="space-y-4 pt-4" onSubmit={handleWithdraw}>
+          {/* Current savings in goal */}
+          {selectedGoal && (
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400">
+              <Wallet className="h-4 w-4 flex-shrink-0" />
+              <span className="font-medium">
+                Số tiền hiện có trong mục tiêu: <span className="font-bold">{fmt(selectedGoal.currentAmount)} ₫</span>
+              </span>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="withdraw">{t("goals.withdrawAmount") || "Số tiền rút (₫)"}</Label>
+            <Input
+              id="withdraw"
+              name="withdraw"
+              type="number"
+              inputMode="decimal"
+              autoComplete="off"
+              step="1"
+              min="1"
+              max={selectedGoal?.currentAmount ?? undefined}
+              placeholder="100.000"
+              autoFocus
+              required
+              value={withdrawValue}
+              onChange={(e) => setWithdrawValue(e.target.value)}
+              className={isWithdrawExceedSavings ? "border-destructive focus-visible:ring-0 focus-visible:ring-offset-0" : "focus-visible:ring-0 focus-visible:ring-offset-0"}
+            />
+            {/* Preview + warning */}
+            {withdrawAmount > 0 && (
+              <div className="flex items-center justify-between text-xs px-1">
+                <span className="text-muted-foreground">
+                  = <span className="font-semibold text-foreground">{fmt(withdrawAmount)} ₫</span>
+                </span>
+                {isWithdrawExceedSavings && (
+                  <span className="text-destructive font-medium">
+                    Vượt quá số tiền hiện có ({fmt(selectedGoal?.currentAmount ?? 0)} ₫)
+                  </span>
+                )}
+              </div>
+            )}
+            {/* After-withdraw preview */}
+            {withdrawAmount > 0 && !isWithdrawExceedSavings && selectedGoal && (
+              <p className="text-xs text-muted-foreground px-1">
+                Còn lại trong mục tiêu sau rút:{" "}
+                <span className="font-semibold text-foreground">{fmt(selectedGoal.currentAmount - withdrawAmount)} ₫</span>
+              </p>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => { setIsWithdrawOpen(false); setWithdrawValue("") }}>
+              {t("goals.cancel")}
+            </Button>
+            <Button
+              type="submit"
+              variant="destructive"
+              disabled={isWithdrawing || isWithdrawExceedSavings || !selectedGoal || selectedGoal.currentAmount <= 0}
+            >
+              {isWithdrawing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("goals.confirmWithdraw") || "Xác nhận rút"}
             </Button>
           </div>
         </form>

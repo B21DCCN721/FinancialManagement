@@ -33,6 +33,10 @@ export const contributeGoalSchema = z.object({
   amount: z.number().positive("Contribution amount must be positive"),
 })
 
+export const withdrawGoalSchema = z.object({
+  amount: z.number().positive("Withdrawal amount must be positive"),
+})
+
 export const goalParamsSchema = z.object({
   id: z.string().uuid("Invalid goal ID"),
 })
@@ -58,3 +62,4 @@ export const goalSchema = z.object({
 export type CreateGoalInput = z.infer<typeof createGoalSchema>
 export type UpdateGoalInput = z.infer<typeof updateGoalSchema>
 export type ContributeGoalInput = z.infer<typeof contributeGoalSchema>
+export type WithdrawGoalInput = z.infer<typeof withdrawGoalSchema>

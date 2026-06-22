@@ -1,12 +1,12 @@
 import { FastifyInstance, FastifyPluginAsync } from "fastify"
 import { ZodTypeProvider } from "fastify-type-provider-zod"
 import {
-  createGoalSchema, updateGoalSchema, contributeGoalSchema,
+  createGoalSchema, updateGoalSchema, contributeGoalSchema, withdrawGoalSchema,
   goalParamsSchema, goalSchema,
 } from "./goals.schema"
 import {
   getAllGoalsController, createGoalController,
-  updateGoalController, contributeGoalController, deleteGoalController,
+  updateGoalController, contributeGoalController, withdrawGoalController, deleteGoalController,
 } from "./goals.controller"
 import { authenticate } from "../../hooks/authenticate"
 import { z } from "zod"
@@ -48,6 +48,15 @@ export const goalRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
       response: { 200: goalSchema, 400: errorSchema, 404: errorSchema },
     },
   }, contributeGoalController)
+
+  // POST /api/goals/:id/withdraw
+  s.post("/:id/withdraw", {
+    schema: {
+      params: goalParamsSchema,
+      body: withdrawGoalSchema,
+      response: { 200: goalSchema, 400: errorSchema, 404: errorSchema },
+    },
+  }, withdrawGoalController)
 
   // DELETE /api/goals/:id
   s.delete("/:id", {
