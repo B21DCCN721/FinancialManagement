@@ -50,8 +50,36 @@ export default function ReportsPage() {
     { skip: !exportDateFrom && !exportDateTo }
   )
 
+  const downloadOrShareFile = async (blob: Blob, filename: string) => {
+    try {
+      const file = new File([blob], filename, { type: blob.type })
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: filename,
+        })
+        return
+      }
+    } catch (err) {
+      console.log('Share API not supported or failed', err)
+    }
+    // Fallback cho trình duyệt không hỗ trợ Share API
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   const handleExportCSV = () => {
-    const rows = exportData?.data ?? []
+    if (!exportData || exportData.data.length === 0) {
+      toast.error(t("reports.noDataToExport", { defaultValue: "Không có dữ liệu để xuất" }))
+      return
+    }
+    const rows = exportData.data
     const header = "Ngày,Mô tả,Danh mục,Loại,Số tiền"
     const lines = rows.map((tx) =>
       [
@@ -64,12 +92,104 @@ export default function ReportsPage() {
     )
     const csv = [header, ...lines].join("\n")
     const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `transactions_${exportDateFrom || "all"}_to_${exportDateTo || "all"}.csv`
-    link.click()
-    URL.revokeObjectURL(url)
+    const filename = `transactions_${exportDateFrom || "all"}_to_${exportDateTo || "all"}.csv`
+    downloadOrShareFile(blob, filename)
+  }
+
+  const handleExportExcel = async () => {
+    if (!exportData || exportData.data.length === 0) {
+      toast.error(t("reports.noDataToExport", { defaultValue: "Không có dữ liệu để xuất" }))
+      return
+    }
+    const XLSX = await import("xlsx")
+    
+    const rows = exportData.data.map((tx) => ({
+      "Ngày": new Date(tx.date).toLocaleDateString("vi-VN"),
+      "Mô tả": tx.description || "",
+      "Danh mục": tx.category?.name || tx.categoryId,
+      "Loại": tx.type === "income" ? "Thu nhập" : "Chi phí",
+      "Số tiền": tx.amount,
+    }))
+    
+    const worksheet = XLSX.utils.json_to_sheet(rows)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions")
+    
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" })
+    const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+    
+    const filename = `transactions_${exportDateFrom || "all"}_to_${exportDateTo || "all"}.xlsx`
+    downloadOrShareFile(blob, filename)
+  }
+
+  const handleExportPDF = async () => {
+    if (!exportData || exportData.data.length === 0) {
+      toast.error(t("reports.noDataToExport", { defaultValue: "Không có dữ liệu để xuất" }))
+      return
+    }
+    toast.loading(t("reports.generatingPdf", { defaultValue: "Đang tạo PDF..." }), { id: "pdf-loading" })
+    try {
+      const html2pdf = (await import("html2pdf.js")).default
+      
+      const container = document.createElement("div")
+      container.style.padding = "20px"
+      container.style.fontFamily = "sans-serif"
+      
+      const title = document.createElement("h2")
+      title.innerText = `Báo cáo Giao dịch (${exportDateFrom || "Tất cả"} - ${exportDateTo || "Tất cả"})`
+      title.style.textAlign = "center"
+      title.style.marginBottom = "20px"
+      container.appendChild(title)
+      
+      const table = document.createElement("table")
+      table.style.width = "100%"
+      table.style.borderCollapse = "collapse"
+      
+      const thead = document.createElement("thead")
+      thead.innerHTML = `
+        <tr style="background-color: #f3f4f6; text-align: left;">
+          <th style="padding: 8px; border-bottom: 1px solid #e5e7eb;">Ngày</th>
+          <th style="padding: 8px; border-bottom: 1px solid #e5e7eb;">Mô tả</th>
+          <th style="padding: 8px; border-bottom: 1px solid #e5e7eb;">Danh mục</th>
+          <th style="padding: 8px; border-bottom: 1px solid #e5e7eb;">Loại</th>
+          <th style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">Số tiền</th>
+        </tr>
+      `
+      table.appendChild(thead)
+      
+      const tbody = document.createElement("tbody")
+      exportData.data.forEach(tx => {
+        const tr = document.createElement("tr")
+        tr.innerHTML = `
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${new Date(tx.date).toLocaleDateString("vi-VN")}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${tx.description || "—"}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${tx.category?.name || tx.categoryId}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${tx.type === "income" ? "Thu nhập" : "Chi phí"}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right; color: ${tx.type === "income" ? "#10d9a0" : "#ff4d6d"};">${tx.amount.toLocaleString("vi-VN")} ₫</td>
+        `
+        tbody.appendChild(tr)
+      })
+      table.appendChild(tbody)
+      container.appendChild(table)
+      
+      const filename = `transactions_${exportDateFrom || "all"}_to_${exportDateTo || "all"}.pdf`
+      
+      const opt = {
+        margin: 10,
+        filename: filename,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+      }
+      
+      const pdfBlob = await html2pdf().set(opt).from(container).output('blob')
+      toast.dismiss("pdf-loading")
+      downloadOrShareFile(pdfBlob, filename)
+    } catch (error) {
+      console.error(error)
+      toast.dismiss("pdf-loading")
+      toast.error(t("reports.pdfError", { defaultValue: "Lỗi tạo PDF" }))
+    }
   }
 
   const formatPeriodLabel = (p: string) => {
@@ -273,12 +393,12 @@ export default function ReportsPage() {
                 {t("reports.exportCSV")}
                 <ArrowRight className="ml-auto h-4 w-4 opacity-50" />
               </Button>
-              <Button variant="outline" className="justify-start w-full" onClick={() => toast.info(t("reports.pdfDev"))}>
+              <Button variant="outline" className="justify-start w-full" onClick={handleExportPDF}>
                 <FileJson className="mr-2 h-4 w-4 text-muted-foreground" />
                 {t("reports.exportPDF")}
                 <ArrowRight className="ml-auto h-4 w-4 opacity-50" />
               </Button>
-              <Button variant="outline" className="justify-start w-full" onClick={() => toast.info(t("reports.excelDev"))}>
+              <Button variant="outline" className="justify-start w-full" onClick={handleExportExcel}>
                 <FileSpreadsheet className="mr-2 h-4 w-4 text-muted-foreground" />
                 {t("reports.exportExcel")}
                 <ArrowRight className="ml-auto h-4 w-4 opacity-50" />

@@ -197,6 +197,8 @@
     "exportCSV": "Export CSV",
     "exportPDF": "Export PDF",
     "exportExcel": "Export Excel",
+    "generatingPdf": "Generating PDF...",
+    "pdfError": "Error generating PDF. Please try again.",
     "pdfDev": "PDF export is under development.",
     "excelDev": "Excel export is under development.",
     "netBalanceTrend": "Monthly Net Balance Trend",
