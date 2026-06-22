@@ -358,7 +358,13 @@ export default function Dashboard() {
             ) : transactions.length > 0 ? (
               transactions.map((tx) => (
                 <div key={tx.id} className="flex items-center gap-3 p-3 rounded-xl transition-all hover:scale-[1.01] bg-card border border-border">
-                  <div className="h-9 w-9 rounded-xl flex items-center justify-center text-base shrink-0 bg-secondary">
+                  <div 
+                    className="h-9 w-9 rounded-xl flex items-center justify-center text-base shrink-0"
+                    style={{ 
+                      backgroundColor: tx.category?.color ? `${tx.category.color}20` : 'var(--secondary)',
+                      color: tx.category?.color || 'currentColor'
+                    }}
+                  >
                     <DynamicIcon name={tx.category?.icon ?? "FileText"} className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
