@@ -566,28 +566,29 @@ function TransactionsContent() {
         {/* Recurring Transactions Tab */}
         <TabsContent value="recurring" className="mt-0">
           <div className="space-y-4">
+            {/* Header */}
             <div className="p-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="font-semibold text-foreground flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                       <RefreshCw className="h-4 w-4 text-primary" />
                     </div>
                     {t("transactions.recurringTitle")}
                   </h3>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1 pl-9 sm:pl-0">
                     {t("transactions.recurringSubtitle")}
                   </p>
                 </div>
                 {filteredRecurring.length > 0 && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground pl-9 sm:pl-0 shrink-0">
                     {filteredRecurring.length} giao dịch đang hoạt động
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               {isRecurringLoading ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -596,109 +597,129 @@ function TransactionsContent() {
                 <>
                   {filteredRecurring.map((tx) => {
                     const nextRun = formatNextRun(tx.nextRunAt)
+                    const iconStyle = {
+                      background: tx.category?.color ? `${tx.category.color}20` : (tx.type === "income" ? "rgba(16,217,160,0.12)" : "rgba(124,92,252,0.12)"),
+                      color: tx.category?.color ? tx.category.color : (tx.type === "income" ? "#10d9a0" : "#7c5cfc"),
+                    }
+                    const tagStyle = {
+                      background: tx.category?.color ? `${tx.category.color}1A` : "rgba(124,92,252,0.1)",
+                      color: tx.category?.color ? tx.category.color : "#a78bfa",
+                    }
                     return (
                       <div
                         key={tx.id}
-                        className="group flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.005] bg-card border border-border hover:border-primary/20 hover:shadow-[0_4px_20px_rgba(124,92,252,0.08)]"
+                        className="group p-3.5 rounded-xl transition-all hover:scale-[1.005] bg-primary/[0.03] border border-primary/20 hover:border-primary/40 hover:shadow-[0_4px_20px_rgba(124,92,252,0.12)]"
                       >
-                        {/* Icon */}
-                        <div
-                          className="relative h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
-                          style={{
-                            background: tx.category?.color ? `${tx.category.color}20` : (tx.type === "income" ? "rgba(16,217,160,0.12)" : "rgba(124,92,252,0.12)"),
-                            color: tx.category?.color ? tx.category.color : (tx.type === "income" ? "#10d9a0" : "#7c5cfc"),
-                          }}
-                        >
-                          {tx.category?.icon
-                            ? <DynamicIcon name={tx.category.icon} className="h-5 w-5" />
-                            : <CalendarClock className="h-5 w-5" />}
-                          <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center">
-                            <RefreshCw className="h-2 w-2 text-white" />
-                          </span>
+                        {/* Desktop row */}
+                        <div className="hidden sm:flex items-center gap-4">
+                          {/* Icon */}
+                          <div className="relative h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={iconStyle}>
+                            {tx.category?.icon ? <DynamicIcon name={tx.category.icon} className="h-5 w-5" /> : <CalendarClock className="h-5 w-5" />}
+                            <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center">
+                              <RefreshCw className="h-2 w-2 text-white" />
+                            </span>
+                          </div>
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-foreground truncate">{tx.description ?? "—"}</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              {tx.category?.name && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={tagStyle}>{tx.category.name}</span>
+                              )}
+                              {tx.frequency && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-primary/10 text-primary flex items-center gap-1">
+                                  <RefreshCw className="h-2.5 w-2.5" />{FREQUENCY_LABELS[tx.frequency] ?? tx.frequency}
+                                </span>
+                              )}
+                              {nextRun && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-500 flex items-center gap-1">
+                                  <Clock className="h-2.5 w-2.5" />Tiếp: {nextRun}
+                                </span>
+                              )}
+                              <span className="text-[11px] text-muted-foreground">Bắt đầu: {formatDate(tx.date)}</span>
+                            </div>
+                          </div>
+                          {/* Amount */}
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-bold tabular-nums" style={{ color: tx.type === "income" ? "#10d9a0" : "#ff4d6d" }}>
+                              {tx.type === "income" ? "+" : "-"}{tx.amount.toLocaleString("vi-VN")} ₫
+                            </p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              {"Định kỳ · "}{tx.type === "income" ? "Thu nhập" : "Chi phí"}
+                            </p>
+                          </div>
+                          {/* Actions */}
+                          <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => handleEditClick(tx)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10" onClick={() => setStopRecurringId(tx.id)} disabled={isStopping} title="Dừng định kỳ">
+                              <StopCircle className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-danger hover:bg-danger/10" onClick={() => setDeleteId(tx.id)} disabled={isDeleting} title="Xóa giao dịch">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
 
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-foreground truncate">
-                            {tx.description ?? "—"}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            {tx.category?.name && (
-                              <span
-                                className="text-[11px] px-2 py-0.5 rounded-full font-medium"
-                                style={{
-                                  background: tx.category?.color ? `${tx.category.color}1A` : "rgba(124,92,252,0.1)",
-                                  color: tx.category?.color ? tx.category.color : "#a78bfa"
-                                }}
-                              >
-                                {tx.category.name}
+                        {/* Mobile stacked layout */}
+                        <div className="flex flex-col gap-1.5 sm:hidden">
+                          {/* Row 1: Icon + Name */}
+                          <div className="flex items-center gap-2">
+                            <div className="relative h-9 w-9 rounded-xl flex items-center justify-center shrink-0" style={iconStyle}>
+                              {tx.category?.icon ? <DynamicIcon name={tx.category.icon} className="h-4 w-4" /> : <CalendarClock className="h-4 w-4" />}
+                              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary flex items-center justify-center">
+                                <RefreshCw className="h-1.5 w-1.5 text-white" />
                               </span>
+                            </div>
+                            <p className="text-sm font-semibold text-foreground truncate flex-1">{tx.description ?? "—"}</p>
+                          </div>
+
+                          {/* Row 2: Tags */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {tx.category?.name && (
+                              <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={tagStyle}>{tx.category.name}</span>
                             )}
                             {tx.frequency && (
                               <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-primary/10 text-primary flex items-center gap-1">
-                                <RefreshCw className="h-2.5 w-2.5" />
-                                {FREQUENCY_LABELS[tx.frequency] ?? tx.frequency}
+                                <RefreshCw className="h-2.5 w-2.5" />{FREQUENCY_LABELS[tx.frequency] ?? tx.frequency}
                               </span>
                             )}
                             {nextRun && (
                               <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-500/10 text-amber-500 flex items-center gap-1">
-                                <Clock className="h-2.5 w-2.5" />
-                                Tiếp: {nextRun}
+                                <Clock className="h-2.5 w-2.5" />Tiếp: {nextRun}
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-muted-foreground mt-0.5">
-                            Ngày bắt đầu: {formatDate(tx.date)}
-                          </p>
-                        </div>
 
-                        {/* Amount */}
-                        <div className="text-right shrink-0">
-                          <p
-                            className="text-sm font-bold tabular-nums"
-                            style={{ color: tx.type === "income" ? "#10d9a0" : "#ff4d6d" }}
-                          >
-                            {tx.type === "income" ? "+" : "-"}{tx.amount.toLocaleString("vi-VN")} ₫
-                          </p>
-                          <p className="text-[11px] text-muted-foreground mt-0.5">
-                            {tx.type === "income" ? "Thu nhập" : "Chi phí"}
-                          </p>
-                        </div>
+                          {/* Row 3: Amount + type + Actions */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-bold tabular-nums" style={{ color: tx.type === "income" ? "#10d9a0" : "#ff4d6d" }}>
+                                {tx.type === "income" ? "+" : "-"}{tx.amount.toLocaleString("vi-VN")} ₫
+                              </p>
+                              <span className="text-[11px] text-muted-foreground">
+                                {"Định kỳ · "}{tx.type === "income" ? "Thu nhập" : "Chi phí"}
+                              </span>
+                            </div>
+                            {/* Actions */}
+                            <div className="flex items-center gap-0.5">
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => handleEditClick(tx)}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10" onClick={() => setStopRecurringId(tx.id)} disabled={isStopping} title="Dừng định kỳ">
+                                <StopCircle className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-danger hover:bg-danger/10" onClick={() => setDeleteId(tx.id)} disabled={isDeleting} title="Xóa giao dịch">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
 
-                        {/* Actions */}
-                        <div className="flex items-center gap-1 shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                            onClick={() => handleEditClick(tx)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-
-                          {/* Stop Recurring */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10"
-                            onClick={() => setStopRecurringId(tx.id)}
-                            disabled={isStopping}
-                            title="Dừng định kỳ"
-                          >
-                            <StopCircle className="h-4 w-4" />
-                          </Button>
-
-                          {/* Delete */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-danger hover:bg-danger/10"
-                            onClick={() => setDeleteId(tx.id)}
-                            disabled={isDeleting}
-                            title="Xóa giao dịch"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {/* Row 4: Start date — bottom-right */}
+                          <div className="flex justify-end">
+                            <span className="text-[11px] text-muted-foreground">Bắt đầu: {formatDate(tx.date)}</span>
+                          </div>
                         </div>
                       </div>
                     )

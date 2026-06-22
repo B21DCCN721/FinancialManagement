@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify"
 import { errors } from "../../utils/errors"
-import { getCache, setCache, deleteCache, TTL, buildCacheKey } from "../../utils/cache"
+import { getCache, setCache, deleteCache, invalidateCachePattern, TTL, buildCacheKey } from "../../utils/cache"
 import { CreateGoalInput, UpdateGoalInput, ContributeGoalInput } from "./goals.schema"
 
 function cacheKey(userId: string) {
@@ -119,7 +119,11 @@ export async function contributeToGoalService(
       data: { currentAmount: newAmount },
     })
 
-    await deleteCache(server.redis, cacheKey(userId))
+    // Invalidate goals cache AND all report caches so balance updates immediately
+    await Promise.all([
+      deleteCache(server.redis, cacheKey(userId)),
+      invalidateCachePattern(server.redis, buildCacheKey("user", userId, "reports", "*")),
+    ])
     return enrichGoal(updated)
   })
 }

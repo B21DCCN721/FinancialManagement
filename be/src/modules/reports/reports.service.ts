@@ -20,19 +20,27 @@ export async function getSummaryService(server: FastifyInstance, userId: string,
 
   const { start, end } = periodToRange(period)
 
-  const transactions = await server.prisma.transaction.findMany({
-    where: { userId, date: { gte: start, lt: end } },
-    select: { amount: true, type: true },
-  })
+  const [transactions, goalsAgg] = await Promise.all([
+    server.prisma.transaction.findMany({
+      where: { userId, date: { gte: start, lt: end } },
+      select: { amount: true, type: true },
+    }),
+    server.prisma.goal.aggregate({
+      where: { userId },
+      _sum: { currentAmount: true },
+    }),
+  ])
 
   const totalIncome = transactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0)
   const totalExpense = transactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0)
+  const totalGoalSavings = goalsAgg._sum.currentAmount ?? 0
 
   const result = {
     period,
     totalIncome,
     totalExpense,
-    netBalance: totalIncome - totalExpense,
+    totalGoalSavings,
+    netBalance: totalIncome - totalExpense - totalGoalSavings,
     transactionCount: transactions.length,
   }
 
@@ -180,10 +188,10 @@ export async function getCashFlowService(server: FastifyInstance, userId: string
 // ─── All-Time Balance ──────────────────────────────────────────────────────────
 export async function getBalanceService(server: FastifyInstance, userId: string) {
   const key = buildCacheKey("user", userId, "reports", "balance")
-  const cached = await getCache<{ totalIncome: number; totalExpense: number; netBalance: number }>(server.redis, key)
+  const cached = await getCache<{ totalIncome: number; totalExpense: number; totalGoalSavings: number; netBalance: number }>(server.redis, key)
   if (cached) return cached
 
-  const [incomeAgg, expenseAgg] = await Promise.all([
+  const [incomeAgg, expenseAgg, goalsAgg] = await Promise.all([
     server.prisma.transaction.aggregate({
       where: { userId, type: "income" },
       _sum: { amount: true },
@@ -192,14 +200,20 @@ export async function getBalanceService(server: FastifyInstance, userId: string)
       where: { userId, type: "expense" },
       _sum: { amount: true },
     }),
+    server.prisma.goal.aggregate({
+      where: { userId },
+      _sum: { currentAmount: true },
+    }),
   ])
 
   const totalIncome = incomeAgg._sum.amount ?? 0
   const totalExpense = expenseAgg._sum.amount ?? 0
+  const totalGoalSavings = goalsAgg._sum.currentAmount ?? 0
   const result = {
     totalIncome,
     totalExpense,
-    netBalance: totalIncome - totalExpense,
+    totalGoalSavings,
+    netBalance: totalIncome - totalExpense - totalGoalSavings,
   }
 
   await setCache(server.redis, key, result, TTL.SHORT) // 1 min

@@ -3,7 +3,7 @@
 
 import { useState, useRef } from "react"
 import { DynamicIcon } from "@/components/ui/dynamic-icon"
-import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, TrendingDown, Sparkles, Loader2, MoreHorizontal, Download, Inbox } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, TrendingDown, PiggyBank, Sparkles, Loader2, MoreHorizontal, Download, Inbox } from "lucide-react"
 import {
   Bar,
   BarChart,
@@ -99,7 +99,8 @@ export default function Dashboard() {
 
   const totalIncome = summary?.totalIncome ?? transactions.filter(tx => tx.type === "income").reduce((acc, tx) => acc + tx.amount, 0)
   const totalExpense = summary?.totalExpense ?? transactions.filter(tx => tx.type === "expense").reduce((acc, tx) => acc + tx.amount, 0)
-  const totalBalance = summary?.netBalance ?? (totalIncome - totalExpense)
+  const totalGoalSavings = (summary as any)?.totalGoalSavings ?? 0
+  const totalBalance = summary?.netBalance ?? (totalIncome - totalExpense - totalGoalSavings)
 
   // Map trend data to chart format
   const monthlyData = trend.map(d => ({
@@ -146,6 +147,16 @@ export default function Dashboard() {
       iconBg: "rgba(255,77,109,0.15)",
       iconColor: "#ff4d6d",
     },
+    {
+      label: t("dashboard.totalGoalSavings") || "Tiền đang tiết kiệm",
+      value: `${totalGoalSavings.toLocaleString("vi-VN")} ₫`,
+      changeLabel: t("dashboard.allocatedToGoals") || "Đã nạp vào mục tiêu",
+      positive: true,
+      icon: PiggyBank,
+      className: "stat-card-primary",
+      iconBg: "rgba(245,158,11,0.15)",
+      iconColor: "#f59e0b",
+    },
   ]
 
   const formatDate = (dateStr: string) => {
@@ -177,7 +188,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <div key={stat.label} className={`rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] ${stat.className}`}>
             <div className="flex items-center justify-between mb-3">
