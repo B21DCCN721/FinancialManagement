@@ -21,6 +21,7 @@ import {
 import Link from "next/link"
 import { useGetTransactionsQuery } from "@/services/transactionsApi"
 import { useGetMonthlyTrendQuery, useGetCategoryBreakdownQuery, useGetReportSummaryQuery, useLazyGetAiInsightsQuery } from "@/services/reportsApi"
+import { useGetGoalsQuery } from "@/services/goalsApi"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { Modal } from "@/components/ui/modal"
 import ReactMarkdown from "react-markdown"
@@ -94,13 +95,16 @@ export default function Dashboard() {
   const { data: summary } = useGetReportSummaryQuery({ period })
   const { data: trend = [], isLoading: isTrendLoading } = useGetMonthlyTrendQuery({ months: 6 })
   const { data: breakdown = [], isLoading: isBreakdownLoading } = useGetCategoryBreakdownQuery({ period })
+  const { data: goals = [] } = useGetGoalsQuery()
 
   const transactions = data?.data ?? []
 
   const totalIncome = summary?.totalIncome ?? transactions.filter(tx => tx.type === "income").reduce((acc, tx) => acc + tx.amount, 0)
   const totalExpense = summary?.totalExpense ?? transactions.filter(tx => tx.type === "expense").reduce((acc, tx) => acc + tx.amount, 0)
-  const totalGoalSavings = (summary as any)?.totalGoalSavings ?? 0
-  const totalBalance = summary?.netBalance ?? (totalIncome - totalExpense - totalGoalSavings)
+  // Tính tổng tiền đã nạp vào mục tiêu từ danh sách goals thực tế
+  const totalGoalSavings = goals.reduce((acc, g) => acc + (g.currentAmount ?? 0), 0)
+  // Số dư khả dụng = netBalance từ BE - tiền đang tiết kiệm (BE không tạo expense khi nạp goal)
+  const totalBalance = (summary?.netBalance ?? (totalIncome - totalExpense)) - totalGoalSavings
 
   // Map trend data to chart format
   const monthlyData = trend.map(d => ({
@@ -118,7 +122,7 @@ export default function Dashboard() {
 
   const stats = [
     {
-      label: t("dashboard.totalBalance"),
+      label: t("dashboard.availableBalance"),
       value: `${totalBalance.toLocaleString("vi-VN")} ₫`,
       changeLabel: t("dashboard.basedOnRecent"),
       positive: totalBalance >= 0,
