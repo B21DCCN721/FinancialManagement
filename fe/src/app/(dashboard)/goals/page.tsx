@@ -32,6 +32,7 @@ export default function GoalsPage() {
   const [depositValue, setDepositValue] = useState("")
   const [withdrawValue, setWithdrawValue] = useState("")
   const [deadlineDate, setDeadlineDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [goalErrors, setGoalErrors] = useState<{ title?: string; target?: string }>({})
 
   const { data: goals = [], isLoading } = useGetGoalsQuery()
   const { data: balance } = useGetBalanceQuery()
@@ -53,7 +54,14 @@ export default function GoalsPage() {
     e.preventDefault()
     const form = e.currentTarget
     const formData = new FormData(form)
+    const titleVal = formData.get("title") as string
     const targetAmount = parseFloat(formData.get("target") as string)
+
+    const errors: { title?: string; target?: string } = {}
+    if (!titleVal?.trim()) errors.title = "Vui lòng nhập tên mục tiêu"
+    if (isNaN(targetAmount) || targetAmount <= 0) errors.target = "Vui lòng nhập số tiền mục tiêu hợp lệ"
+    if (Object.keys(errors).length > 0) { setGoalErrors(errors); return }
+    setGoalErrors({})
     if (isNaN(targetAmount)) return
 
     const deadlineStr = formData.get("deadline") as string
@@ -77,6 +85,7 @@ export default function GoalsPage() {
       }).unwrap()
       setIsAddModalOpen(false)
       form.reset()
+      setGoalErrors({})
       logger.info("Goal created")
       toast.success(t("goals.addSuccess"))
     } catch (err: any) {
@@ -296,11 +305,17 @@ export default function GoalsPage() {
         <form className="space-y-4 pt-4" onSubmit={handleAddGoal}>
           <div className="space-y-2">
             <Label htmlFor="title">{t("goals.goalName")}</Label>
-            <Input id="title" name="title" autoComplete="off" placeholder="VD: Du lịch hè" required />
+            <Input id="title" name="title" autoComplete="off" placeholder="VD: Du lịch hè"
+              error={goalErrors.title}
+              onChange={() => { if (goalErrors.title) setGoalErrors(p => ({ ...p, title: undefined })) }}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="target">{t("goals.targetAmount")}</Label>
-            <Input id="target" name="target" type="number" inputMode="decimal" autoComplete="off" placeholder="5000000" required className="focus-visible:ring-0 focus-visible:ring-offset-0" />
+            <Input id="target" name="target" type="number" inputMode="decimal" autoComplete="off" placeholder="5000000"
+              error={goalErrors.target}
+              onChange={() => { if (goalErrors.target) setGoalErrors(p => ({ ...p, target: undefined })) }}
+              className="focus-visible:ring-0 focus-visible:ring-offset-0" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="deadline">{t("goals.deadlineLabel")}</Label>

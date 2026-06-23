@@ -21,6 +21,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [errorMsg, setErrorMsg] = useState("")
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; password?: string }>({})
 
   const router = useRouter()
   const dispatch = useDispatch()
@@ -57,10 +58,12 @@ export default function RegisterPage() {
     e.preventDefault()
     setErrorMsg("")
 
-    if (password.length < 8) {
-      setErrorMsg(t("register.passwordLength"))
-      return
-    }
+    const errs: { name?: string; email?: string; password?: string } = {}
+    if (!name.trim()) errs.name = "Vui lòng nhập họ tên"
+    if (!email.trim()) errs.email = "Vui lòng nhập email"
+    if (password.length < 8) errs.password = t("register.passwordLength")
+    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return }
+    setFieldErrors({})
 
     try {
       const result = await register({ email, password, name }).unwrap()
@@ -172,11 +175,11 @@ export default function RegisterPage() {
               <input
                 id="name"
                 placeholder="Nguyễn Văn A"
-                required
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="input-modern flex h-11 w-full px-4 text-sm"
+                onChange={(e) => { setName(e.target.value); if (fieldErrors.name) setFieldErrors(p => ({ ...p, name: undefined })) }}
+                className={`input-modern flex h-11 w-full px-4 text-sm ${fieldErrors.name ? "border-red-500" : ""}`}
               />
+              {fieldErrors.name && <p className="mt-1 text-xs text-red-400 animate-in fade-in">{fieldErrors.name}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -185,11 +188,11 @@ export default function RegisterPage() {
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input-modern flex h-11 w-full px-4 text-sm"
+                onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors(p => ({ ...p, email: undefined })) }}
+                className={`input-modern flex h-11 w-full px-4 text-sm ${fieldErrors.email ? "border-red-500" : ""}`}
               />
+              {fieldErrors.email && <p className="mt-1 text-xs text-red-400 animate-in fade-in">{fieldErrors.email}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -199,11 +202,11 @@ export default function RegisterPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder={t("register.passwordPlaceholder")}
-                  required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input-modern flex h-11 w-full px-4 pr-11 text-sm"
+                  onChange={(e) => { setPassword(e.target.value); if (fieldErrors.password) setFieldErrors(p => ({ ...p, password: undefined })) }}
+                  className={`input-modern flex h-11 w-full px-4 pr-11 text-sm ${fieldErrors.password ? "border-red-500" : ""}`}
                 />
+                {fieldErrors.password && <p className="mt-1 text-xs text-red-400 animate-in fade-in">{fieldErrors.password}</p>}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}

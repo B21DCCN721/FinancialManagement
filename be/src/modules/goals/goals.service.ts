@@ -7,18 +7,7 @@ function cacheKey(userId: string) {
   return buildCacheKey("user", userId, "goals")
 }
 
-// ─── Helper ─────────────────────────────────────────────────────────
-function enrichGoal(goal: { targetAmount: number; currentAmount: number; [key: string]: any }) {
-  const progressPercentage =
-    goal.targetAmount > 0
-      ? Math.round((goal.currentAmount / goal.targetAmount) * 10000) / 100
-      : 0
-  return {
-    ...goal,
-    progressPercentage,
-    isCompleted: goal.currentAmount >= goal.targetAmount,
-  }
-}
+import { enrichGoal } from "../../utils/goalHelpers"
 
 export async function getAllGoalsService(server: FastifyInstance, userId: string) {
   const key = cacheKey(userId)

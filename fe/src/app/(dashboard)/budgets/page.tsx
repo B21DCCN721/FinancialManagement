@@ -54,6 +54,7 @@ export default function BudgetsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [budgetErrors, setBudgetErrors] = useState<{ categoryId?: string; limit?: string }>({})
 
   const { data: budgets = [], isLoading } = useGetBudgetSummaryQuery({ period })
   const { data: categories = [] } = useGetCategoriesQuery({ type: "expense" })
@@ -77,7 +78,13 @@ export default function BudgetsPage() {
     const amountStr = formData.get("limit") as string
     const amount = amountStr ? parseInt(amountStr.replace(/\D/g, ''), 10) : NaN
     const categoryId = formData.get("categoryId") as string
-    
+
+    const errors: { categoryId?: string; limit?: string } = {}
+    if (isNaN(amount) || amount <= 0) errors.limit = "Vui lòng nhập số tiền hợp lệ"
+    if (!editingId && !categoryId) errors.categoryId = "Vui lòng chọn danh mục"
+    if (Object.keys(errors).length > 0) { setBudgetErrors(errors); return }
+    setBudgetErrors({})
+
     if (isNaN(amount) || amount <= 0) {
       toast.error("Vui lòng nhập số tiền hợp lệ")
       return
@@ -98,6 +105,7 @@ export default function BudgetsPage() {
       }
       setIsAddModalOpen(false)
       setEditingId(null)
+      setBudgetErrors({})
       form.reset()
     } catch (err: any) {
       logger.error("Failed to save budget", err)
@@ -321,7 +329,8 @@ export default function BudgetsPage() {
               <Select
                 id="categoryId"
                 name="categoryId"
-                required
+                error={budgetErrors.categoryId}
+                onChange={() => { if (budgetErrors.categoryId) setBudgetErrors(p => ({ ...p, categoryId: undefined })) }}
                 options={[
                   { value: "", label: "-- Chọn danh mục --" },
                   ...categories.map(c => ({
@@ -347,7 +356,8 @@ export default function BudgetsPage() {
               autoComplete="off"
               defaultValue={editingBudget?.amount}
               placeholder="VD: 500000"
-              required
+              error={budgetErrors.limit}
+              onChange={() => { if (budgetErrors.limit) setBudgetErrors(p => ({ ...p, limit: undefined })) }}
             />
           </div>
           <div className="flex justify-end gap-2 pt-4">

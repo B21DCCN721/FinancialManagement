@@ -2,7 +2,7 @@
 
 import { useState, Suspense, useRef } from "react"
 import { useSearchParams } from "next/navigation"
-import { Plus, Search, Filter, FilterX, RefreshCw, Trash2, Pencil, Loader2, Inbox, StopCircle, ArrowUpRight, ArrowDownRight, Clock, CalendarClock } from "lucide-react"
+import { Plus, Search, Filter, FilterX, RefreshCw, Trash2, Pencil, Loader2, Inbox, StopCircle, ArrowUpRight, ArrowDownRight, Clock, CalendarClock, ScanLine } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -19,6 +19,7 @@ import {
   useUpdateTransactionMutation,
   useDeleteTransactionMutation,
   useStopRecurringMutation,
+  useScanReceiptMutation,
 } from "@/services/transactionsApi"
 import { useGetBudgetSummaryQuery } from "@/services/budgetsApi"
 import { useGetCategoriesQuery } from "@/services/categoriesApi"
@@ -66,6 +67,14 @@ function TransactionsContent() {
   const [txDate, setTxDate] = useState<string>(() => new Date().toISOString().split("T")[0])
   const [activeTab, setActiveTab] = useState("all")
 
+  // Receipt scan state
+  const [txAmount, setTxAmount] = useState<string>("")
+  const [txDescription, setTxDescription] = useState<string>("")
+  const receiptInputRef = useRef<HTMLInputElement>(null)
+
+  // Form validation errors
+  const [formErrors, setFormErrors] = useState<{ amount?: string; categoryId?: string; description?: string }>({})
+
   const { data: categories = [] } = useGetCategoriesQuery({ type: txType })
   const { data: budgetsMonth = [] } = useGetBudgetSummaryQuery({ period: txDate.substring(0, 7) }, { skip: txType !== "expense" || !isModalOpen })
   const { data: budgetsYear = [] } = useGetBudgetSummaryQuery({ period: txDate.substring(0, 4) }, { skip: txType !== "expense" || !isModalOpen })
@@ -92,6 +101,7 @@ function TransactionsContent() {
   const [updateTransaction, { isLoading: isUpdating }] = useUpdateTransactionMutation()
   const [deleteTransaction, { isLoading: isDeleting }] = useDeleteTransactionMutation()
   const [stopRecurring, { isLoading: isStopping }] = useStopRecurringMutation()
+  const [scanReceipt, { isLoading: isScanning }] = useScanReceiptMutation()
 
   const isSaving = isCreating || isUpdating
 
@@ -124,8 +134,60 @@ function TransactionsContent() {
     setTxType("expense")
     setTxCategoryId("")
     setTxDate(new Date().toISOString().split("T")[0])
+    setTxAmount("")
+    setTxDescription("")
     setIsRecurring(false)
     setIsModalOpen(true)
+  }
+
+  const handleScanReceiptClick = () => {
+    receiptInputRef.current?.click()
+  }
+
+  const handleReceiptFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!e.target.files) return
+    // Reset input so same file can be re-selected
+    e.target.value = ""
+    if (!file) return
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Chỉ chấp nhận file ảnh (jpg, png, webp...)")
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File ảnh quá lớn, tối đa 5MB")
+      return
+    }
+
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      toast.loading("Đang quét hóa đơn...", { id: "scan-receipt" })
+      const result = await scanReceipt(formData).unwrap()
+      toast.dismiss("scan-receipt")
+
+      if (!result.amount && !result.description) {
+        toast.warning("Không thể đọc thông tin từ hóa đơn. Vui lòng nhập thủ công.")
+      } else {
+        toast.success("Đã quét xong hóa đơn! Vui lòng kiểm tra và chọn danh mục.")
+      }
+
+      // Open modal and pre-fill fields
+      setEditingTx(null)
+      setTxType("expense")
+      setTxCategoryId("")
+      setTxAmount(result.amount !== null ? String(result.amount) : "")
+      setTxDescription(result.description || "")
+      setTxDate(result.date || new Date().toISOString().split("T")[0])
+      setIsRecurring(false)
+      setIsModalOpen(true)
+    } catch (err: unknown) {
+      toast.dismiss("scan-receipt")
+      const error = err as { data?: { message?: string } }
+      toast.error(error?.data?.message || "Lỗi khi quét hóa đơn")
+    }
   }
 
   const handleEditClick = (tx: Transaction) => {
@@ -133,6 +195,8 @@ function TransactionsContent() {
     setTxType(tx.type)
     setTxCategoryId(tx.categoryId)
     setTxDate(new Date(tx.date).toISOString().split("T")[0])
+    setTxAmount(String(tx.amount))
+    setTxDescription(tx.description || "")
     setIsRecurring(tx.isRecurring)
     setIsModalOpen(true)
   }
@@ -144,17 +208,24 @@ function TransactionsContent() {
 
     const form = e.currentTarget
     const formData = new FormData(form)
-    const description = formData.get("description") as string
-    const amount = parseFloat(formData.get("amount") as string)
+    const description = txDescription
+    const amount = parseFloat(txAmount)
     const type = formData.get("type") as "income" | "expense"
     const categoryId = formData.get("categoryId") as string
     const dateVal = formData.get("date") as string
     const frequency = formData.get("frequency") as "daily" | "weekly" | "monthly" | "yearly" | undefined
 
-    if (!description || isNaN(amount) || !categoryId) {
+    // Validate — kiểu AntD: hiển thị lỗi inline bên dưới field
+    const errors: { amount?: string; categoryId?: string; description?: string } = {}
+    if (!txAmount || isNaN(amount) || amount <= 0) errors.amount = "Vui lòng nhập số tiền hợp lệ"
+    if (!categoryId) errors.categoryId = "Vui lòng chọn danh mục"
+    if (!description.trim()) errors.description = "Vui lòng nhập mô tả"
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors)
       isSubmittingRef.current = false
       return
     }
+    setFormErrors({})
 
     try {
       const payload = {
@@ -197,6 +268,9 @@ function TransactionsContent() {
       form.reset()
       setEditingTx(null)
       setIsRecurring(false)
+      setTxAmount("")
+      setTxDescription("")
+      setFormErrors({})
       setTxDate(new Date().toISOString().split("T")[0])
     } catch (err: any) {
       logger.error("Failed to save transaction", err)
@@ -240,15 +314,33 @@ function TransactionsContent() {
 
   return (
     <div className="space-y-6">
+      {/* Hidden file input for receipt scanning */}
+      <input
+        ref={receiptInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleReceiptFileChange}
+      />
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground">{t("transactions.title")}</h1>
           <p className="text-sm md:text-lg text-muted-foreground">{t("transactions.subtitle")}</p>
         </div>
-        <Button onClick={handleAddClick}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t("transactions.addTransaction")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleScanReceiptClick} disabled={isScanning} className="gap-2">
+            {isScanning
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : <ScanLine className="h-4 w-4" />}
+            Quét hóa đơn
+          </Button>
+          <Button onClick={handleAddClick}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t("transactions.addTransaction")}
+          </Button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setPage(1); }} className="w-full">
@@ -743,11 +835,25 @@ function TransactionsContent() {
       {/* Add/Edit Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => { setIsModalOpen(false); setEditingTx(null); setIsRecurring(false); }}
+        onClose={() => { setIsModalOpen(false); setEditingTx(null); setIsRecurring(false); setTxAmount(""); setTxDescription(""); setFormErrors({}); }}
         title={editingTx ? (t("transactions.editModalTitle") || "Sửa giao dịch") : (t("transactions.addModalTitle") || "Thêm giao dịch")}
         description={editingTx ? (t("transactions.editModalDesc") || "Cập nhật thông tin giao dịch của bạn.") : (t("transactions.addModalDesc") || "Nhập thông tin cho giao dịch mới của bạn.")}
       >
         <form className="space-y-4 pt-4" onSubmit={handleSubmit}>
+          {/* Scan receipt banner (chỉ hiện khi không edit) */}
+          {!editingTx && (
+            <button
+              type="button"
+              onClick={handleScanReceiptClick}
+              disabled={isScanning}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 text-primary text-sm font-medium hover:border-primary/60 hover:bg-primary/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isScanning
+                ? <><Loader2 className="h-4 w-4 animate-spin" /> Đang quét hóa đơn...</>
+                : <><ScanLine className="h-4 w-4" /> Quét hóa đơn tự động</>}
+            </button>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="type">{t("transactions.type")}</Label>
@@ -763,7 +869,18 @@ function TransactionsContent() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="amount">{t("transactions.amount")}</Label>
-            <Input id="amount" name="amount" type="number" inputMode="decimal" autoComplete="off" step="10" placeholder="0" defaultValue={editingTx?.amount} required />
+            <Input
+              id="amount"
+              name="amount"
+              type="number"
+              inputMode="decimal"
+              autoComplete="off"
+              step="10"
+              placeholder="0"
+              value={txAmount}
+              onChange={(e) => { setTxAmount(e.target.value); if (formErrors.amount) setFormErrors(p => ({ ...p, amount: undefined })) }}
+              error={formErrors.amount}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="categoryId">{t("transactions.categoryId") || "Danh mục"}</Label>
@@ -771,8 +888,8 @@ function TransactionsContent() {
               id="categoryId"
               name="categoryId"
               value={txCategoryId}
-              onChange={(e) => setTxCategoryId(e.target.value)}
-              required
+              onChange={(e) => { setTxCategoryId(e.target.value); if (formErrors.categoryId) setFormErrors(p => ({ ...p, categoryId: undefined })) }}
+              error={formErrors.categoryId}
               options={[
                 { value: "", label: t("transactions.selectCategory") || "-- Chọn danh mục --" },
                 ...categories.map(c => ({
@@ -789,7 +906,15 @@ function TransactionsContent() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">{t("transactions.description")}</Label>
-            <Input id="description" name="description" autoComplete="off" placeholder="VD: Lương tháng 5, Ăn trưa..." defaultValue={editingTx?.description || ""} required />
+            <Input
+              id="description"
+              name="description"
+              autoComplete="off"
+              placeholder="VD: Lương tháng 5, Ăn trưa..."
+              value={txDescription}
+              onChange={(e) => { setTxDescription(e.target.value); if (formErrors.description) setFormErrors(p => ({ ...p, description: undefined })) }}
+              error={formErrors.description}
+            />
           </div>
 
           <div className="flex items-center space-x-2 pt-2">
@@ -820,7 +945,7 @@ function TransactionsContent() {
           )}
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => { setIsModalOpen(false); setEditingTx(null); }}>{t("transactions.cancel")}</Button>
+            <Button type="button" variant="outline" onClick={() => { setIsModalOpen(false); setEditingTx(null); setTxAmount(""); setTxDescription(""); }}>{t("transactions.cancel")}</Button>
             <Button type="submit" disabled={isSaving}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isSaving ? t("transactions.saving") : t("transactions.save")}

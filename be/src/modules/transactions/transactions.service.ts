@@ -5,20 +5,7 @@ import { CreateTransactionInput, UpdateTransactionInput, TransactionQuery } from
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/**
- * Calculate the next run date based on the current date and frequency.
- */
-export function calcNextRunAt(from: Date, frequency: "daily" | "weekly" | "monthly" | "yearly"): Date {
-  const next = new Date(from)
-  switch (frequency) {
-    case "daily":   next.setDate(next.getDate() + 1); break
-    case "weekly":  next.setDate(next.getDate() + 7); break
-    case "monthly": next.setMonth(next.getMonth() + 1); break
-    case "yearly":  next.setFullYear(next.getFullYear() + 1); break
-  }
-  return next
-}
-
+import { calcNextRunAt } from "../../utils/date"
 // ─── Auto-Categorize ─────────────────────────────────────────────────────────
 
 export async function autoCategorizeService(

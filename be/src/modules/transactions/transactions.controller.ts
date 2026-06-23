@@ -4,6 +4,7 @@ import {
   createTransactionService, updateTransactionService, deleteTransactionService,
   autoCategorizeService, stopRecurringService, processRecurringTransactionsService,
 } from "./transactions.service"
+import { scanReceiptService } from "./receipt.service"
 import { CreateTransactionInput, UpdateTransactionInput, TransactionQuery } from "./transactions.schema"
 import { handleError } from "../../utils/errors"
 
@@ -88,5 +89,43 @@ export async function processRecurringController(
   try {
     await processRecurringTransactionsService(request.server)
     return reply.send({ message: "Recurring transactions processed successfully" })
+  } catch (err) { return handleError(err, reply) }
+}
+
+/**
+ * POST /api/transactions/scan-receipt
+ * Upload a receipt image, analyze with Google Vision OCR, return parsed fields.
+ */
+export async function scanReceiptController(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await (request as any).file()
+
+    if (!data) {
+      return reply.code(400).send({ statusCode: 400, message: "Không có file ảnh được gửi lên" })
+    }
+
+    const mimeType: string = data.mimetype || ""
+    if (!mimeType.startsWith("image/")) {
+      return reply.code(400).send({ statusCode: 400, message: "Chỉ chấp nhận file ảnh (image/*)" })
+    }
+
+    // Read buffer from multipart stream
+    const chunks: Buffer[] = []
+    for await (const chunk of data.file) {
+      chunks.push(chunk)
+    }
+    const imageBuffer = Buffer.concat(chunks)
+
+    // Limit: 5MB
+    if (imageBuffer.length > 5 * 1024 * 1024) {
+      return reply.code(400).send({ statusCode: 400, message: "File ảnh quá lớn, tối đa 5MB" })
+    }
+
+    const result = await scanReceiptService(imageBuffer)
+    return reply.send(result)
   } catch (err) { return handleError(err, reply) }
 }

@@ -1,16 +1,7 @@
 import { FastifyInstance } from "fastify"
 import { getCache, setCache, TTL, buildCacheKey } from "../../utils/cache"
 
-function currentPeriod() {
-  return new Date().toISOString().slice(0, 7)
-}
-
-function periodToRange(period: string) {
-  const [year, month] = period.split("-").map(Number)
-  const start = new Date(year, month - 1, 1)
-  const end = new Date(year, month, 1)
-  return { start, end }
-}
+import { currentPeriod, periodToRange } from "../../utils/date"
 
 // ─── Summary ─────────────────────────────────────────────────────────────────
 export async function getSummaryService(server: FastifyInstance, userId: string, period: string) {

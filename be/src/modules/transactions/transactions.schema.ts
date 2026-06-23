@@ -36,7 +36,7 @@ export const autoCategorizeSchema = z.object({
 
 export const transactionQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(10000).default(20),
   type: z.enum(["income", "expense"]).optional(),
   categoryId: z.string().uuid().optional(),
   dateFrom: isoDate.optional(),
@@ -91,6 +91,13 @@ export const autoCategorizeResponseSchema = z.object({
   categoryId: z.string().uuid().nullable(),
   categoryName: z.string().nullable(),
   type: z.string().nullable(),
+})
+
+export const scanReceiptResponseSchema = z.object({
+  amount: z.number().nullable(),
+  description: z.string().nullable(),
+  date: z.string().nullable(),
+  rawText: z.string(),
 })
 
 // ─── Types ──────────────────────────────────────────────────────────

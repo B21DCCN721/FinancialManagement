@@ -20,6 +20,7 @@ function LoginContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [errorMsg, setErrorMsg] = useState("")
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({})
 
   const router = useRouter()
   const dispatch = useDispatch()
@@ -67,6 +68,12 @@ function LoginContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg("")
+
+    const errs: { email?: string; password?: string } = {}
+    if (!email.trim()) errs.email = "Vui lòng nhập email"
+    if (!password) errs.password = "Vui lòng nhập mật khẩu"
+    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return }
+    setFieldErrors({})
 
     try {
       const result = await login({ email, password }).unwrap()
@@ -153,11 +160,11 @@ function LoginContent() {
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input-modern flex h-11 w-full px-4 text-sm"
+                onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors(p => ({ ...p, email: undefined })) }}
+                className={`input-modern flex h-11 w-full px-4 text-sm ${fieldErrors.email ? "border-red-500" : ""}`}
               />
+              {fieldErrors.email && <p className="mt-1 text-xs text-red-400 animate-in fade-in">{fieldErrors.email}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -170,11 +177,11 @@ function LoginContent() {
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input-modern flex h-11 w-full px-4 pr-11 text-sm"
+                  onChange={(e) => { setPassword(e.target.value); if (fieldErrors.password) setFieldErrors(p => ({ ...p, password: undefined })) }}
+                  className={`input-modern flex h-11 w-full px-4 pr-11 text-sm ${fieldErrors.password ? "border-red-500" : ""}`}
                 />
+                {fieldErrors.password && <p className="mt-1 text-xs text-red-400 animate-in fade-in">{fieldErrors.password}</p>}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}

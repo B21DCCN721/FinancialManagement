@@ -100,6 +100,19 @@ export const transactionsApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+
+    scanReceipt: builder.mutation<
+      { amount: number | null; description: string | null; date: string | null; rawText: string },
+      FormData
+    >({
+      query: (formData) => ({
+        url: "/transactions/scan-receipt",
+        method: "POST",
+        body: formData,
+        // Không set Content-Type — để browser tự set với boundary cho multipart
+        formData: true,
+      }),
+    }),
   }),
 })
 
@@ -111,4 +124,5 @@ export const {
   useDeleteTransactionMutation,
   useStopRecurringMutation,
   useAutoCategorizeMutation,
+  useScanReceiptMutation,
 } = transactionsApi

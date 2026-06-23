@@ -4,6 +4,7 @@ import cors from "@fastify/cors"
 import jwt from "@fastify/jwt"
 import helmet from "@fastify/helmet"
 import compress from "@fastify/compress"
+import multipart from "@fastify/multipart"
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from "fastify-type-provider-zod"
 
 import { env } from "./config/env"
@@ -66,6 +67,7 @@ server.setNotFoundHandler((_request, reply) => {
 // ─── Plugins ─────────────────────────────────────────────────────────────────
 server.register(helmet)
 server.register(compress, { global: true })
+server.register(multipart, { limits: { files: 1, fileSize: 5 * 1024 * 1024 } })
 server.register(cors, {
   origin: env.CORS_ORIGIN.split(",").map((o) => o.trim()),
   credentials: true,

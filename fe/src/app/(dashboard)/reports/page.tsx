@@ -44,26 +44,14 @@ export default function ReportsPage() {
   const { data: exportData } = useGetTransactionsQuery(
     {
       limit: 1000,
-      ...(exportDateFrom && { dateFrom: new Date(exportDateFrom).toISOString() }),
+      ...(exportDateFrom && { dateFrom: new Date(exportDateFrom + "T00:00:00").toISOString() }),
       ...(exportDateTo && { dateTo: new Date(exportDateTo + "T23:59:59").toISOString() }),
     },
     { skip: !exportDateFrom && !exportDateTo }
   )
 
-  const downloadOrShareFile = async (blob: Blob, filename: string) => {
-    try {
-      const file = new File([blob], filename, { type: blob.type })
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: filename,
-        })
-        return
-      }
-    } catch (err) {
-      console.log('Share API not supported or failed', err)
-    }
-    // Fallback cho trình duyệt không hỗ trợ Share API
+  // Tải xuống file trực tiếp — không dùng navigator.share
+  const downloadFile = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
@@ -93,7 +81,7 @@ export default function ReportsPage() {
     const csv = [header, ...lines].join("\n")
     const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" })
     const filename = `transactions_${exportDateFrom || "all"}_to_${exportDateTo || "all"}.csv`
-    downloadOrShareFile(blob, filename)
+    downloadFile(blob, filename)
   }
 
   const handleExportExcel = async () => {
@@ -102,7 +90,7 @@ export default function ReportsPage() {
       return
     }
     const XLSX = await import("xlsx")
-    
+
     const rows = exportData.data.map((tx) => ({
       "Ngày": new Date(tx.date).toLocaleDateString("vi-VN"),
       "Mô tả": tx.description || "",
@@ -110,16 +98,16 @@ export default function ReportsPage() {
       "Loại": tx.type === "income" ? "Thu nhập" : "Chi phí",
       "Số tiền": tx.amount,
     }))
-    
+
     const worksheet = XLSX.utils.json_to_sheet(rows)
     const workbook = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions")
-    
+
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" })
     const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
-    
+
     const filename = `transactions_${exportDateFrom || "all"}_to_${exportDateTo || "all"}.xlsx`
-    downloadOrShareFile(blob, filename)
+    downloadFile(blob, filename)
   }
 
   const handleExportPDF = async () => {
@@ -130,21 +118,21 @@ export default function ReportsPage() {
     toast.loading(t("reports.generatingPdf", { defaultValue: "Đang tạo PDF..." }), { id: "pdf-loading" })
     try {
       const html2pdf = (await import("html2pdf.js")).default
-      
+
       const container = document.createElement("div")
       container.style.padding = "20px"
       container.style.fontFamily = "sans-serif"
-      
+
       const title = document.createElement("h2")
       title.innerText = `Báo cáo Giao dịch (${exportDateFrom || "Tất cả"} - ${exportDateTo || "Tất cả"})`
       title.style.textAlign = "center"
       title.style.marginBottom = "20px"
       container.appendChild(title)
-      
+
       const table = document.createElement("table")
       table.style.width = "100%"
       table.style.borderCollapse = "collapse"
-      
+
       const thead = document.createElement("thead")
       thead.innerHTML = `
         <tr style="background-color: #f3f4f6; text-align: left;">
@@ -156,7 +144,7 @@ export default function ReportsPage() {
         </tr>
       `
       table.appendChild(thead)
-      
+
       const tbody = document.createElement("tbody")
       exportData.data.forEach(tx => {
         const tr = document.createElement("tr")
@@ -171,9 +159,9 @@ export default function ReportsPage() {
       })
       table.appendChild(tbody)
       container.appendChild(table)
-      
+
       const filename = `transactions_${exportDateFrom || "all"}_to_${exportDateTo || "all"}.pdf`
-      
+
       const opt = {
         margin: 10,
         filename: filename,
@@ -181,10 +169,10 @@ export default function ReportsPage() {
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
       }
-      
+
       const pdfBlob = await html2pdf().set(opt).from(container).output('blob')
       toast.dismiss("pdf-loading")
-      downloadOrShareFile(pdfBlob, filename)
+      downloadFile(pdfBlob, filename)
     } catch (error) {
       console.error(error)
       toast.dismiss("pdf-loading")

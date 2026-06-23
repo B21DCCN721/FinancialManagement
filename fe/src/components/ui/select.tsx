@@ -7,10 +7,11 @@ import { ChevronDown, Check } from "lucide-react"
 
 export type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
   options?: { value: string; label: React.ReactNode }[];
+  error?: string;
 }
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, children, value, defaultValue, onChange, name, options: customOptions, ...props }, ref) => {
+  ({ className, children, value, defaultValue, onChange, name, options: customOptions, error, ...props }, ref) => {
     const [isOpen, setIsOpen] = React.useState(false)
     const [internalValue, setInternalValue] = React.useState(defaultValue || "")
     const dropdownRef = React.useRef<HTMLDivElement>(null)
@@ -55,16 +56,21 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       }
     }
 
+    // Tách required và id ra để không truyền vào hidden select
+    // required trên hidden element gây lỗi "An invalid form control is not focusable"
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { required: _required, id: _id, ...restProps } = props as any
+
     return (
       <div className="relative w-full" ref={dropdownRef}>
-        {/* Hidden select for form submissions */}
+        {/* Hidden select for form submissions — bỏ required vì element bị ẩn */}
         <select
           ref={ref}
           name={name}
           value={currentValue}
           className="hidden"
           onChange={() => { }}
-          {...props}
+          {...restProps}
         >
           {customOptions ? customOptions.map(opt => (
             <option key={opt.value} value={opt.value}>
@@ -79,6 +85,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           className={cn(
             "flex h-[42px] w-full items-center justify-between rounded-xl border border-input bg-background/50 backdrop-blur-md px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50 transition-all hover:bg-accent/50",
             isOpen && "border-primary ring-2 ring-primary/20",
+            error && !isOpen && "border-destructive",
             className
           )}
         >
@@ -108,6 +115,11 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
               ))}
             </div>
           </div>
+        )}
+        {error && (
+          <p className="mt-1 text-xs text-destructive animate-in fade-in slide-in-from-top-1 duration-200">
+            {error}
+          </p>
         )}
       </div>
     )

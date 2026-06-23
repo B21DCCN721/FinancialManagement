@@ -233,8 +233,8 @@ export default function ProfilePage() {
                     type="password"
                     value={currentPwd}
                     onChange={(e) => setCurrentPwd(e.target.value)}
-                    required
                     className="max-w-md transition-all focus-visible:ring-primary/50"
+                    error={!currentPwd && pwdError ? "Vui lòng nhập mật khẩu hiện tại" : undefined}
                   />
                 </div>
                 <div className="space-y-2.5">
@@ -245,7 +245,6 @@ export default function ProfilePage() {
                     value={newPwd}
                     onChange={(e) => setNewPwd(e.target.value)}
                     placeholder={t("profile.newPasswordPlaceholder")}
-                    required
                     className="max-w-md transition-all focus-visible:ring-primary/50"
                   />
                 </div>
@@ -257,7 +256,6 @@ export default function ProfilePage() {
                     value={confirmNewPwd}
                     onChange={(e) => setConfirmNewPwd(e.target.value)}
                     placeholder={t("profile.confirmNewPasswordPlaceholder") || "Nhập lại mật khẩu mới"}
-                    required
                     className="max-w-md transition-all focus-visible:ring-primary/50"
                   />
                 </div>

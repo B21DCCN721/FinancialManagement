@@ -54,6 +54,7 @@ export default function CategoriesPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [selectedIcon, setSelectedIcon] = useState("FileText")
   const [selectedColor, setSelectedColor] = useState("#7c5cfc")
+  const [categoryErrors, setCategoryErrors] = useState<{ name?: string }>({})
 
   // Luôn fetch tất cả để có count chính xác cho mỗi tab
   const { data: categories = [], isLoading } = useGetCategoriesQuery()
@@ -78,6 +79,7 @@ export default function CategoriesPage() {
     setEditingId(null)
     setSelectedIcon("FileText")
     setSelectedColor("#7c5cfc")
+    setCategoryErrors({})
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -85,6 +87,9 @@ export default function CategoriesPage() {
     const formData = new FormData(e.currentTarget)
     const name = formData.get("name") as string
     const type = formData.get("type") as "income" | "expense"
+
+    if (!name?.trim()) { setCategoryErrors({ name: "Vui lòng nhập tên danh mục" }); return }
+    setCategoryErrors({})
 
     try {
       if (editingId) {
@@ -198,7 +203,11 @@ export default function CategoriesPage() {
         <form className="space-y-5 pt-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <Label htmlFor="name">{t("categories.name")}</Label>
-            <Input id="name" name="name" placeholder="VD: Du lịch, Sức khỏe" required defaultValue={editingCategory?.name} />
+            <Input id="name" name="name" placeholder="VD: Du lịch, Sức khỏe"
+              error={categoryErrors.name}
+              onChange={() => { if (categoryErrors.name) setCategoryErrors({}) }}
+              defaultValue={editingCategory?.name}
+            />
           </div>
 
           {!editingId && (

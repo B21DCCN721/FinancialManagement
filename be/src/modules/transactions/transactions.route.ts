@@ -1,15 +1,18 @@
 import { FastifyInstance, FastifyPluginAsync } from "fastify"
 import { ZodTypeProvider } from "fastify-type-provider-zod"
+import multipart from "@fastify/multipart"
 import {
   createTransactionSchema, updateTransactionSchema,
   transactionParamsSchema, transactionQuerySchema,
   transactionSchema, paginatedTransactionsSchema,
-  autoCategorizeSchema, autoCategorizeResponseSchema
+  autoCategorizeSchema, autoCategorizeResponseSchema,
+  scanReceiptResponseSchema,
 } from "./transactions.schema"
 import {
   getAllTransactionsController, getTransactionByIdController,
   createTransactionController, updateTransactionController, deleteTransactionController,
   autoCategorizeController, stopRecurringController, processRecurringController,
+  scanReceiptController,
 } from "./transactions.controller"
 import { authenticate } from "../../hooks/authenticate"
 import { z } from "zod"
@@ -59,6 +62,12 @@ export const transactionRoutes: FastifyPluginAsync = async (server: FastifyInsta
       response: { 200: msgSchema },
     },
   }, processRecurringController)
+
+  // POST /api/transactions/scan-receipt — OCR hóa đơn bằng Google Vision
+  // Dùng server.post (không dùng s.post) vì multipart không tương thích với Zod body schema
+  server.post("/scan-receipt", {
+    config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+  }, scanReceiptController)
 
   // POST /api/transactions/:id/stop-recurring
   s.post("/:id/stop-recurring", {
