@@ -38,16 +38,23 @@ export const baseQueryWithAuth: BaseQueryFn<
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
+  // Lấy token ban đầu trước khi gọi API để sau này so sánh (cho Mutex Race Condition)
+  const initialState = api.getState() as RootState
+  const initialToken = initialState.auth?.accessToken
+
   let result = await rawBaseQuery(args, api, extraOptions)
 
   // ── Auto-retry khi FETCH_ERROR (server đang spin-up từ Render free tier sleep) ──
   if (result.error && result.error.status === "FETCH_ERROR") {
     const url = typeof args === "string" ? args : args.url
-    logger.warn(`FETCH_ERROR on [${url}], retrying in 3s...`)
-    for (let attempt = 0; attempt < MAX_FETCH_RETRIES; attempt++) {
-      await new Promise((resolve) => setTimeout(resolve, 3000))
-      result = await rawBaseQuery(args, api, extraOptions)
-      if (!result.error || result.error.status !== "FETCH_ERROR") break
+    // Bỏ qua retry cho các endpoint auth để tránh loop/delay không mong muốn
+    if (!url.includes("/auth/")) {
+      logger.warn(`FETCH_ERROR on [${url}], retrying in 3s...`)
+      for (let attempt = 0; attempt < MAX_FETCH_RETRIES; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+        result = await rawBaseQuery(args, api, extraOptions)
+        if (!result.error || result.error.status !== "FETCH_ERROR") break
+      }
     }
   }
 
@@ -64,16 +71,6 @@ export const baseQueryWithAuth: BaseQueryFn<
     }
   }
 
-  // ── Log lỗi HTTP ──────────────────────────────────────────────────────────
-  if (result.error) {
-    const errData = result.error.data as ApiError | undefined
-    logger.error(
-      `API Error [${result.error.status}]: ${errData?.message ?? "Unknown error"}`,
-      result.error,
-      { url: typeof args === "string" ? args : args.url, status: result.error.status }
-    )
-  }
-
   // ── Auto-refresh token khi nhận 401 ───────────────────────────────────────
   if (result.error && result.error.status === 401) {
     const urlStr = typeof args === "string" ? args : args.url
@@ -82,17 +79,26 @@ export const baseQueryWithAuth: BaseQueryFn<
       return result
     }
 
-    // Đợi nếu Mutex đang bị khoá (tức là đang có 1 request refresh khác chạy)
-    if (!mutex.isLocked()) {
-      const release = await mutex.acquire()
-      try {
-        const state = api.getState() as RootState
-        const refreshToken = state.auth?.refreshToken
+    // Mutex.acquire() trực tiếp: Tự động xếp hàng các request bị 401
+    const release = await mutex.acquire()
+    try {
+      const currentState = api.getState() as RootState
+      const currentToken = currentState.auth?.accessToken
+
+      // Giải quyết Race Condition: 
+      // Nếu token hiện tại khác với token lúc gửi request, nghĩa là một request 401 trước đó
+      // đã lấy được Mutex và refresh thành công. Ta chỉ việc retry request mà không gọi refresh nữa.
+      if (initialToken !== currentToken) {
+        logger.info("Token already refreshed by another request, retrying original request...")
+        result = await rawBaseQuery(args, api, extraOptions)
+      } else {
+        const refreshToken = currentState.auth?.refreshToken
 
         if (!refreshToken) {
           logger.warn("No refresh token, clearing auth")
           api.dispatch(clearAuth())
-          if (typeof window !== "undefined") window.location.href = "/login"
+          // Không dùng window.location.href để tránh lỗi SSR/Server Actions,
+          // nên xử lý redirect thông qua AuthProvider Component hoặc Middleware lắng nghe state Redux.
           return result
         }
 
@@ -108,24 +114,28 @@ export const baseQueryWithAuth: BaseQueryFn<
           const refreshData = refreshResult.data as { accessToken: string; refreshToken: string }
           api.dispatch(setCredentials({ accessToken: refreshData.accessToken, refreshToken: refreshData.refreshToken }))
           logger.info("Token refreshed successfully, retrying original request...")
+          
           // Retry lại request gốc
           result = await rawBaseQuery(args, api, extraOptions)
         } else {
           logger.error("Refresh token failed, logging out", refreshResult.error)
           api.dispatch(clearAuth())
-          if (typeof window !== "undefined") window.location.href = "/login"
         }
-      } finally {
-        // Mở khoá Mutex sau khi hoàn thành refresh (hoặc thất bại)
-        release()
       }
-    } else {
-      // Nếu đã có 1 request refresh đang chạy, chỉ cần đợi nó chạy xong
-      logger.info("Waiting for ongoing refresh token process...")
-      await mutex.waitForUnlock()
-      // Retry lại request gốc sau khi Mutex được mở khoá (token đã được cấp mới)
-      result = await rawBaseQuery(args, api, extraOptions)
+    } finally {
+      // Đảm bảo mở khoá Mutex trong mọi trường hợp (thành công hoặc có exception)
+      release()
     }
+  }
+
+  // ── Log lỗi HTTP (Ngoại trừ 401, timeout, fetch_error đã handle) ─────────
+  if (result.error && result.error.status !== 401 && result.error.status !== "FETCH_ERROR" && result.error.status !== "TIMEOUT_ERROR") {
+    const errData = result.error.data as ApiError | undefined
+    logger.error(
+      `API Error [${result.error.status}]: ${errData?.message ?? "Unknown error"}`,
+      result.error,
+      { url: typeof args === "string" ? args : args.url, status: result.error.status }
+    )
   }
 
   return result

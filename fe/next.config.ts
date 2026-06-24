@@ -56,16 +56,19 @@ export default withSentryConfig(withSerwist(nextConfig), {
 
   widenClientFileUpload: true,
 
-  reactComponentAnnotation: {
-    enabled: true,
-  },
-
   tunnelRoute: "/monitoring",
 
   // By default, Sentry now deletes source maps after uploading them.
   // If you need to disable them entirely, use `sourcemaps: { disable: true }`
 
-  disableLogger: true,
-
-  automaticVercelMonitors: true,
+  // Migrate deprecated properties into the webpack object
+  webpack: {
+    reactComponentAnnotation: {
+      enabled: true,
+    },
+    treeshake: {
+      removeDebugLogging: true,
+    },
+    automaticVercelMonitors: true,
+  },
 });

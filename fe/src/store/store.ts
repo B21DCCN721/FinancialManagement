@@ -14,7 +14,7 @@ const authPersistConfig = {
   whitelist: ["accessToken", "refreshToken", "user"],
 }
 
-const rootReducer = combineReducers({
+const appReducer = combineReducers({
   // Persisted slices
   auth: persistReducer(authPersistConfig, authReducer),
 
@@ -24,6 +24,15 @@ const rootReducer = combineReducers({
   // Centralized RTK Query API reducer
   [baseApi.reducerPath]: baseApi.reducer,
 })
+
+const rootReducer = (state: any, action: any) => {
+  if (action.type === "auth/clearAuth") {
+    // Reset toàn bộ Redux state (bao gồm RTK Query cache) về trạng thái ban đầu khi đăng xuất
+    // Điều này giúp tránh việc user mới đăng nhập vào vẫn nhìn thấy dữ liệu cache của user cũ
+    state = undefined
+  }
+  return appReducer(state, action)
+}
 
 export const makeStore = () => {
   const store = configureStore({
