@@ -48,6 +48,7 @@ export const budgetsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _err, { id }) => [
         { type: "Budget", id },
+        { type: "Budget", id: "LIST" },
         { type: "Budget", id: "SUMMARY" },
       ],
     }),

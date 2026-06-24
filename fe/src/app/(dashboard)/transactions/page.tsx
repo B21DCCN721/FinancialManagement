@@ -319,7 +319,6 @@ function TransactionsContent() {
         ref={receiptInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={handleReceiptFileChange}
       />

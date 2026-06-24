@@ -56,7 +56,7 @@ export const goalsApi = baseApi.injectEndpoints({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: (_result, _err, { id }) => [{ type: "Goal", id }],
+      invalidatesTags: (_result, _err, { id }) => [{ type: "Goal", id }, { type: "Goal", id: "LIST" }],
     }),
 
     contributeToGoal: builder.mutation<Goal, { id: string; body: ContributeRequest }>({

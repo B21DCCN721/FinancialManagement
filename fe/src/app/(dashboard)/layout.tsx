@@ -11,7 +11,7 @@ export default function DashboardLayout({
   return (
     <AuthGuard>
       <SidebarProvider>
-        <div className="flex h-screen overflow-hidden bg-mesh relative">
+        <div className="flex h-dvh overflow-hidden bg-mesh relative">
           <Sidebar />
           <div className="flex flex-1 flex-col overflow-hidden w-full">
             <Header />
