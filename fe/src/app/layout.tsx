@@ -89,7 +89,19 @@ export default function RootLayout({
           <ReduxProvider>
             <I18nProvider>
               {children}
-              <Toaster position="top-right" richColors />
+              <Toaster
+                position="top-right"
+                richColors
+                theme="system"
+                closeButton
+                toastOptions={{
+                  duration: 3500,
+                  style: {
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: "14px",
+                  },
+                }}
+              />
               <PWAInstallPrompt />
             </I18nProvider>
           </ReduxProvider>

@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { DatePicker } from "@/components/ui/date-picker"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
+import { SkeletonGoalCard } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 import {
   useGetGoalsQuery,
   useCreateGoalMutation,
@@ -188,8 +190,8 @@ export default function GoalsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center items-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonGoalCard key={i} />)}
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -288,14 +290,16 @@ export default function GoalsPage() {
             )
           })}
           {goals.length === 0 && (
-            <div className="col-span-full py-12 flex flex-col items-center justify-center gap-3 text-center glass-card rounded-2xl px-6">
-              <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
-                <Inbox className="h-6 w-6" />
-              </div>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                {t("goals.empty")}
-              </p>
-            </div>
+            <EmptyState
+              icon={Target}
+              title={t("goals.empty") || "Chưa có mục tiêu nào"}
+              description="Hãy thiết lập mục tiêu tài chính để bắt đầu tiết kiệm cho tương lai."
+              actionLabel={t("goals.createGoal") || "Tạo mục tiêu"}
+              onAction={() => {
+                setDeadlineDate(new Date().toISOString().slice(0, 10))
+                setIsAddModalOpen(true)
+              }}
+            />
           )}
         </div>
       )}

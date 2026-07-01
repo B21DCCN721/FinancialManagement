@@ -13,6 +13,8 @@ import { Select } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DynamicIcon } from "@/components/ui/dynamic-icon"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
+import { SkeletonRow } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 import {
   useGetTransactionsQuery,
   useCreateTransactionMutation,
@@ -434,8 +436,8 @@ function TransactionsContent() {
           {activeTab !== "recurring" && (
             <div className="space-y-3">
               {isLoading ? (
-                <div className="flex justify-center items-center py-16">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <div className="space-y-2 py-2">
+                  {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
                 </div>
               ) : transactions.length > 0 ? (
                 <>
@@ -641,14 +643,12 @@ function TransactionsContent() {
                   )}
                 </>
               ) : (
-                <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-6">
-                  <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
-                    <Inbox className="h-6 w-6" />
-                  </div>
-                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                    {isFetching ? t("transactions.loading") : t("transactions.noTransactions")}
-                  </p>
-                </div>
+                <EmptyState
+                  icon={Inbox}
+                  title={t("transactions.noTransactions") || "Không tìm thấy khoản chi nào."}
+                  description="Bạn chưa có khoản thu chi nào phù hợp với bộ lọc hiện tại."
+                  className="py-12"
+                />
               )}
             </div>
           )}
@@ -681,8 +681,8 @@ function TransactionsContent() {
 
             <div className="space-y-2">
               {isRecurringLoading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <div className="space-y-2 py-2">
+                  {Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)}
                 </div>
               ) : filteredRecurring.length > 0 ? (
                 <>
@@ -817,14 +817,12 @@ function TransactionsContent() {
                   })}
                 </>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 gap-3 text-center px-6">
-                  <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
-                    <RefreshCw className="h-6 w-6" />
-                  </div>
-                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                    {t("transactions.noRecurring")}
-                  </p>
-                </div>
+                <EmptyState
+                  icon={RefreshCw}
+                  title={t("transactions.noRecurring") || "Không có khoản chi định kỳ nào."}
+                  description="Các khoản thu chi lặp lại tự động sẽ xuất hiện ở đây."
+                  className="py-8"
+                />
               )}
             </div>
           </div>
@@ -908,6 +906,7 @@ function TransactionsContent() {
             <Input
               id="description"
               name="description"
+              type="text"
               autoComplete="off"
               placeholder="VD: Lương tháng 5, Ăn trưa..."
               value={txDescription}

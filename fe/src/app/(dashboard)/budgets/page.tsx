@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AlertCircle, Plus, Utensils, Car, ShoppingBag, Gamepad2, ReceiptText, Home, Zap, Loader2, Inbox, Pencil, Trash2, CalendarDays } from "lucide-react"
+import { AlertCircle, Plus, Utensils, Car, ShoppingBag, Gamepad2, ReceiptText, Home, Zap, Pencil, Trash2, CalendarDays, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { Label } from "@/components/ui/label"
@@ -11,6 +11,8 @@ import { ConfirmModal } from "@/components/ui/confirm-modal"
 import { DynamicIcon } from "@/components/ui/dynamic-icon"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { YearPicker } from "@/components/ui/year-picker"
+import { SkeletonCard } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 import {
   useGetBudgetSummaryQuery,
   useCreateBudgetMutation,
@@ -187,8 +189,8 @@ export default function BudgetsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center items-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -242,10 +244,10 @@ export default function BudgetsPage() {
                   <div className="h-2.5 w-full overflow-hidden rounded-full bg-secondary">
                     <div
                       className={`h-full transition-all duration-500 rounded-full ${isOverBudget
-                          ? "bg-danger shadow-[0_0_10px_rgba(255,77,109,0.5)]"
-                          : isNearLimit
-                            ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
-                            : "bg-primary shadow-[0_0_10px_rgba(124,92,252,0.5)]"
+                        ? "bg-danger shadow-[0_0_10px_rgba(255,77,109,0.5)]"
+                        : isNearLimit
+                          ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                          : "bg-primary shadow-[0_0_10px_rgba(124,92,252,0.5)]"
                         }`}
                       style={{ width: `${Math.min(budget.percentUsed, 100)}%` }}
                     />
@@ -267,14 +269,13 @@ export default function BudgetsPage() {
             )
           })}
           {budgets.length === 0 && (
-            <div className="col-span-full py-12 flex flex-col items-center justify-center gap-3 text-center glass-card rounded-2xl px-6">
-              <div className="h-14 w-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground">
-                <Inbox className="h-6 w-6" />
-              </div>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                {t("budgets.empty")}
-              </p>
-            </div>
+            <EmptyState
+              icon={CalendarDays}
+              title={t("budgets.empty") || "Chưa có ngân sách nào"}
+              description="Hãy tạo ngân sách để theo dõi và kiểm soát chi tiêu của bạn."
+              actionLabel={t("budgets.createBudget") || "Tạo ngân sách"}
+              onAction={openCreate}
+            />
           )}
         </div>
       )}

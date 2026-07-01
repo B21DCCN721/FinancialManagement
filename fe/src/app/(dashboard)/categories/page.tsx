@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   useGetCategoriesQuery,
   useCreateCategoryMutation,
@@ -166,8 +167,10 @@ export default function CategoriesPage() {
 
         <TabsContent value={activeTab} className="mt-0">
           {isLoading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SkeletonCategory key={i} />
+              ))}
             </div>
           ) : displayedCategories.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -341,6 +344,28 @@ function CategoryCard({
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SkeletonCategory() {
+  return (
+    <Card className="hover:shadow-md transition-all group hover:scale-[1.01]">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-11 w-11 rounded-xl shrink-0" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <Skeleton className="h-8 w-8 rounded-lg" />
           </div>
         </div>
       </CardContent>

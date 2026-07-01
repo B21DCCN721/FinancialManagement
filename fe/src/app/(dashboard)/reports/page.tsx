@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { DatePicker } from "@/components/ui/date-picker"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   useGetReportSummaryQuery,
   useGetMonthlyTrendQuery,
@@ -227,7 +228,7 @@ export default function ReportsPage() {
               </div>
             </div>
             {isSummaryLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <Skeleton className="h-8 w-24" />
             ) : (
               <p className="text-2xl font-bold text-foreground">
                 {stat.isCount
@@ -248,8 +249,8 @@ export default function ReportsPage() {
             <p className="text-sm md:text-base mt-0.5 text-muted-foreground">{t("reports.last6Months")}</p>
           </div>
           {isTrendLoading ? (
-            <div className="h-[260px] flex items-center justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <div className="h-[260px] w-full pt-4">
+              <Skeleton className="h-full w-full rounded-xl" />
             </div>
           ) : (
             <div className="h-[260px]">
@@ -278,8 +279,8 @@ export default function ReportsPage() {
             <p className="text-sm md:text-base mt-0.5 text-muted-foreground">{t("reports.period")} {period}</p>
           </div>
           {isBreakdownLoading ? (
-            <div className="h-[260px] flex items-center justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <div className="h-[260px] w-full pt-4">
+              <Skeleton className="h-full w-full rounded-xl" />
             </div>
           ) : breakdown.length === 0 ? (
             <div className="h-[260px] flex items-center justify-center text-sm text-muted-foreground">{t("reports.noData")}</div>
@@ -325,8 +326,8 @@ export default function ReportsPage() {
             <p className="text-sm md:text-base mt-0.5 text-muted-foreground">{t("reports.period")} {period}</p>
           </div>
           {isCashFlowLoading ? (
-            <div className="h-[200px] flex items-center justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <div className="h-[200px] w-full pt-4">
+              <Skeleton className="h-full w-full rounded-xl" />
             </div>
           ) : (
             <div className="h-[200px]">
@@ -403,8 +404,8 @@ export default function ReportsPage() {
           <p className="text-sm md:text-base mt-0.5 text-muted-foreground">{t("reports.financialTrend")}</p>
         </div>
         {isTrendLoading ? (
-          <div className="h-[200px] flex items-center justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <div className="h-[200px] w-full pt-4">
+            <Skeleton className="h-full w-full rounded-xl" />
           </div>
         ) : (
           <div className="h-[200px]">

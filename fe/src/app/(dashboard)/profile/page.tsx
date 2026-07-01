@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Loader2, Save, KeyRound, Trash2, User2, CheckCircle2, LogOut, Edit2 } from "lucide-react"
+import { Loader2, Save, KeyRound, Trash2, User2, LogOut, Edit2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Modal } from "@/components/ui/modal"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -115,8 +116,16 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-32">
-        <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
+      <div className="space-y-8 max-w-3xl mx-auto pb-16 mt-8">
+        <div className="space-y-3">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-5 w-64" />
+        </div>
+        <Skeleton className="h-32 w-full rounded-2xl" />
+        <div className="grid gap-8">
+          <Skeleton className="h-[300px] w-full rounded-2xl" />
+          <Skeleton className="h-[200px] w-full rounded-2xl" />
+        </div>
       </div>
     )
   }
@@ -130,7 +139,7 @@ export default function ProfilePage() {
   return (
     <div className="space-y-8 max-w-3xl mx-auto pb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div>
-        <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/60">
+        <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/60">
           {t("profile.title")}
         </h1>
         <p className="text-muted-foreground mt-2 text-sm md:text-lg">{t("profile.subtitle")}</p>
@@ -144,9 +153,9 @@ export default function ProfilePage() {
           border: "1px solid rgba(124,92,252,0.2)",
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+        <div className="absolute inset-0 bg-linear-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
         <div
-          className="h-24 w-24 rounded-[2rem] flex flex-shrink-0 items-center justify-center text-4xl font-bold text-white shadow-lg relative z-10 transition-transform duration-500 group-hover:scale-105 overflow-hidden"
+          className="h-24 w-24 rounded-4xl flex shrink-0 items-center justify-center text-4xl font-bold text-white shadow-lg relative z-10 transition-transform duration-500 group-hover:scale-105 overflow-hidden"
           style={{ background: "linear-gradient(135deg, #7c5cfc 0%, #c084fc 100%)" }}
         >
           {user?.avatarUrl ? (
@@ -304,7 +313,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Danger Zone */}
-        <Card className="overflow-hidden border-destructive/20 shadow-sm transition-all duration-500 hover:shadow-lg hover:border-destructive/50 bg-gradient-to-b from-transparent to-destructive/5 group">
+        <Card className="overflow-hidden border-destructive/20 shadow-sm transition-all duration-500 hover:shadow-lg hover:border-destructive/50 bg-linear-to-b from-transparent to-destructive/5 group">
           <CardHeader className="border-b border-destructive/10 pb-6">
             <CardTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="h-5 w-5" />

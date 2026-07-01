@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/store/store"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useSidebar } from "@/contexts/SidebarContext"
 
 export function Header() {
@@ -108,8 +109,11 @@ export function Header() {
             aria-hidden="true"
           />
 
-          <button
-            className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all hover:scale-105 bg-card border border-border"
+          <Link
+            href="/profile"
+            aria-label="Đến trang cài đặt tài khoản"
+            title="Cài đặt tài khoản"
+            className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all hover:scale-105 hover:border-primary/30 hover:shadow-[0_0_12px_rgba(124,92,252,0.15)] bg-card border border-border"
           >
             <div
               className="h-7 w-7 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-linear-to-br from-primary to-primary-light overflow-hidden"
@@ -124,7 +128,7 @@ export function Header() {
             <div className="hidden md:block text-left">
               <p className="text-xs font-semibold text-foreground leading-none">{displayName}</p>
             </div>
-          </button>
+          </Link>
         </div>
       </div>
     </header>

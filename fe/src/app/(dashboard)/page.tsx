@@ -3,7 +3,7 @@
 
 import { useState, useRef } from "react"
 import { DynamicIcon } from "@/components/ui/dynamic-icon"
-import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, TrendingDown, PiggyBank, Sparkles, Loader2, MoreHorizontal, Download, Inbox } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, TrendingDown, PiggyBank, Sparkles, Loader2, MoreHorizontal, Download, ReceiptText } from "lucide-react"
 import {
   Bar,
   BarChart,
@@ -24,6 +24,10 @@ import { useGetMonthlyTrendQuery, useGetCategoryBreakdownQuery, useGetReportSumm
 import { useGetGoalsQuery } from "@/services/goalsApi"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { Modal } from "@/components/ui/modal"
+import { SkeletonStat, SkeletonChart, SkeletonRow } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
+import { useCountUp } from "@/hooks/useCountUp"
+import { formatCurrencyAxis } from "@/lib/format"
 import ReactMarkdown from "react-markdown"
 import { useTranslation } from "react-i18next"
 
@@ -108,6 +112,13 @@ export default function Dashboard() {
   // Đồng nhất với sidebar và modal nạp tiền mục tiêu
   const totalBalance = balance?.netBalance ?? 0
 
+  // CountUp animations for stat cards
+  const isStatsLoading = isLoading
+  const animatedBalance = useCountUp({ target: totalBalance, isLoading: isStatsLoading, format: (v) => `${v.toLocaleString("vi-VN")} ₫` })
+  const animatedIncome = useCountUp({ target: totalIncome, isLoading: isStatsLoading, format: (v) => `${v.toLocaleString("vi-VN")} ₫` })
+  const animatedExpense = useCountUp({ target: totalExpense, isLoading: isStatsLoading, format: (v) => `${v.toLocaleString("vi-VN")} ₫` })
+  const animatedGoals = useCountUp({ target: totalGoalSavings, isLoading: isStatsLoading, format: (v) => `${v.toLocaleString("vi-VN")} ₫` })
+
   // Map trend data to chart format
   const monthlyData = trend.map(d => ({
     name: (() => { const [, m] = d.period.split("-"); return `Thg ${parseInt(m)}` })(),
@@ -125,7 +136,7 @@ export default function Dashboard() {
   const stats = [
     {
       label: t("dashboard.availableBalance"),
-      value: `${totalBalance.toLocaleString("vi-VN")} ₫`,
+      value: animatedBalance,
       changeLabel: t("dashboard.basedOnRecent"),
       positive: totalBalance >= 0,
       icon: Wallet,
@@ -135,7 +146,7 @@ export default function Dashboard() {
     },
     {
       label: t("dashboard.totalIncome"),
-      value: `${totalIncome.toLocaleString("vi-VN")} ₫`,
+      value: animatedIncome,
       changeLabel: t("dashboard.basedOnRecent"),
       positive: true,
       icon: TrendingUp,
@@ -145,7 +156,7 @@ export default function Dashboard() {
     },
     {
       label: t("dashboard.totalExpense"),
-      value: `${totalExpense.toLocaleString("vi-VN")} ₫`,
+      value: animatedExpense,
       changeLabel: t("dashboard.basedOnRecent"),
       positive: false,
       icon: TrendingDown,
@@ -155,7 +166,7 @@ export default function Dashboard() {
     },
     {
       label: t("dashboard.totalGoalSavings") || "Tiền đang tiết kiệm",
-      value: `${totalGoalSavings.toLocaleString("vi-VN")} ₫`,
+      value: animatedGoals,
       changeLabel: t("dashboard.allocatedToGoals") || "Đã nạp vào mục tiêu",
       positive: true,
       icon: PiggyBank,
@@ -194,33 +205,44 @@ export default function Dashboard() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <div key={stat.label} className={`rounded-2xl p-4 transition-all duration-300 hover:scale-[1.02] overflow-hidden min-w-0 ${stat.className}`}>
-            <div className="flex items-center justify-between mb-3 gap-1">
-              <p className="text-xs sm:text-sm font-medium text-muted-foreground leading-snug line-clamp-2">{stat.label}</p>
-              <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: stat.iconBg }}>
-                <stat.icon className="h-4 w-4" style={{ color: stat.iconColor }} />
+      {isLoading ? (
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => <SkeletonStat key={i} />)}
+        </div>
+      ) : (
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat) => (
+            <div key={stat.label} className={`rounded-2xl p-4 transition-all duration-300 hover:scale-[1.02] overflow-hidden min-w-0 ${stat.className}`}>
+              <div className="flex items-center justify-between mb-3 gap-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground leading-snug line-clamp-2">{stat.label}</p>
+                <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: stat.iconBg }}>
+                  <stat.icon className="h-4 w-4" style={{ color: stat.iconColor }} />
+                </div>
+              </div>
+              <div className="text-lg sm:text-2xl font-bold mb-1.5 tracking-tight text-foreground truncate">
+                {stat.value}
+              </div>
+              <div className="flex items-center gap-1 min-w-0">
+                {stat.positive ? (
+                  <ArrowUpRight className="h-3.5 w-3.5 text-success shrink-0" />
+                ) : (
+                  <ArrowDownRight className="h-3.5 w-3.5 text-danger shrink-0" />
+                )}
+                <span className="text-xs text-muted-foreground truncate">{stat.changeLabel}</span>
               </div>
             </div>
-            <div className="text-lg sm:text-2xl font-bold mb-1.5 tracking-tight text-foreground truncate">
-              {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : stat.value}
-            </div>
-            <div className="flex items-center gap-1 min-w-0">
-              {stat.positive ? (
-                <ArrowUpRight className="h-3.5 w-3.5 text-success shrink-0" />
-              ) : (
-                <ArrowDownRight className="h-3.5 w-3.5 text-danger shrink-0" />
-              )}
-              <span className="text-xs text-muted-foreground truncate">{stat.changeLabel}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Charts row */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         {/* Bar chart */}
+        {isTrendLoading ? (
+          <div className="md:col-span-2 lg:col-span-4">
+            <SkeletonChart height={260} />
+          </div>
+        ) : (
         <div className="md:col-span-2 lg:col-span-4 rounded-2xl p-5 glass-card min-w-0">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -242,16 +264,14 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="h-[260px]">
-            {isTrendLoading ? (
-              <div className="h-full flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-            ) : monthlyData.length === 0 ? (
+            {monthlyData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-xs text-muted-foreground">{t("dashboard.noData")}</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <BarChart data={monthlyData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }} barGap={4}>
                   <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" vertical={false} />
                   <XAxis dataKey="name" stroke="currentColor" className="text-muted-foreground" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="currentColor" className="text-muted-foreground" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k ₫`} />
+                  <YAxis stroke="currentColor" className="text-muted-foreground" fontSize={11} tickLine={false} axisLine={false} tickFormatter={formatCurrencyAxis} />
                   <Tooltip content={<CustomTooltip />} cursor={false} />
                   <Bar dataKey="income" name="Thu nhập" fill="#10d9a0" radius={[6, 6, 0, 0]} maxBarSize={28} />
                   <Bar dataKey="expense" name="Chi phí" fill="#ff4d6d" radius={[6, 6, 0, 0]} maxBarSize={28} />
@@ -260,8 +280,14 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+        )}
 
         {/* Pie chart */}
+        {isBreakdownLoading ? (
+          <div className="md:col-span-2 lg:col-span-3">
+            <SkeletonChart height={180} />
+          </div>
+        ) : (
         <div className="md:col-span-2 lg:col-span-3 rounded-2xl p-5 glass-card min-w-0">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -273,9 +299,7 @@ export default function Dashboard() {
             </button>
           </div>
           <div className="flex flex-col items-center">
-            {isBreakdownLoading ? (
-              <div className="h-[180px] flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-            ) : categoryData.length === 0 ? (
+            {categoryData.length === 0 ? (
               <div className="h-[180px] flex items-center justify-center text-xs text-muted-foreground">{t("dashboard.noData")}</div>
             ) : (
               <>
@@ -312,6 +336,7 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* Recent transactions + area chart */}
@@ -333,7 +358,7 @@ export default function Dashboard() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" vertical={false} />
                 <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} stroke="currentColor" className="text-muted-foreground" />
-                <YAxis fontSize={10} tickLine={false} axisLine={false} stroke="currentColor" className="text-muted-foreground" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k ₫`} />
+                <YAxis fontSize={10} tickLine={false} axisLine={false} stroke="currentColor" className="text-muted-foreground" tickFormatter={formatCurrencyAxis} />
                 <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid var(--border)", backgroundColor: "var(--popover)", color: "var(--popover-foreground)", fontSize: "12px" }} />
                 <Area type="monotone" dataKey="savings" name="Tiết kiệm" stroke="#7c5cfc" strokeWidth={2} fill="url(#savingsGrad)" />
               </AreaChart>
@@ -354,8 +379,8 @@ export default function Dashboard() {
           </div>
           <div className="space-y-2">
             {isLoading ? (
-              <div className="flex justify-center py-6">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
               </div>
             ) : transactions.length > 0 ? (
               transactions.map((tx) => (
@@ -381,14 +406,11 @@ export default function Dashboard() {
                 </div>
               ))
             ) : (
-              <div className="flex flex-col items-center justify-center py-6 gap-2 text-center px-6">
-                <div className="h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center text-muted-foreground">
-                  <Inbox className="h-5 w-5" />
-                </div>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  {t("dashboard.noTransactions")}
-                </p>
-              </div>
+              <EmptyState
+                icon={ReceiptText}
+                title={t("dashboard.noTransactions")}
+                description="Hãy thêm khoản thu chi đầu tiên của bạn."
+              />
             )}
           </div>
         </div>
