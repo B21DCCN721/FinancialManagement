@@ -17,13 +17,18 @@ interface ModalProps {
 
 export function Modal({ isOpen, onClose, title, description, children, className }: ModalProps) {
   React.useEffect(() => {
+    // Lưu lại giá trị overflow cũ để restore
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+
     if (isOpen) {
       document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
+      document.documentElement.style.overflow = "hidden";
     }
+
     return () => {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
     };
   }, [isOpen]);
 

@@ -11,7 +11,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <div className="w-full">
         <input
           type={type}
-          autoComplete={type === "password" ? "new-password" : "off"}
+          autoComplete={type === "password" ? "new-password" : "nope"}
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck="false"
