@@ -37,8 +37,8 @@ export function PWAInstallPrompt() {
 
     if (isStandalone) return;
 
-    // Kiểm tra nếu user đã dismiss trong session này
-    const wasDismissed = sessionStorage.getItem("pwa-prompt-dismissed");
+    // Kiểm tra nếu user đã dismiss (chỉ hiện 1 lần duy nhất)
+    const wasDismissed = localStorage.getItem("pwa-prompt-dismissed");
     if (wasDismissed) return;
 
     // Android Chrome: lắng nghe sự kiện beforeinstallprompt
@@ -78,7 +78,7 @@ export function PWAInstallPrompt() {
 
   const handleDismiss = () => {
     setDismissed(true);
-    sessionStorage.setItem("pwa-prompt-dismissed", "1");
+    localStorage.setItem("pwa-prompt-dismissed", "1");
     setDeferredPrompt(null);
     setShowIOSGuide(false);
   };
