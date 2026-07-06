@@ -1,6 +1,7 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import reactCompiler from "eslint-plugin-react-compiler";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -14,10 +15,20 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
   ]),
   {
+    // React Compiler: phát hiện vi phạm Rules of React (hooks, dependencies,
+    // mutations...) khiến component không thể tự động tối ưu được.
+    plugins: {
+      "react-compiler": reactCompiler,
+    },
     rules: {
-      "@typescript-eslint/no-explicit-any": "warn"
-    }
-  }
+      "react-compiler/react-compiler": "error",
+    },
+  },
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;
