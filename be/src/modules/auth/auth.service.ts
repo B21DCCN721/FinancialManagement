@@ -7,6 +7,11 @@ import crypto from "crypto"
 import { sendMail } from "../../utils/mailer"
 import { ForgotPasswordInput, ResetPasswordInput } from "./auth.schema"
 import * as admin from "firebase-admin"
+import { deleteCache, buildCacheKey } from "../../utils/cache"
+
+function profileCacheKey(userId: string) {
+  return buildCacheKey("user", userId, "profile")
+}
 
 // Khởi tạo Firebase Admin với Project ID của dự án
 if (!admin.apps.length) {
@@ -36,6 +41,7 @@ export async function registerService(
           where: { id: user.id },
           data: { password: hashed, authProvider: "linked", name: data.name }
         })
+        await deleteCache(server.redis, profileCacheKey(user.id))
       } else {
         throw errors.conflict("Email đã tồn tại trong hệ thống. Vui lòng đăng nhập.")
       }
@@ -165,6 +171,7 @@ export async function googleLoginService(
           where: { id: user.id },
           data: updateData
         })
+        await deleteCache(server.redis, profileCacheKey(user.id))
       }
     } else {
       // Tạo user mới nếu chưa tồn tại
@@ -337,6 +344,8 @@ export async function resetPasswordService(
         refreshToken: null, // Bắt đăng nhập lại
       },
     })
+    
+    await deleteCache(server.redis, profileCacheKey(user.id))
 
     return { message: "Mật khẩu đã được đặt lại thành công" }
   })

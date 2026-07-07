@@ -85,6 +85,7 @@ export function Header() {
               name="search"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
+              autoComplete="off"
             />
           </div>
         </form>

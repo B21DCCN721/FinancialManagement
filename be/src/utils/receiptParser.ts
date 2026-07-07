@@ -17,28 +17,57 @@
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-/** Từ khóa tổng tiền — dùng để ưu tiên tìm dòng chứa số tiền cần trả */
-const TOTAL_KEYWORDS = [
+/** Từ khóa tổng tiền — Độ ưu tiên CAO NHẤT (Chắc chắn là tổng thanh toán cuối cùng) */
+const TOTAL_KEYWORDS_HIGH = [
   // Tiếng Việt
-  /t[oổ]ng\s*c[oộ]ng/i,
-  /t[oổ]ng\s*ti[eề]n\s*(thanh\s*to[aá]n|c[aầ]n\s*tr[aả]|ph[aả]i\s*tr[aả])?/i,
+  /t[oổ]ng\s*ti[eề]n\s*(thanh\s*to[aá]n|c[aầ]n\s*tr[aả]|ph[aả]i\s*tr[aả])/i,
   /ti[eề]n\s*thanh\s*to[aá]n/i,
-  /thanh\s*to[aá]n/i,
-  /s[oố]\s*ti[eề]n/i,
-  /th[aà]nh\s*ti[eề]n/i,
   /t[oổ]ng\s*ph[aả]i\s*tr[aả]/i,
-  /kh[aá]ch\s*tr[aả]/i,
   /gi[aá]\s*tr[iị]\s*thanh\s*to[aá]n/i,
-  /t[oổ]ng\s*gi[aá]\s*tr[iị]/i,
+  /t[oổ]ng\s*thanh\s*to[aá]n/i,
   // Tiếng Anh
   /grand\s*total/i,
-  /total\s*(amount|due|payable|payment)?/i,
-  /amount\s*(due|payable|total)?/i,
+  /total\s*(due|payable|payment)/i,
   /net\s*(amount|total)/i,
-  /balance\s*(due|payable)?/i,
+  /balance\s*(due|payable)/i,
+  /invoice\s*total/i,
+]
+
+/** Từ khóa tổng tiền — Độ ưu tiên TRUNG BÌNH (Dễ nhầm lẫn nhưng vẫn tốt) */
+const TOTAL_KEYWORDS_MEDIUM = [
+  /t[oổ]ng\s*c[oộ]ng/i,
+  /t[oổ]ng\s*ti[eề]n/i,
+  /t[oổ]ng/i,
+  /\btotal\b/i,
+  /thanh\s*to[aá]n/i,
+  /kh[aá]ch\s*ph[aả]i\s*tr[aả]/i,
+]
+
+/** Từ khóa tổng tiền — Độ ưu tiên THẤP (Dùng cuối cùng để tránh dính VAT/Giảm giá/Khách đưa) */
+const TOTAL_KEYWORDS_LOW = [
+  /s[oố]\s*ti[eề]n/i,
+  /th[aà]nh\s*ti[eề]n/i,
+  /t[oổ]ng\s*gi[aá]\s*tr[iị]/i,
+  /\bamount\b/i,
   /subtotal/i,
   /sum\s*total/i,
-  /invoice\s*total/i,
+  /t[aạ]m\s*t[ií]nh/i,
+]
+
+/** Từ khóa loại trừ KHI FALLBACK (Tránh lấy nhầm tiền thừa, tiền khách đưa, thuế) */
+const IGNORE_FOR_FALLBACK = [
+  /ti[eề]n\s*kh[aá]ch\s*(đ[uư]a|tr[aả])/i,
+  /kh[aá]ch\s*(đ[uư]a|tr[aả])/i,
+  /ti[eề]n\s*nh[aậ]n/i,
+  /ti[eề]n\s*th[uừ]a/i,
+  /ti[eề]n\s*th[oố]i/i,
+  /\bcash\b/i,
+  /\bchange\b/i,
+  /\btendered\b/i,
+  /\breceived\b/i,
+  /\bvat\b/i,
+  /\btax\b/i,
+  /thu[eế]\s*(gtgt)?/i,
 ]
 
 /** Từ khóa phụ (ít tin cậy hơn nhưng vẫn dùng làm fallback) */
@@ -208,31 +237,36 @@ function extractMoneyFromText(text: string): number[] {
 export function parseAmount(text: string): number | null {
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean)
 
-  // ── Bước 1: Tìm dòng tổng tiền chính ────────────────────────────────────
-  for (const line of lines) {
-    const isTotalLine = TOTAL_KEYWORDS.some((kw) => kw.test(line))
-    if (!isTotalLine) continue
+  const keywordTiers = [TOTAL_KEYWORDS_HIGH, TOTAL_KEYWORDS_MEDIUM, TOTAL_KEYWORDS_LOW]
 
-    const amounts = extractMoneyFromText(line)
-    if (amounts.length > 0) {
-      return Math.max(...amounts)
+  // ── Helper lọc dòng khi sử dụng fallback ──────────────────────────────
+  const isValidFallbackLine = (line: string) => {
+    return !IGNORE_FOR_FALLBACK.some((kw) => kw.test(line))
+  }
+
+  // ── Bước 1 & 2: Tìm dòng tổng tiền theo độ ưu tiên ──────────────────────
+  for (const tier of keywordTiers) {
+    // Ưu tiên dòng chứa số tiền trên cùng 1 dòng
+    for (const line of lines) {
+      if (tier.some((kw) => kw.test(line))) {
+        const amounts = extractMoneyFromText(line)
+        if (amounts.length > 0) return Math.max(...amounts)
+      }
+    }
+
+    // Nếu không có số ở cùng dòng, thử ghép với dòng kế tiếp
+    for (let i = 0; i < lines.length - 1; i++) {
+      if (tier.some((kw) => kw.test(lines[i]))) {
+        if (!isValidFallbackLine(lines[i + 1])) continue
+        const amounts = extractMoneyFromText(lines[i + 1])
+        if (amounts.length > 0) return Math.max(...amounts)
+      }
     }
   }
 
-  // ── Bước 2: Thử ghép 2 dòng liên tiếp (tổng tiền và số nằm dòng dưới) ──
-  for (let i = 0; i < lines.length - 1; i++) {
-    const isTotalLine = TOTAL_KEYWORDS.some((kw) => kw.test(lines[i]))
-    if (!isTotalLine) continue
-
-    // Thử lấy số từ dòng kế tiếp
-    const amounts = extractMoneyFromText(lines[i + 1])
-    if (amounts.length > 0) {
-      return Math.max(...amounts)
-    }
-  }
-
-  // ── Bước 3: Từ khóa phụ ──────────────────────────────────────────────────
+  // ── Bước 3: Từ khóa phụ (chỉ xét những dòng hợp lệ) ──────────────────────
   for (const line of lines) {
+    if (!isValidFallbackLine(line)) continue
     const isSecondary = SECONDARY_AMOUNT_KEYWORDS.some((kw) => kw.test(line))
     if (!isSecondary) continue
 
@@ -240,8 +274,9 @@ export function parseAmount(text: string): number | null {
     if (amounts.length > 0) return Math.max(...amounts)
   }
 
-  // ── Bước 4: Fallback — lấy giá trị lớn nhất toàn bộ text ────────────────
-  const allAmounts = extractMoneyFromText(text)
+  // ── Bước 4: Fallback — lấy giá trị lớn nhất từ các dòng hợp lệ ───────────
+  const validText = lines.filter(isValidFallbackLine).join("\n")
+  const allAmounts = extractMoneyFromText(validText)
   if (allAmounts.length === 0) return null
   return Math.max(...allAmounts)
 }
@@ -278,15 +313,25 @@ export function parseDate(text: string): string | null {
   }
 
   const datePatterns: { regex: RegExp; parse: (m: RegExpExecArray) => string | null }[] = [
-    // ISO timestamp: 2026-06-23T14:30:00 hoặc 2026-06-23 14:30
+    // ISO timestamp: 2026-06-23T14:30:00 hoặc 2026/6/23 14:30
     {
-      regex: /\b(\d{4})[-\/](\d{2})[-\/](\d{2})(?:[T\s]\d{2}:\d{2})?/g,
+      regex: /\b(\d{4})[-\/](0?[1-9]|1[0-2])[-\/](0?[1-9]|[12]\d|3[01])(?:[T\s]\d{2}:\d{2})?/g,
+      parse: (m) => tryBuildDate(parseInt(m[3]), parseInt(m[2]), parseInt(m[1])),
+    },
+    // YYYYMMDD (POS compact: e.g. 20260623)
+    {
+      regex: /\b(20\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\b/g,
       parse: (m) => tryBuildDate(parseInt(m[3]), parseInt(m[2]), parseInt(m[1])),
     },
     // DD/MM/YYYY hoặc DD-MM-YYYY hoặc DD.MM.YYYY (cả năm 2 và 4 chữ số)
     {
       regex: /\b(0?[1-9]|[12]\d|3[01])[\/\-\.](0?[1-9]|1[0-2])[\/\-\.]((?:20)?\d{2})\b/g,
       parse: (m) => tryBuildDate(parseInt(m[1]), parseInt(m[2]), parseInt(m[3])),
+    },
+    // US format MM/DD/YYYY (Chỉ bắt khi DD/MM/YYYY fail, ví dụ 06/23/2026)
+    {
+      regex: /\b(0?[1-9]|1[0-2])[\/\-\.](0?[1-9]|[12]\d|3[01])[\/\-\.]((?:20)?\d{2})\b/g,
+      parse: (m) => tryBuildDate(parseInt(m[2]), parseInt(m[1]), parseInt(m[3])),
     },
     // "Ngày 23 tháng 06 năm 2026"
     {
@@ -358,45 +403,84 @@ export function parseDescription(text: string): string | null {
     .map((l) => l.trim())
     .filter((l) => l.length > 1 && l.length < 120)
 
-  // ── Bước 1: Tìm dòng label "Tên cửa hàng / Merchant" ───────────────────
-  const nameLabels = [
+  if (lines.length === 0) return null
+
+  // Lấy 15 dòng đầu tiên để phân tích
+  const firstLines = lines.slice(0, 15)
+  let bestLine = lines[0]
+  let maxScore = -999
+
+  const upperCaseViet = /^[A-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐƠƯ0-9\s&'".,-]+$/u
+  
+  for (let i = 0; i < firstLines.length; i++) {
+    const line = firstLines[i]
+    let score = 0
+
+    // 1. Label chắc chắn (như Store Name: Circle K)
+    const nameLabels = [
+      /(?:tên\s*(?:cửa\s*hàng|ch|đơn\s*vị|công\s*ty)|merchant|store\s*name|shop\s*name|seller)[:\s]+(.+)/i,
+      /(?:đơn\s*vị\s*bán|sold\s*by|from)[:\s]+(.+)/i,
+    ]
+    let hasLabel = false
+    for (const label of nameLabels) {
+      const match = line.match(label)
+      if (match && match[1].trim().length > 1) {
+        score += 50
+        hasLabel = true
+        break
+      }
+    }
+
+    // 2. Vị trí dòng (càng trên càng cao, dòng 0: +15, dòng 1: +13...)
+    score += Math.max(0, 15 - i * 2)
+
+    // 3. Viết HOA toàn bộ (thường là tên thương hiệu)
+    if (upperCaseViet.test(line) && line.replace(/\s/g, "").length > 3) {
+      score += 5
+    }
+
+    // 4. Các từ khóa thương hiệu phổ biến
+    if (/(cửa\s*hàng|siêu\s*thị|nhà\s*thuốc|nhà\s*hàng|quán|co\.op|mart)/i.test(line)) {
+      score += 5
+    }
+
+    // 5. Từ khóa pháp nhân (Company Ltd) -> cộng nhẹ để phân biệt với rác, nhưng ko thắng đc tên thương hiệu
+    if (/(công\s*ty|tnhh|cổ\s*phần|cp|co\.,\s*ltd|jsc)/i.test(line)) {
+      score += 2
+    }
+
+    // 6. Điểm trừ cho các nội dung không phải tên quán
+    if (/(chi\s*nhánh|branch)/i.test(line)) score -= 2
+    
+    if (/(địa\s*chỉ|address|đ\/c|dc:|phường|quận|thành\s*phố|tp\.|street|ward|district)/i.test(line)) score -= 15
+    
+    if (isPhoneNumber(line) || /hotline|tel|phone/i.test(line)) score -= 15
+    
+    if (/(website|www\.|http|\.com|email|@)/i.test(line)) score -= 15
+    
+    if (/(hóa\s*đơn|invoice|receipt|bill|phiếu\s*thu|đơn\s*hàng|đặt\s*hàng|order)/i.test(line)) score -= 20
+    
+    if (/(ngày|date|time|giờ|xuất)/i.test(line)) score -= 15
+    
+    if (/(vat|thuế|tax|tổng|total|subtotal|mst|mã\s*số)/i.test(line)) score -= 20
+    
+    if (/^[\d\s.,:;\/\-_*#@!%^&()[\]{}|\\]+$/.test(line)) score -= 20
+
+    if (score > maxScore) {
+      maxScore = score
+      bestLine = line
+    }
+  }
+
+  // Cắt lấy tên nếu dòng thắng cuộc có chứa label
+  const nameLabelsExtract = [
     /(?:tên\s*(?:cửa\s*hàng|ch|đơn\s*vị|công\s*ty)|merchant|store\s*name|shop\s*name|seller)[:\s]+(.+)/i,
     /(?:đơn\s*vị\s*bán|sold\s*by|from)[:\s]+(.+)/i,
   ]
-
-  for (const line of lines) {
-    for (const label of nameLabels) {
-      const match = line.match(label)
-      if (match && match[1].trim().length > 1) return match[1].trim()
-    }
+  for (const label of nameLabelsExtract) {
+    const match = bestLine.match(label)
+    if (match && match[1].trim().length > 1) return match[1].trim()
   }
 
-  // ── Bước 2: Dòng HOA hoàn toàn ở đầu (tên shop) ────────────────────────
-  // Cho phép có dấu tiếng Việt hoa
-  const upperCaseViet = /^[A-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐƠƯÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝ0-9\s&'".,-]+$/u
-
-  const first30Lines = lines.slice(0, 30)
-  for (const line of first30Lines) {
-    if (shouldSkipDescription(line)) continue
-    if (isPhoneNumber(line)) continue
-    if (isTableHeader(line)) continue
-    if (upperCaseViet.test(line) && line.replace(/\s/g, "").length > 3) {
-      // Bỏ qua nếu chỉ là "HOA ĐƠN" hoặc "INVOICE" v.v.
-      if (/^(HÓA\s*ĐƠN|INVOICE|RECEIPT|BILL|ORDER|PHIẾU|ĐƠNHÀNG)$/i.test(line.replace(/\s/g, ""))) continue
-      return line
-    }
-  }
-
-  // ── Bước 3: Dòng đầu tiên hợp lệ có chữ cái ────────────────────────────
-  for (const line of first30Lines) {
-    if (shouldSkipDescription(line)) continue
-    if (isPhoneNumber(line)) continue
-    if (isTableHeader(line)) continue
-    if (/[a-zA-ZÀ-ỹ]/.test(line) && line.replace(/\s/g, "").length > 3) {
-      return line
-    }
-  }
-
-  // ── Fallback ──────────────────────────────────────────────────────────────
-  return lines[0] || null
+  return bestLine
 }
