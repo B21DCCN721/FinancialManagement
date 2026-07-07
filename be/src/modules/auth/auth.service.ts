@@ -24,24 +24,30 @@ export async function registerService(
 ) {
   const prisma: PrismaClient = server.prisma
 
-  // Check duplicate email
-  const existing = await prisma.user.findUnique({ where: { email: data.email } })
-  if (existing) {
-    if (existing.authProvider === "google") {
-      throw errors.conflict("Email này đã được đăng ký bằng Google. Vui lòng đăng nhập bằng Google.")
-    }
-    throw errors.conflict("Email đã tồn tại trong hệ thống. Vui lòng đăng nhập.")
-  }
-
   const hashed = await hashPassword(data.password)
   return await prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        email: data.email,
-        password: hashed,
-        name: data.name,
-      },
-    })
+    let user = await tx.user.findUnique({ where: { email: data.email } })
+    if (user) {
+      if (user.authProvider === "google") {
+        if (!data.confirmLink) {
+          throw errors.conflict("REQUIRE_LINK_CONFIRMATION")
+        }
+        user = await tx.user.update({
+          where: { id: user.id },
+          data: { password: hashed, authProvider: "linked", name: data.name }
+        })
+      } else {
+        throw errors.conflict("Email đã tồn tại trong hệ thống. Vui lòng đăng nhập.")
+      }
+    } else {
+      user = await tx.user.create({
+        data: {
+          email: data.email,
+          password: hashed,
+          name: data.name,
+        },
+      })
+    }
 
     const { accessToken, refreshToken } = await issueTokens(server, user.id, user.email)
 
@@ -78,7 +84,7 @@ export async function loginService(
   if (!user) throw errors.unauthorized("Tài khoản email không tồn tại")
 
   if (user.authProvider === "google") {
-    throw errors.unauthorized("Email này được đăng ký bằng Google. Vui lòng đăng nhập bằng Google.")
+    throw errors.unauthorized("Email này được đăng nhập bằng Google. Vui lòng đăng nhập bằng Google, hoặc dùng Quên mật khẩu để tạo mật khẩu.")
   }
 
   const valid = await verifyPassword(data.password, user.password)
@@ -110,7 +116,8 @@ export async function loginService(
  */
 export async function googleLoginService(
   server: FastifyInstance,
-  token: string
+  token: string,
+  confirmLink?: boolean
 ) {
   const prisma: PrismaClient = server.prisma
 
@@ -142,18 +149,21 @@ export async function googleLoginService(
     })
 
     if (user) {
-      if (user.authProvider !== "google") {
-        throw errors.conflict("Email này đã được đăng ký bằng tài khoản thường. Vui lòng đăng nhập bằng mật khẩu.")
+      // Yêu cầu xác nhận nếu là local
+      if (user.authProvider === "local" && !confirmLink) {
+        throw errors.conflict("REQUIRE_LINK_CONFIRMATION")
       }
+
+      // Liên kết tài khoản nếu email đã tồn tại (dù là local hay google)
+      const updateData: any = {}
+      if (!user.providerId) updateData.providerId = providerId;
+      if (!user.avatarUrl && avatarUrl) updateData.avatarUrl = avatarUrl;
+      if (user.authProvider === "local") updateData.authProvider = "linked";
       
-      // Update providerId or avatarUrl if missing
-      if (!user.providerId || !user.avatarUrl) {
+      if (Object.keys(updateData).length > 0) {
         user = await tx.user.update({
           where: { id: user.id },
-          data: {
-            providerId: user.providerId ?? providerId,
-            avatarUrl: user.avatarUrl ?? avatarUrl,
-          }
+          data: updateData
         })
       }
     } else {
@@ -255,7 +265,7 @@ export async function forgotPasswordService(
     return { message: "Nếu email tồn tại trong hệ thống, mã OTP đã được gửi." }
   }
 
-  if (user.authProvider !== "local") {
+  if (user.authProvider === "google") {
     throw errors.badRequest("Tài khoản này được đăng ký bằng Google. Vui lòng đăng nhập bằng Google.")
   }
 
@@ -298,7 +308,11 @@ export async function resetPasswordService(
   return await prisma.$transaction(async (tx) => {
     const user = await tx.user.findUnique({ where: { email: data.email } })
 
-    if (!user) throw errors.badRequest("Email không tồn tại hoặc OTP không hợp lệ")
+    if (!user) throw errors.badRequest("User không tồn tại")
+
+    if (user.authProvider === "google") {
+      throw errors.badRequest("Tài khoản này được đăng ký bằng Google. Vui lòng đăng nhập bằng Google.")
+    }
 
     if (!user.resetPasswordOtp || !user.resetPasswordExpiresAt) {
       throw errors.badRequest("Chưa có yêu cầu lấy lại mật khẩu nào cho tài khoản này")
@@ -328,20 +342,6 @@ export async function resetPasswordService(
   })
 }
 
-/**
- * Delete Account - Permanently remove user and all associated data
- */
-export async function deleteAccountService(
-  server: FastifyInstance,
-  userId: string
-) {
-  const prisma: PrismaClient = server.prisma
-  
-  // Xóa tài khoản (Prisma onDelete: Cascade sẽ tự dọn các bảng liên quan)
-  await prisma.user.delete({
-    where: { id: userId },
-  })
-}
 
 // ─── Internal helpers ────────────────────────────────────────────────
 async function issueTokens(server: FastifyInstance, id: string, email: string) {

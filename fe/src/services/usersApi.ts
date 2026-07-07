@@ -42,6 +42,14 @@ export const usersApi = baseApi.injectEndpoints({
         method: "DELETE",
       }),
     }),
+
+    unlinkGoogle: builder.mutation<{ message: string }, void>({
+      query: () => ({
+        url: "/users/me/google-link",
+        method: "DELETE",
+      }),
+      invalidatesTags: [{ type: "User", id: "ME" }],
+    }),
   }),
 })
 
@@ -50,4 +58,5 @@ export const {
   useUpdateProfileMutation,
   useChangePasswordMutation,
   useDeleteAccountMutation,
+  useUnlinkGoogleMutation,
 } = usersApi

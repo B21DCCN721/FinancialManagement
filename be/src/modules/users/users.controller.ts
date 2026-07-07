@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from "fastify"
-import { getMeService, updateProfileService, changePasswordService, deleteAccountService } from "./users.service"
+import { getMeService, updateProfileService, changePasswordService, deleteAccountService, unlinkGoogleService } from "./users.service"
 import { UpdateProfileInput, ChangePasswordInput } from "./users.schema"
 import { handleError } from "../../utils/errors"
 
@@ -34,5 +34,12 @@ export async function deleteAccountController(request: FastifyRequest, reply: Fa
   try {
     await deleteAccountService(request.server, request.user.id)
     return reply.code(200).send({ message: "Account deleted successfully" })
+  } catch (err) { return handleError(err, reply) }
+}
+
+export async function unlinkGoogleController(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    await unlinkGoogleService(request.server, request.user.id)
+    return reply.code(200).send({ message: "Đã gỡ liên kết Google thành công." })
   } catch (err) { return handleError(err, reply) }
 }

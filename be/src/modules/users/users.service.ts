@@ -58,6 +58,10 @@ export async function changePasswordService(
     const user = await tx.user.findUnique({ where: { id: userId } })
     if (!user) throw errors.notFound("User not found")
 
+    if (user.authProvider === "google") {
+      throw errors.badRequest("Tài khoản này được đăng ký bằng Google. Vui lòng đăng nhập bằng Google.")
+    }
+
     const valid = await verifyPassword(data.currentPassword, user.password)
     if (!valid) throw errors.badRequest("Current password is incorrect")
 
@@ -71,8 +75,33 @@ export async function changePasswordService(
 }
 
 export async function deleteAccountService(server: FastifyInstance, userId: string) {
+  try {
+    await server.prisma.$transaction(async (tx) => {
+      await tx.user.delete({ where: { id: userId } })
+      await deleteCache(server.redis, profileCacheKey(userId))
+    })
+  } catch (error: any) {
+    if (error.code === "P2025") {
+      throw errors.notFound("User not found")
+    }
+    throw error
+  }
+}
+
+export async function unlinkGoogleService(server: FastifyInstance, userId: string) {
   await server.prisma.$transaction(async (tx) => {
-    await tx.user.delete({ where: { id: userId } })
+    const user = await tx.user.findUnique({ where: { id: userId } })
+    if (!user) throw errors.notFound("User not found")
+
+    if (user.authProvider !== "linked") {
+      throw errors.badRequest("Tài khoản của bạn chưa được liên kết với Google hoặc chỉ sử dụng Google.")
+    }
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { providerId: null, authProvider: "local" },
+    })
+
     await deleteCache(server.redis, profileCacheKey(userId))
   })
 }

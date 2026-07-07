@@ -9,6 +9,7 @@ export const registerSchema = z.object({
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
   name: z.string().min(1, "Name is required").max(100),
+  confirmLink: z.boolean().optional(),
 })
 
 export const loginSchema = z.object({
@@ -18,6 +19,7 @@ export const loginSchema = z.object({
 
 export const googleLoginSchema = z.object({
   token: z.string().min(1, "Google/Firebase token is required"),
+  confirmLink: z.boolean().optional(),
 })
 
 export const refreshTokenSchema = z.object({

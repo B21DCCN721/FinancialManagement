@@ -12,6 +12,7 @@ import { auth, googleProvider } from "@/lib/firebase"
 import { signInWithPopup } from "firebase/auth"
 import { useTranslation } from "react-i18next"
 import { TermsModal } from "@/components/auth/terms-modal"
+import { ConfirmModal } from "@/components/ui/confirm-modal"
 import { useDispatch } from "react-redux"
 
 function LoginContent() {
@@ -28,6 +29,7 @@ function LoginContent() {
   const [googleLogin] = useGoogleLoginMutation()
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [modalType, setModalType] = useState<"terms" | "privacy" | null>(null)
+  const [linkConfirmData, setLinkConfirmData] = useState<{ token: string } | null>(null)
 
   const searchParams = useSearchParams()
   const errorParam = searchParams.get("error")
@@ -41,13 +43,16 @@ function LoginContent() {
     }
   }
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async (confirmToken?: string) => {
     setIsGoogleLoading(true)
+    let token = confirmToken || "";
     try {
-      const result = await signInWithPopup(auth, googleProvider)
-      const token = await result.user.getIdToken()
+      if (!token) {
+        const result = await signInWithPopup(auth, googleProvider)
+        token = await result.user.getIdToken()
+      }
 
-      const apiResult = await googleLogin({ token }).unwrap()
+      const apiResult = await googleLogin({ token, confirmLink: !!confirmToken }).unwrap()
 
       dispatch(setCredentials({
         accessToken: apiResult.accessToken,
@@ -61,7 +66,12 @@ function LoginContent() {
       setIsGoogleLoading(false)
       logger.error("Firebase Google Login failed", err)
       const errMessage = err?.data?.message || err?.error || err?.message || "Đã xảy ra lỗi không xác định"
-      setErrorMsg(`Lỗi kết nối Google: ${errMessage}`)
+      
+      if (errMessage === "REQUIRE_LINK_CONFIRMATION") {
+        setLinkConfirmData({ token })
+      } else {
+        setErrorMsg(`Lỗi kết nối Google: ${errMessage}`)
+      }
     }
   }
 
@@ -218,7 +228,7 @@ function LoginContent() {
           {/* Google Login Button */}
           <button
             type="button"
-            onClick={handleGoogleLogin}
+            onClick={() => handleGoogleLogin()}
             disabled={isGoogleLoading}
             className="relative flex items-center justify-center gap-3 w-full h-11 rounded-xl text-sm font-medium transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
             style={{
@@ -276,6 +286,22 @@ function LoginContent() {
         isOpen={modalType !== null}
         onClose={() => setModalType(null)}
         type={modalType || "terms"}
+      />
+      <ConfirmModal
+        isOpen={!!linkConfirmData}
+        onClose={() => setLinkConfirmData(null)}
+        onConfirm={() => {
+          if (linkConfirmData) {
+            const token = linkConfirmData.token;
+            setLinkConfirmData(null);
+            handleGoogleLogin(token);
+          }
+        }}
+        title="Liên kết tài khoản"
+        description="Email này đã được đăng ký bằng mật khẩu. Bạn có muốn liên kết với tài khoản Google để có thể đăng nhập bằng cả 2 cách không?"
+        confirmText="Đồng ý liên kết"
+        cancelText="Không, cảm ơn"
+        variant="primary"
       />
     </div>
   )

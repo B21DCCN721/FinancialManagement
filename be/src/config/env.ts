@@ -14,7 +14,6 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_REFRESH_TOKEN: z.string().optional(),
   GEMINI_API_KEY: z.string().min(1, "GEMINI_API_KEY is required"),
-  GOOGLE_VISION_CREDENTIALS: z.string().optional(), // JSON string of GCP Service Account for Vision OCR
 })
 
 const parsed = envSchema.safeParse(process.env)

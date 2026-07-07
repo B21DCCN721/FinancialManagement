@@ -32,7 +32,7 @@ export async function googleLoginController(
   reply: FastifyReply
 ) {
   try {
-    const result = await googleLoginService(request.server, request.body.token)
+    const result = await googleLoginService(request.server, request.body.token, request.body.confirmLink)
     return reply.code(200).send(result)
   } catch (err) {
     return handleError(err, reply)
@@ -83,11 +83,3 @@ export async function logoutController(
   return reply.code(200).send({ message: "Logged out successfully" })
 }
 
-export async function deleteAccountController(
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
-  const { deleteAccountService } = await import("./auth.service")
-  await deleteAccountService(request.server, request.user.id)
-  return reply.code(200).send({ message: "Account deleted successfully" })
-}

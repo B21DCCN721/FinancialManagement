@@ -10,6 +10,7 @@ interface RegisterRequest {
   email: string
   password: string
   name: string
+  confirmLink?: boolean
 }
 
 interface RefreshRequest {
@@ -23,6 +24,7 @@ interface RefreshResponse {
 
 interface GoogleLoginRequest {
   token: string
+  confirmLink?: boolean
 }
 
 interface ForgotPasswordRequest {
@@ -97,12 +99,7 @@ export const authApi = baseApi.injectEndpoints({
       }),
     }),
 
-    deleteAccount: builder.mutation<{ message: string }, void>({
-      query: () => ({
-        url: "/auth/account",
-        method: "DELETE",
-      }),
-    }),
+
   }),
 })
 
@@ -115,5 +112,4 @@ export const {
   useGetMeQuery,
   useForgotPasswordMutation,
   useResetPasswordMutation,
-  useDeleteAccountMutation,
 } = authApi

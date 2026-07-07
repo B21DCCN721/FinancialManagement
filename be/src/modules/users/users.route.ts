@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyPluginAsync } from "fastify"
 import { ZodTypeProvider } from "fastify-type-provider-zod"
 import { updateProfileSchema, changePasswordSchema, userProfileSchema } from "./users.schema"
-import { getMeController, updateProfileController, changePasswordController, deleteAccountController } from "./users.controller"
+import { getMeController, updateProfileController, changePasswordController, deleteAccountController, unlinkGoogleController } from "./users.controller"
 import { authenticate } from "../../hooks/authenticate"
 import { z } from "zod"
 
@@ -39,4 +39,9 @@ export const userRoutes: FastifyPluginAsync = async (server: FastifyInstance) =>
   s.delete("/me", {
     schema: { response: { 200: msgSchema } },
   }, deleteAccountController)
+
+  // DELETE /api/users/me/google-link
+  s.delete("/me/google-link", {
+    schema: { response: { 200: msgSchema, 400: errorSchema } },
+  }, unlinkGoogleController)
 }

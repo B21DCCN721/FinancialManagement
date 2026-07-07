@@ -13,6 +13,7 @@ import { auth, googleProvider } from "@/lib/firebase"
 import { signInWithPopup } from "firebase/auth"
 import { useTranslation } from "react-i18next"
 import { TermsModal } from "@/components/auth/terms-modal"
+import { ConfirmModal } from "@/components/ui/confirm-modal"
 
 export default function RegisterPage() {
   const { t } = useTranslation()
@@ -29,14 +30,20 @@ export default function RegisterPage() {
   const [googleLogin] = useGoogleLoginMutation()
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [modalType, setModalType] = useState<"terms" | "privacy" | null>(null)
+  
+  // linkConfirmData.type identifies if we are confirming a googleLogin or a local register
+  const [linkConfirmData, setLinkConfirmData] = useState<{ type: "google" | "local", token?: string } | null>(null)
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async (confirmToken?: string) => {
     setIsGoogleLoading(true)
+    let token = confirmToken || "";
     try {
-      const result = await signInWithPopup(auth, googleProvider)
-      const token = await result.user.getIdToken()
+      if (!token) {
+        const result = await signInWithPopup(auth, googleProvider)
+        token = await result.user.getIdToken()
+      }
 
-      const apiResult = await googleLogin({ token }).unwrap()
+      const apiResult = await googleLogin({ token, confirmLink: !!confirmToken }).unwrap()
 
       dispatch(setCredentials({
         accessToken: apiResult.accessToken,
@@ -49,13 +56,18 @@ export default function RegisterPage() {
     } catch (err: any) {
       setIsGoogleLoading(false)
       logger.error("Firebase Google Register failed", err)
-      const errMessage = err?.message || JSON.stringify(err)
-      setErrorMsg(`${t("register.googleError")} ${errMessage}`)
+      const errMessage = err?.data?.message || err?.error || err?.message || "Đã xảy ra lỗi không xác định"
+      
+      if (errMessage === "REQUIRE_LINK_CONFIRMATION") {
+        setLinkConfirmData({ type: "google", token })
+      } else {
+        setErrorMsg(`${t("register.googleError")} ${errMessage}`)
+      }
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (e?: React.FormEvent, confirmLink: boolean = false) => {
+    if (e) e.preventDefault()
     setErrorMsg("")
 
     const errs: { name?: string; email?: string; password?: string } = {}
@@ -66,7 +78,7 @@ export default function RegisterPage() {
     setFieldErrors({})
 
     try {
-      const result = await register({ email, password, name }).unwrap()
+      const result = await register({ email, password, name, confirmLink }).unwrap()
       dispatch(setCredentials({
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
@@ -77,8 +89,13 @@ export default function RegisterPage() {
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string }; status?: number }
       const msg = apiErr?.data?.message ?? t("register.failed")
-      setErrorMsg(msg)
-      logger.error("Registration failed", err, { email })
+      
+      if (msg === "REQUIRE_LINK_CONFIRMATION") {
+        setLinkConfirmData({ type: "local" })
+      } else {
+        setErrorMsg(msg)
+        logger.error("Registration failed", err, { email })
+      }
     }
   }
 
@@ -140,7 +157,7 @@ export default function RegisterPage() {
           {/* Google Login Button */}
           <button
             type="button"
-            onClick={handleGoogleLogin}
+            onClick={() => handleGoogleLogin()}
             disabled={isGoogleLoading}
             className="relative flex items-center justify-center gap-3 w-full h-11 rounded-xl mb-6 text-sm font-medium transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
             style={{
@@ -264,6 +281,26 @@ export default function RegisterPage() {
         isOpen={modalType !== null}
         onClose={() => setModalType(null)}
         type={modalType || "terms"}
+      />
+      <ConfirmModal
+        isOpen={!!linkConfirmData}
+        onClose={() => setLinkConfirmData(null)}
+        onConfirm={() => {
+          if (linkConfirmData) {
+            const currentData = linkConfirmData;
+            setLinkConfirmData(null);
+            if (currentData.type === "google" && currentData.token) {
+              handleGoogleLogin(currentData.token);
+            } else if (currentData.type === "local") {
+              handleSubmit(undefined, true);
+            }
+          }
+        }}
+        title="Liên kết tài khoản"
+        description="Email này đã được sử dụng. Bạn có muốn liên kết với tài khoản này để có thể đăng nhập bằng cả 2 cách không?"
+        confirmText="Đồng ý liên kết"
+        cancelText="Không, cảm ơn"
+        variant="primary"
       />
     </div>
   )
