@@ -67,7 +67,7 @@ export function Modal({ isOpen, onClose, title, description, children, className
             - pointer-events:auto chỉ trên modal content
           */}
           <div
-            className="fixed inset-0 z-[51] overflow-y-auto"
+            className="fixed inset-0 z-51 overflow-y-auto"
             style={{
               height: "100dvh",
               overscrollBehavior: "none",
