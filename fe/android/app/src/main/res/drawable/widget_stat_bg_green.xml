@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nền stat box Thu nhập (xanh lá nhạt) -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#1A10D9A0" />
+    <corners android:radius="8dp" />
+</shape>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget colors -->
+    <color name="widget_positive">#10D9A0</color>
+    <color name="widget_negative">#FF4D6D</color>
+    <color name="widget_text_primary">#FFFFFF</color>
+    <color name="widget_text_secondary">#9090BB</color>
+    <color name="widget_accent">#7C5CFC</color>
+</resources>

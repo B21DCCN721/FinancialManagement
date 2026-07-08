@@ -4,4 +4,12 @@
     <string name="title_activity_main">FinManage</string>
     <string name="package_name">com.finmanage.app</string>
     <string name="custom_url_scheme">com.finmanage.app</string>
+    <!-- Widget strings -->
+    <string name="widget_app_name">FinManage</string>
+    <string name="widget_balance_label">Số dư hiện tại</string>
+    <string name="widget_income_label">Thu nhập</string>
+    <string name="widget_expense_label">Chi tiêu</string>
+    <string name="widget_not_updated">Chưa cập nhật</string>
+    <string name="widget_description">Hiển thị số dư tài chính của bạn</string>
+    <string name="widget_tap_to_open">Mở FinManage</string>
 </resources>
