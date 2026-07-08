@@ -198,15 +198,15 @@ body {
   --safe-area-left: env(safe-area-inset-left, 0px);
 }
 
-/* Áp dụng safe-area cho body khi chạy ở PWA standalone mode */
-@media (display-mode: standalone) {
-  body {
-    /* Đẩy nội dung xuống dưới status bar (iOS/Android) */
-    padding-top: var(--safe-area-top);
-    padding-bottom: var(--safe-area-bottom);
-    padding-left: var(--safe-area-left);
-    padding-right: var(--safe-area-right);
-  }
+/* Áp dụng safe-area cho body — hoạt động trên cả Capacitor WebView lẫn PWA standalone.
+   Lưu ý: @media (display-mode: standalone) KHÔNG bắt được Capacitor WebView.
+   Dùng env() trực tiếp: khi không phải mobile, env() trả về 0px nên không ảnh hưởng. */
+body {
+  /* Đẩy nội dung xuống dưới status bar (iOS notch / Android status bar) */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 /* Utility classes safe-area để dùng trực tiếp trong components */

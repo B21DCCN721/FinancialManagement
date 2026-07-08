@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
+import { syncBalanceToWidget } from "@/lib/capacitor/balanceWidget"
 import { DynamicIcon } from "@/components/ui/dynamic-icon"
 import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, TrendingDown, Sparkles, Loader2, MoreHorizontal, Download, Inbox } from "lucide-react"
 import {
@@ -20,7 +21,7 @@ import {
 } from "recharts"
 import Link from "next/link"
 import { useGetTransactionsQuery } from "@/services/transactionsApi"
-import { useGetMonthlyTrendQuery, useGetCategoryBreakdownQuery, useGetReportSummaryQuery, useLazyGetAiInsightsQuery } from "@/services/reportsApi"
+import { useGetMonthlyTrendQuery, useGetCategoryBreakdownQuery, useGetReportSummaryQuery, useLazyGetAiInsightsQuery, useGetBalanceQuery } from "@/services/reportsApi"
 import { MonthPicker } from "@/components/ui/month-picker"
 import { Modal } from "@/components/ui/modal"
 import ReactMarkdown from "react-markdown"
@@ -92,14 +93,32 @@ export default function Dashboard() {
 
   const { data, isLoading } = useGetTransactionsQuery({ page: 1, limit: 5 })
   const { data: summary } = useGetReportSummaryQuery({ period })
+  const { data: balanceData } = useGetBalanceQuery() // Số dư tổng toàn thời gian (cho widget)
   const { data: trend = [], isLoading: isTrendLoading } = useGetMonthlyTrendQuery({ months: 6 })
   const { data: breakdown = [], isLoading: isBreakdownLoading } = useGetCategoryBreakdownQuery({ period })
 
   const transactions = data?.data ?? []
 
+  // Số liệu theo tháng đã chọn (hiển thị trên Dashboard cards)
   const totalIncome = summary?.totalIncome ?? transactions.filter(tx => tx.type === "income").reduce((acc, tx) => acc + tx.amount, 0)
   const totalExpense = summary?.totalExpense ?? transactions.filter(tx => tx.type === "expense").reduce((acc, tx) => acc + tx.amount, 0)
   const totalBalance = summary?.netBalance ?? (totalIncome - totalExpense)
+
+  // Đồng bộ số dư lên Android home screen widget
+  // Dùng balanceData (tổng toàn thời gian) thay vì summary theo tháng
+  // để widget hiển thị đúng số dư tích lũy thực tế
+  useEffect(() => {
+    const widgetBalance = balanceData?.netBalance ?? totalBalance
+    const widgetIncome  = balanceData?.totalIncome ?? totalIncome
+    const widgetExpense = balanceData?.totalExpense ?? totalExpense
+    if (balanceData || summary) {
+      syncBalanceToWidget({
+        balance: widgetBalance,
+        income:  widgetIncome,
+        expense: widgetExpense,
+      })
+    }
+  }, [balanceData, summary, totalBalance, totalIncome, totalExpense])
 
   // Map trend data to chart format
   const monthlyData = trend.map(d => ({
