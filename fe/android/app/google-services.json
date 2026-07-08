@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "680792295793",
+    "project_id": "financialmanagement-498504",
+    "storage_bucket": "financialmanagement-498504.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:680792295793:android:a1d27753f8683fadbf0ed0",
+        "android_client_info": {
+          "package_name": "com.finmanage.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "680792295793-80e2i8njcs8it50r8d1tjcjhr4t2tlfm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.finmanage.app",
+            "certificate_hash": "384448bf46b5eb0cc5ff7dec4e76dbc9be057157"
+          }
+        },
+        {
+          "client_id": "680792295793-cujn2urmoripr4l9e43npun3knoor5lh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD94FRgROK2RFbKA1fwfgTGHTKHwT7ydvk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "680792295793-cujn2urmoripr4l9e43npun3knoor5lh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
