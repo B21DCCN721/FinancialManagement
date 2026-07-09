@@ -41,7 +41,7 @@ Hãy viết bằng tiếng Việt, văn phong thân thiện, động viên và f
 `
 
   // Gọi Gemini API
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
   
   try {
     const result = await model.generateContent(prompt)

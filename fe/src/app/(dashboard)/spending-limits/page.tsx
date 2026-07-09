@@ -235,13 +235,13 @@ export default function SpendingLimitsPage() {
         </div>
 
         {/* Date Filters depending on Active Tab */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto shrink-0">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground bg-card px-3 py-1.5 rounded-xl border border-border/30">
             <CalendarDays className="h-4 w-4 text-primary/70" />
             <span>Thời gian:</span>
           </div>
           
-          <div className="min-w-[160px]">
+          <div className="min-w-[140px] sm:min-w-[160px] flex-1 sm:flex-initial">
             {activeTab === "daily" && (
               <DatePicker value={selectedDate} onChange={setSelectedDate} align="right" />
             )}
@@ -366,10 +366,10 @@ export default function SpendingLimitsPage() {
 
           {/* Action buttons inside card */}
           {!isPast ? (
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
               <Button
                 onClick={handleOpenAddModal}
-                className="flex items-center gap-2 border bg-accent border-primary/20 text-primary hover:bg-accent/80 transition-all font-medium rounded-xl"
+                className="flex items-center justify-center gap-2 border bg-accent border-primary/20 text-primary hover:bg-accent/80 transition-all font-medium rounded-xl w-full sm:w-auto"
               >
                 <Pencil className="h-4 w-4" />
                 Thay đổi giới hạn
@@ -378,7 +378,7 @@ export default function SpendingLimitsPage() {
               <Button
                 onClick={() => setIsConfirmDeleteOpen(true)}
                 variant="destructive"
-                className="flex items-center gap-2 transition-all font-medium rounded-xl"
+                className="flex items-center justify-center gap-2 transition-all font-medium rounded-xl w-full sm:w-auto"
               >
                 <Trash2 className="h-4 w-4" />
                 Xóa giới hạn

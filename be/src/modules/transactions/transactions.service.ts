@@ -45,6 +45,7 @@ async function invalidateUserCaches(server: FastifyInstance, userId: string) {
     invalidateCachePattern(server.redis, `user:${userId}:transactions*`),
     invalidateCachePattern(server.redis, `user:${userId}:reports*`),
     invalidateCachePattern(server.redis, `user:${userId}:budgets*`),
+    invalidateCachePattern(server.redis, `user:${userId}:spending-limits*`),
   ])
 }
 
