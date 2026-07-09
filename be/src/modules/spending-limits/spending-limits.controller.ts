@@ -32,11 +32,16 @@ export async function upsertSpendingLimitController(
 }
 
 export async function deleteSpendingLimitController(
-  request: FastifyRequest<{ Params: { type: "daily" | "weekly" | "monthly" } }>,
+  request: FastifyRequest<{ Params: { type: "daily" | "weekly" | "monthly" }; Querystring: { period: string } }>,
   reply: FastifyReply
 ) {
   try {
-    const res = await deleteSpendingLimitService(request.server, request.user.id, request.params.type)
+    const res = await deleteSpendingLimitService(
+      request.server,
+      request.user.id,
+      request.params.type,
+      request.query.period
+    )
     return reply.send(res)
   } catch (err) {
     return handleError(err, reply)

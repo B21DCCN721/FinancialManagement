@@ -43,6 +43,9 @@ export const spendingLimitRoutes: FastifyPluginAsync = async (server: FastifyIns
       params: z.object({
         type: z.enum(["daily", "weekly", "monthly"]),
       }),
+      querystring: z.object({
+        period: z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/, "Period must be YYYY-MM or YYYY-MM-DD format"),
+      }),
       response: { 200: msgSchema, 404: errorSchema },
     },
   }, deleteSpendingLimitController)

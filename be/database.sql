@@ -299,6 +299,7 @@ CREATE TABLE "SpendingLimit" (
     "id"        TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
     "amount"    DOUBLE PRECISION NOT NULL,  -- limit amount
     "type"      TEXT        NOT NULL,        -- 'daily' | 'weekly' | 'monthly'
+    "period"    TEXT        NOT NULL,        -- 'YYYY-MM-DD' or 'YYYY-MM'
     "userId"    TEXT        NOT NULL,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -308,15 +309,16 @@ CREATE TABLE "SpendingLimit" (
     CONSTRAINT "SpendingLimit_type_check"   CHECK ("type" IN ('daily', 'weekly', 'monthly')),
     CONSTRAINT "SpendingLimit_userId_fkey"
         FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE,
-    CONSTRAINT "SpendingLimit_userId_type_key"
-        UNIQUE ("userId", "type")
+    CONSTRAINT "SpendingLimit_userId_type_period_key"
+        UNIQUE ("userId", "type", "period")
 );
 
 CREATE INDEX "SpendingLimit_userId_idx" ON "SpendingLimit"("userId");
+CREATE INDEX "SpendingLimit_userId_period_idx" ON "SpendingLimit"("userId", "period");
 
 CREATE TRIGGER "SpendingLimit_updatedAt"
     BEFORE UPDATE ON "SpendingLimit"
     FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
 
-COMMENT ON TABLE "SpendingLimit" IS 'Spending limits per user per type (daily, weekly, monthly)';
+COMMENT ON TABLE "SpendingLimit" IS 'Spending limits per user per type per period (daily, weekly, monthly)';
 

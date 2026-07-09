@@ -67,6 +67,60 @@ export default function SpendingLimitsPage() {
     setSelectedDate(`${monthStr}-01`)
   }
 
+  const formatDateString = (date: Date): string => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, "0")
+    const d = String(date.getDate()).padStart(2, "0")
+    return `${y}-${m}-${d}`
+  }
+
+  const getMondayDateStr = (dateStr: string): string => {
+    try {
+      const [year, month, day] = dateStr.split("-").map(Number)
+      const d = new Date(year, month - 1, day)
+      const dayOfWeek = d.getDay()
+      const diff = d.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+      const monday = new Date(year, month - 1, diff)
+      return formatDateString(monday)
+    } catch {
+      return dateStr
+    }
+  }
+
+  const isPeriodInPast = (): boolean => {
+    try {
+      const now = new Date()
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+      
+      if (activeTab === "daily") {
+        const [y, m, d] = selectedDate.split("-").map(Number)
+        const periodDate = new Date(y, m - 1, d, 0, 0, 0, 0)
+        return periodDate < todayStart
+      } else if (activeTab === "weekly") {
+        const selMondayStr = getMondayDateStr(selectedDate)
+        const [y, m, d] = selMondayStr.split("-").map(Number)
+        const periodMonday = new Date(y, m - 1, d, 0, 0, 0, 0)
+
+        // Current week Monday
+        const curMonday = new Date(todayStart)
+        const curDay = curMonday.getDay()
+        const curDiff = curMonday.getDate() - curDay + (curDay === 0 ? -6 : 1)
+        curMonday.setDate(curDiff)
+        curMonday.setHours(0, 0, 0, 0)
+
+        return periodMonday < curMonday
+      } else {
+        const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+        const selectedMonthStr = selectedDate.slice(0, 7)
+        return selectedMonthStr < currentMonthStr
+      }
+    } catch {
+      return false
+    }
+  }
+
+  const isPast = isPeriodInPast()
+
   const handleOpenAddModal = () => {
     setModalAmount(currentLimit?.amount ? String(currentLimit.amount) : "")
     setIsModalOpen(true)
@@ -80,12 +134,20 @@ export default function SpendingLimitsPage() {
       return
     }
 
+    const periodStr = activeTab === "monthly"
+      ? selectedDate.slice(0, 7)
+      : (activeTab === "weekly" ? getMondayDateStr(selectedDate) : selectedDate)
+
+    const isEdit = !!currentLimit?.id
+
     try {
       await upsertSpendingLimit({
         amount: amountNum,
         type: activeTab as "daily" | "weekly" | "monthly",
+        period: periodStr,
+        isEdit,
       }).unwrap()
-      toast.success("Cập nhật giới hạn chi tiêu thành công")
+      toast.success(isEdit ? "Cập nhật giới hạn chi tiêu thành công" : "Thiết lập giới hạn chi tiêu thành công")
       setIsModalOpen(false)
     } catch (err: any) {
       toast.error(err?.data?.message || "Không thể lưu giới hạn chi tiêu")
@@ -93,8 +155,15 @@ export default function SpendingLimitsPage() {
   }
 
   const handleDeleteLimit = async () => {
+    const periodStr = activeTab === "monthly"
+      ? selectedDate.slice(0, 7)
+      : (activeTab === "weekly" ? getMondayDateStr(selectedDate) : selectedDate)
+
     try {
-      await deleteSpendingLimit(activeTab as "daily" | "weekly" | "monthly").unwrap()
+      await deleteSpendingLimit({
+        type: activeTab as "daily" | "weekly" | "monthly",
+        period: periodStr,
+      }).unwrap()
       toast.success("Xóa giới hạn chi tiêu thành công")
       setIsConfirmDeleteOpen(false)
     } catch (err: any) {
@@ -296,24 +365,31 @@ export default function SpendingLimitsPage() {
           )}
 
           {/* Action buttons inside card */}
-          <div className="flex items-center gap-3 pt-2">
-            <Button
-              onClick={handleOpenAddModal}
-              className="flex items-center gap-2 border bg-accent border-primary/20 text-primary hover:bg-accent/80 transition-all font-medium rounded-xl"
-            >
-              <Pencil className="h-4 w-4" />
-              Thay đổi giới hạn
-            </Button>
-            
-            <Button
-              onClick={() => setIsConfirmDeleteOpen(true)}
-              variant="destructive"
-              className="flex items-center gap-2 transition-all font-medium rounded-xl"
-            >
-              <Trash2 className="h-4 w-4" />
-              Xóa giới hạn
-            </Button>
-          </div>
+          {!isPast ? (
+            <div className="flex items-center gap-3 pt-2">
+              <Button
+                onClick={handleOpenAddModal}
+                className="flex items-center gap-2 border bg-accent border-primary/20 text-primary hover:bg-accent/80 transition-all font-medium rounded-xl"
+              >
+                <Pencil className="h-4 w-4" />
+                Thay đổi giới hạn
+              </Button>
+              
+              <Button
+                onClick={() => setIsConfirmDeleteOpen(true)}
+                variant="destructive"
+                className="flex items-center gap-2 transition-all font-medium rounded-xl"
+              >
+                <Trash2 className="h-4 w-4" />
+                Xóa giới hạn
+              </Button>
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground bg-muted/30 px-4 py-2.5 rounded-xl border border-border/40 inline-flex items-center gap-1.5 font-medium">
+              <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
+              Không thể thay đổi hạn mức chi tiêu trong quá khứ.
+            </div>
+          )}
         </div>
       ) : (
         /* Empty state when limit has not been set yet */
@@ -325,15 +401,24 @@ export default function SpendingLimitsPage() {
               activeTab === "daily" ? "hàng ngày" : activeTab === "weekly" ? "hàng tuần" : "hàng tháng"
             } cho kỳ này.`}
           />
-          <div className="flex justify-center mt-6">
-            <Button
-              onClick={handleOpenAddModal}
-              className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/95 transition-all shadow-[0_4px_15px_rgba(124,92,252,0.3)] font-semibold rounded-xl px-5 py-2.5"
-            >
-              <Plus className="h-4.5 w-4.5" />
-              Thiết lập ngay
-            </Button>
-          </div>
+          {!isPast ? (
+            <div className="flex justify-center mt-6">
+              <Button
+                onClick={handleOpenAddModal}
+                className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/95 transition-all shadow-[0_4px_15px_rgba(124,92,252,0.3)] font-semibold rounded-xl px-5 py-2.5"
+              >
+                <Plus className="h-4.5 w-4.5" />
+                Thiết lập ngay
+              </Button>
+            </div>
+          ) : (
+            <div className="flex justify-center mt-6">
+              <span className="text-xs text-muted-foreground bg-muted/30 px-4 py-2.5 rounded-xl border border-border/40 inline-flex items-center gap-1.5 font-medium">
+                <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                Không thể thiết lập hạn mức chi tiêu trong quá khứ.
+              </span>
+            </div>
+          )}
         </div>
       )}
 

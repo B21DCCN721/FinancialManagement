@@ -3,6 +3,8 @@ import { z } from "zod"
 export const upsertSpendingLimitSchema = z.object({
   amount: z.number().positive("Limit amount must be positive"),
   type: z.enum(["daily", "weekly", "monthly"]),
+  period: z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/, "Period must be YYYY-MM or YYYY-MM-DD format"),
+  isEdit: z.boolean().default(false),
 })
 
 export const spendingLimitQuerySchema = z.object({
@@ -26,6 +28,7 @@ export const spendingLimitDbSchema = z.object({
   id: z.string(),
   amount: z.number(),
   type: z.enum(["daily", "weekly", "monthly"]),
+  period: z.string(),
   userId: z.string(),
   createdAt: z.union([z.date(), z.string()]),
   updatedAt: z.union([z.date(), z.string()]),

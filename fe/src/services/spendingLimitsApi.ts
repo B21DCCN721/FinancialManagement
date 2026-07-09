@@ -4,6 +4,8 @@ import type { SpendingLimit } from "@/lib/api/types"
 interface UpsertSpendingLimitRequest {
   amount: number
   type: "daily" | "weekly" | "monthly"
+  period: string
+  isEdit: boolean
 }
 
 export const spendingLimitsApi = baseApi.injectEndpoints({
@@ -36,12 +38,12 @@ export const spendingLimitsApi = baseApi.injectEndpoints({
       ],
     }),
 
-    deleteSpendingLimit: builder.mutation<{ message: string }, "daily" | "weekly" | "monthly">({
-      query: (type) => ({
-        url: `/spending-limits/${type}`,
+    deleteSpendingLimit: builder.mutation<{ message: string }, { type: "daily" | "weekly" | "monthly"; period: string }>({
+      query: ({ type, period }) => ({
+        url: `/spending-limits/${type}?period=${period}`,
         method: "DELETE",
       }),
-      invalidatesTags: (_result, _err, type) => [
+      invalidatesTags: (_result, _err, { type }) => [
         { type: "SpendingLimit", id: type },
         { type: "SpendingLimit", id: "LIST" },
       ],

@@ -107,12 +107,14 @@ model SpendingLimit {
   id        String   @id @default(uuid())
   amount    Float
   type      String   // "daily" | "weekly" | "monthly"
+  period    String   // "YYYY-MM-DD" for daily/weekly, "YYYY-MM" for monthly
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([userId, type])
+  @@unique([userId, type, period])
   @@index([userId])
+  @@index([userId, period])
 }
 
