@@ -19,6 +19,7 @@ import { transactionRoutes } from "./modules/transactions/transactions.route"
 import { budgetRoutes } from "./modules/budgets/budgets.route"
 import { goalRoutes } from "./modules/goals/goals.route"
 import { reportRoutes } from "./modules/reports/reports.route"
+import { spendingLimitRoutes } from "./modules/spending-limits/spending-limits.route"
 import { AppError } from "./utils/errors"
 import { registerScheduler } from "./utils/scheduler"
 
@@ -90,6 +91,7 @@ server.register(transactionRoutes, { prefix: "/api/transactions" })
 server.register(budgetRoutes,      { prefix: "/api/budgets" })
 server.register(goalRoutes,        { prefix: "/api/goals" })
 server.register(reportRoutes,      { prefix: "/api/reports" })
+server.register(spendingLimitRoutes,{ prefix: "/api/spending-limits" })
 
 // ─── Health Check ────────────────────────────────────────────────────────────
 server.get("/api/health", {

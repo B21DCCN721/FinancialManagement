@@ -12,9 +12,10 @@ interface DatePickerProps {
   id?: string
   minDate?: string
   maxDate?: string
+  align?: "left" | "right"
 }
 
-export function DatePicker({ value, onChange, name, required, id, minDate, maxDate }: DatePickerProps) {
+export function DatePicker({ value, onChange, name, required, id, minDate, maxDate, align = "left" }: DatePickerProps) {
   const [open, setOpen] = useState(false)
   const [internalValue, setInternalValue] = useState(value || "")
   const currentValue = value !== undefined ? value : internalValue
@@ -123,7 +124,10 @@ export function DatePicker({ value, onChange, name, required, id, minDate, maxDa
             />
             <div
               ref={popupRef}
-              className="fixed bottom-0 left-0 right-0 z-[110] rounded-t-2xl sm:rounded-2xl sm:absolute sm:bottom-auto sm:left-0 sm:top-[calc(100%+8px)] sm:w-[300px] sm:z-50 shadow-[0_8px_40px_rgba(0,0,0,0.25)] border border-border overflow-hidden animate-in slide-in-from-bottom-2 sm:slide-in-from-top-2"
+              className={[
+                "fixed bottom-0 left-0 right-0 z-[110] rounded-t-2xl sm:rounded-2xl sm:absolute sm:bottom-auto sm:top-[calc(100%+8px)] sm:w-[300px] sm:z-50 shadow-[0_8px_40px_rgba(0,0,0,0.25)] border border-border overflow-hidden animate-in slide-in-from-bottom-2 sm:slide-in-from-top-2",
+                align === "right" ? "sm:left-auto sm:right-0" : "sm:left-0 sm:right-auto"
+              ].join(" ")}
               style={{
                 background: "var(--popover)",
                 color: "var(--popover-foreground)",

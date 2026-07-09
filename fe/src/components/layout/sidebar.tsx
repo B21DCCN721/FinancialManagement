@@ -16,6 +16,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Loader2,
+  ShieldAlert,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useGetBalanceQuery } from "@/services/reportsApi"
@@ -28,6 +29,7 @@ const navigation = [
   { nameKey: "categories", href: "/categories", icon: Tags },
   { nameKey: "budgets", href: "/budgets", icon: Wallet },
   { nameKey: "goals", href: "/goals", icon: Target },
+  { nameKey: "spendingLimits", href: "/spending-limits", icon: ShieldAlert },
   { nameKey: "reports", href: "/reports", icon: PieChart },
 ]
 

@@ -4,6 +4,6 @@ import { baseQueryWithAuth } from "./baseQuery"
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithAuth,
-  tagTypes: ["User", "Transaction", "Budget", "Goal", "Category", "Report"],
+  tagTypes: ["User", "Transaction", "Budget", "Goal", "Category", "Report", "SpendingLimit"],
   endpoints: () => ({}),
 })

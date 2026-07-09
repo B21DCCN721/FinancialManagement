@@ -118,3 +118,17 @@ export interface TransactionQuery {
   search?: string
   isRecurring?: boolean
 }
+
+export interface SpendingLimit {
+  id?: string
+  amount: number | null
+  type: "daily" | "weekly" | "monthly"
+  userId: string
+  spentAmount: number
+  remaining: number | null
+  percentUsed: number
+  status: "normal" | "warning" | "exceeded"
+  startDate: string
+  endDate: string
+}
+

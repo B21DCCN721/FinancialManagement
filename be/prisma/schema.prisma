@@ -25,6 +25,7 @@ model User {
   categories   Category[]
   budgets      Budget[]
   goals        Goal[]
+  spendingLimits SpendingLimit[]
 }
 
 model Category {
@@ -101,3 +102,17 @@ model Goal {
 
   @@index([userId])
 }
+
+model SpendingLimit {
+  id        String   @id @default(uuid())
+  amount    Float
+  type      String   // "daily" | "weekly" | "monthly"
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, type])
+  @@index([userId])
+}
+

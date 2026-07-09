@@ -15,6 +15,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 DROP TABLE IF EXISTS "Transaction" CASCADE;
 DROP TABLE IF EXISTS "Budget"      CASCADE;
 DROP TABLE IF EXISTS "Goal"        CASCADE;
+DROP TABLE IF EXISTS "SpendingLimit" CASCADE;
 DROP TABLE IF EXISTS "Category"    CASCADE;
 DROP TABLE IF EXISTS "User"        CASCADE;
 
@@ -290,3 +291,32 @@ JOIN "Category" c ON c."id" = t."categoryId"
 GROUP BY t."userId", TO_CHAR(t."date", 'YYYY-MM'), t."categoryId", c."name", c."color", c."icon", t."type";
 
 COMMENT ON VIEW "v_category_breakdown" IS 'Transaction totals grouped by category per month';
+
+-- ============================================================
+-- TABLE: SpendingLimit
+-- ============================================================
+CREATE TABLE "SpendingLimit" (
+    "id"        TEXT        NOT NULL DEFAULT gen_random_uuid()::TEXT,
+    "amount"    DOUBLE PRECISION NOT NULL,  -- limit amount
+    "type"      TEXT        NOT NULL,        -- 'daily' | 'weekly' | 'monthly'
+    "userId"    TEXT        NOT NULL,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT "SpendingLimit_pkey"         PRIMARY KEY ("id"),
+    CONSTRAINT "SpendingLimit_amount_check" CHECK ("amount" > 0),
+    CONSTRAINT "SpendingLimit_type_check"   CHECK ("type" IN ('daily', 'weekly', 'monthly')),
+    CONSTRAINT "SpendingLimit_userId_fkey"
+        FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE,
+    CONSTRAINT "SpendingLimit_userId_type_key"
+        UNIQUE ("userId", "type")
+);
+
+CREATE INDEX "SpendingLimit_userId_idx" ON "SpendingLimit"("userId");
+
+CREATE TRIGGER "SpendingLimit_updatedAt"
+    BEFORE UPDATE ON "SpendingLimit"
+    FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
+COMMENT ON TABLE "SpendingLimit" IS 'Spending limits per user per type (daily, weekly, monthly)';
+
