@@ -156,6 +156,19 @@ export default fp(async (fastify: FastifyInstance) => {
 
   // 3. Hook onResponse: Nơi duy nhất ghi log (đảm bảo statusCode chính xác và không trùng lặp)
   fastify.addHook("onResponse", async (request, reply) => {
+    const urlPath = request.url.split("?")[0]
+
+    // Bỏ qua ghi log cho các request OPTIONS, Health Check, favicon, robots.txt, hoặc .well-known
+    if (
+      request.method === "OPTIONS" ||
+      urlPath === "/api/health" ||
+      urlPath === "/favicon.ico" ||
+      urlPath === "/robots.txt" ||
+      urlPath.startsWith("/.well-known/")
+    ) {
+      return
+    }
+
     const duration = request.startTime ? Date.now() - request.startTime : 0
     const userId = request.user?.id || "anonymous"
     const ip = request.ip
