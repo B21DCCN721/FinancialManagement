@@ -14,6 +14,9 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_REFRESH_TOKEN: z.string().optional(),
   GEMINI_API_KEY: z.string().min(1, "GEMINI_API_KEY is required"),
+  LOKI_URL: z.string().optional(),
+  LOKI_USER: z.string().optional(),
+  LOKI_PASSWORD: z.string().optional(),
 })
 
 const parsed = envSchema.safeParse(process.env)

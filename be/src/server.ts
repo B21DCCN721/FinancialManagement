@@ -11,6 +11,7 @@ import { env } from "./config/env"
 import dbPlugin from "./plugins/db"
 import redisPlugin from "./plugins/redis"
 import rateLimitPlugin from "./plugins/rateLimit"
+import loggingPlugin from "./plugins/logging"
 
 import { authRoutes } from "./modules/auth/auth.route"
 import { userRoutes } from "./modules/users/users.route"
@@ -78,6 +79,8 @@ server.register(cors, {
 server.register(jwt, {
   secret: env.JWT_SECRET,
 })
+
+server.register(loggingPlugin)
 
 server.register(dbPlugin)
 server.register(redisPlugin)

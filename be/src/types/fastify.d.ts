@@ -7,6 +7,11 @@ declare module "fastify" {
     prisma: PrismaClient
     redis: Redis
   }
+  interface FastifyRequest {
+    startTime?: number
+    hasError?: boolean
+    rawError?: Error | null
+  }
 }
 
 declare module "@fastify/jwt" {
