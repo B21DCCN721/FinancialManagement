@@ -56,6 +56,7 @@ import { ReduxProvider } from "@/store/provider";
 import I18nProvider from "@/components/providers/I18nProvider";
 import { Toaster } from "sonner";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
+import { WidgetSyncProvider } from "@/components/providers/WidgetSyncProvider";
 
 export default function RootLayout({
   children,
@@ -88,7 +89,9 @@ export default function RootLayout({
         >
           <ReduxProvider>
             <I18nProvider>
-              {children}
+              <WidgetSyncProvider>
+                {children}
+              </WidgetSyncProvider>
               <Toaster
                 position="top-right"
                 richColors
